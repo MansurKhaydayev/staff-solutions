@@ -1,0 +1,12 @@
+# Einstellungen für Netlify: Die Web-App liegt im Ordner "app".
+[build]
+  publish = "app"
+
+# Sicherheits-Einstellungen für den Browser
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://dzvalpnptlbrogfkunbr.supabase.co; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'"
