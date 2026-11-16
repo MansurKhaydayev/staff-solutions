@@ -15,6 +15,19 @@ später Zeiterfassung, Urlaub, Krankenstand und Auswertungen.
 | `supabase/seed_demo.sql` | Erfundene Demo-Firma „Demo Fitness Gruppe“ (kann mehrfach ausgeführt werden) |
 | `vorlagen/demo/` | Demo-Vorlagen mit Platzhaltern wie `{{name}}` |
 | `generator/` | Werkzeuge zum Vorbereiten und Befüllen von Vorlagen |
+| `app/` | Web-App (ohne zusätzliche Bibliotheken): Anmeldung, Dienstzettel erfassen, Mitarbeiterliste |
+
+## App lokal starten
+
+Die App muss über einen kleinen Webserver geöffnet werden (ein Doppelklick auf
+`index.html` reicht nicht, weil der Browser sonst die Programmteile blockiert):
+
+```bash
+cd app
+python3 -m http.server 8000
+```
+
+Danach im Browser `http://localhost:8000` öffnen.
 
 ## Datenmodell in Kürze
 

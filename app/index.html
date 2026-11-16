@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="de-AT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Staff-Solutions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+
+  <!-- Anmeldung -->
+  <main id="ansicht-anmeldung" class="anmeldung" hidden>
+    <form id="anmelde-formular" class="anmelde-karte" novalidate>
+      <h1 class="marke">Staff-Solutions</h1>
+      <p class="anmelde-text">Melde dich mit deinem Zugang an.</p>
+      <label class="feld">
+        <span>E-Mail</span>
+        <input type="email" name="email" autocomplete="username" required>
+      </label>
+      <label class="feld">
+        <span>Passwort</span>
+        <input type="password" name="passwort" autocomplete="current-password" required>
+      </label>
+      <p class="fehler" id="anmelde-fehler" role="alert" hidden></p>
+      <button type="submit" class="knopf knopf-haupt">Anmelden</button>
+    </form>
+  </main>
+
+  <!-- Programm -->
+  <div id="ansicht-programm" hidden>
+    <header class="kopf">
+      <span class="marke marke-klein">Staff-Solutions</span>
+      <nav class="navigation" aria-label="Hauptnavigation">
+        <a href="#erfassen" data-ziel="erfassen">Neuer Mitarbeiter</a>
+        <a href="#mitarbeiter" data-ziel="mitarbeiter">Mitarbeiter</a>
+      </nav>
+      <span class="wer" id="wer"></span>
+      <button type="button" class="knopf knopf-leise" id="abmelden">Abmelden</button>
+    </header>
+
+    <!-- Dienstzettel erfassen -->
+    <main id="seite-erfassen" class="seite" hidden>
+      <h1 class="seitentitel">Dienstzettel erfassen</h1>
+      <p class="einleitung">Trag die Angaben aus dem Gespräch mit dem neuen Mitarbeiter ein.
+        Was rechts <mark>markiert</mark> ist, ermittelt das System selbst.</p>
+
+      <form id="dienstzettel" class="erfassung" novalidate>
+        <div class="formular">
+
+          <fieldset>
+            <legend>Anstellung</legend>
+            <div class="reihe">
+              <label class="feld breit">
+                <span>Studio</span>
+                <select name="standort" required></select>
+              </label>
+              <label class="feld breit">
+                <span>Funktion</span>
+                <select name="funktion" required></select>
+              </label>
+            </div>
+            <div class="reihe">
+              <label class="feld">
+                <span>Dienstantritt</span>
+                <input type="date" name="eintritt" required>
+              </label>
+              <label class="feld">
+                <span>Beschäftigungsart</span>
+                <select name="beschaeftigungsart" required>
+                  <option value="">Bitte wählen</option>
+                  <option value="vollzeit">Vollzeit</option>
+                  <option value="teilzeit">Teilzeit</option>
+                  <option value="geringfuegig">Geringfügig</option>
+                </select>
+              </label>
+              <label class="feld schmal">
+                <span>Stunden pro Woche</span>
+                <input type="number" name="wochenstunden" min="1" max="60" step="0.5" inputmode="decimal" required>
+              </label>
+              <label class="feld schmal">
+                <span>Arbeitstage pro Woche</span>
+                <input type="number" name="arbeitstage" min="1" max="7" step="1" inputmode="numeric">
+              </label>
+            </div>
+            <p class="hinweis" id="hinweis-stunden" hidden></p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Person</legend>
+            <div class="reihe">
+              <label class="feld schmal">
+                <span>Anrede</span>
+                <select name="anrede">
+                  <option value=""></option>
+                  <option>Frau</option>
+                  <option>Herr</option>
+                  <option>Divers</option>
+                </select>
+              </label>
+              <label class="feld">
+                <span>Vorname</span>
+                <input name="vorname" autocomplete="off" required>
+              </label>
+              <label class="feld">
+                <span>Nachname</span>
+                <input name="nachname" autocomplete="off" required>
+              </label>
+              <label class="feld">
+                <span>Geburtsdatum</span>
+                <input type="date" name="geburtsdatum">
+              </label>
+            </div>
+            <div class="reihe">
+              <label class="feld breit">
+                <span>Straße und Hausnummer</span>
+                <input name="strasse" autocomplete="off">
+              </label>
+              <label class="feld schmal">
+                <span>PLZ</span>
+                <input name="plz" inputmode="numeric" autocomplete="off">
+              </label>
+              <label class="feld">
+                <span>Ort</span>
+                <input name="ort" autocomplete="off">
+              </label>
+            </div>
+            <div class="reihe">
+              <label class="feld">
+                <span>Telefon</span>
+                <input type="tel" name="telefon" autocomplete="off">
+              </label>
+              <label class="feld">
+                <span>E-Mail</span>
+                <input type="email" name="email" autocomplete="off">
+              </label>
+              <label class="feld">
+                <span>Staatsangehörigkeit</span>
+                <input name="staatsangehoerigkeit" autocomplete="off">
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Entgelt</legend>
+            <div class="reihe">
+              <label class="feld">
+                <span>Netto pro Monat (€)</span>
+                <input type="number" name="netto" min="0" step="0.01" inputmode="decimal" required>
+              </label>
+              <label class="feld" id="feld-zulage" hidden>
+                <span>Leiterzulage netto (€), falls vereinbart</span>
+                <input type="number" name="leiterzulage" min="0" step="0.01" inputmode="decimal">
+              </label>
+            </div>
+            <label class="ankreuzen">
+              <input type="checkbox" name="sonderzahlung">
+              <span>13. und 14. Gehalt vereinbart</span>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Für die Lohnverrechnung</legend>
+            <p class="einleitung klein">Diese Angaben sieht nach dem Speichern nur das Büro.</p>
+            <div class="reihe">
+              <label class="feld">
+                <span>Versicherungsnummer</span>
+                <input name="sv_nummer" inputmode="numeric" autocomplete="off" placeholder="1234 010190">
+              </label>
+              <label class="feld breit">
+                <span>IBAN</span>
+                <input name="iban" autocomplete="off" placeholder="AT61 1904 3002 3457 3201">
+              </label>
+              <label class="feld schmal">
+                <span>BIC</span>
+                <input name="bic" autocomplete="off">
+              </label>
+            </div>
+          </fieldset>
+        </div>
+
+        <!-- Was das System selbst einträgt -->
+        <aside class="ableitung" aria-labelledby="ableitung-titel" aria-live="polite">
+          <h2 id="ableitung-titel">Trägt das System ein</h2>
+          <dl>
+            <div><dt>Arbeitgeber</dt><dd id="a-gmbh"><span class="leer">Studio wählen</span></dd></div>
+            <div><dt>Arbeitsort im Vertrag</dt><dd id="a-arbeitsort"><span class="leer">Studio wählen</span></dd></div>
+            <div><dt>Befristet bis</dt><dd id="a-befristung"><span class="leer">Dienstantritt eintragen</span></dd></div>
+            <div><dt>Brutto pro Monat</dt><dd id="a-brutto"><span class="leer">Netto eintragen</span></dd></div>
+            <div><dt>Einzelvereinbarungen</dt><dd id="a-vereinbarungen"><span class="leer">keine</span></dd></div>
+          </dl>
+          <p class="fehler" id="speicher-fehler" role="alert" hidden></p>
+          <button type="submit" class="knopf knopf-haupt" id="speichern">Dienstzettel speichern</button>
+        </aside>
+      </form>
+
+      <section id="gespeichert" class="gespeichert" hidden tabindex="-1">
+        <h2>Dienstzettel gespeichert</h2>
+        <p id="gespeichert-text"></p>
+        <button type="button" class="knopf knopf-haupt" id="naechster">Nächsten Mitarbeiter erfassen</button>
+        <a href="#mitarbeiter" class="knopf knopf-leise">Zur Mitarbeiterliste</a>
+      </section>
+    </main>
+
+    <!-- Mitarbeiterliste -->
+    <main id="seite-mitarbeiter" class="seite" hidden>
+      <h1 class="seitentitel">Mitarbeiter</h1>
+      <div class="tabelle-rahmen">
+        <table class="tabelle">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Studio</th>
+              <th scope="col">Funktion</th>
+              <th scope="col">Stunden</th>
+              <th scope="col" class="zahl">Dienstantritt</th>
+              <th scope="col" class="zahl">Befristet bis</th>
+            </tr>
+          </thead>
+          <tbody id="liste"></tbody>
+        </table>
+      </div>
+      <p class="leer-zustand" id="liste-leer" hidden>Noch keine Mitarbeiter erfasst.
+        <a href="#erfassen">Ersten Dienstzettel erfassen</a></p>
+    </main>
+  </div>
+</body>
+</html>
