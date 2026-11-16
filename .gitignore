@@ -1,0 +1,14 @@
+# Abhängigkeiten und Build
+node_modules/
+__pycache__/
+*.pyc
+.env
+.env.*
+
+# Erzeugte Testdokumente
+test*.docx
+*.pdf
+
+# Niemals echte Firmen- oder Mitarbeiterdaten einchecken
+privat/
+echt/

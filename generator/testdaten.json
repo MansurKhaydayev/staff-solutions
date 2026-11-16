@@ -1,0 +1,16 @@
+{
+  "gmbh_name": "DemoFit Steiermark GmbH",
+  "gmbh_strasse": "Musterstraße 1",
+  "gmbh_plz_ort": "8010 Graz",
+  "name": "Max Mustermann",
+  "strasse": "Musterweg 2",
+  "plz_ort": "8605 Kapfenberg",
+  "dienstantritt": "01.11.2026",
+  "befristung_ende": "31.01.2027",
+  "arbeitsort": "DemoFit Leoben",
+  "brutto": "1.234,56",
+  "beschaeftigungsart": "Teilzeitbeschäftigung",
+  "wochenstunden": "20",
+  "ort_datum_arbeitnehmer": "Leoben, 12.11.2026",
+  "ort_datum_arbeitgeber": "Graz, 13.11.2026"
+}
