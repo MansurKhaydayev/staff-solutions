@@ -295,3 +295,44 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--fe
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* ---------- Prüfungen ---------- */
+.feld-fehler {
+  color: var(--fehler);
+  font-size: .8125rem;
+  line-height: 1.35;
+}
+select:disabled { color: var(--tinte-leise); background: var(--grund); cursor: not-allowed; }
+.rechnung {
+  margin: .9rem 0 0;
+  font-size: .9375rem;
+}
+.knopf-reihe { display: flex; gap: .75rem; flex-wrap: wrap; }
+
+/* ---------- Liste: Suche und Filter ---------- */
+.filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+  margin: 1rem 0 1.25rem;
+}
+.filter .suche { flex: 2 1 16rem; }
+.filter .feld { flex: 1 1 11rem; }
+.anzahl { margin: 0 0 .5rem; color: var(--tinte-leise); font-size: .875rem; }
+.name { font-weight: 500; }
+.merkmal {
+  display: inline-block;
+  font-size: .75rem;
+  font-weight: 600;
+  padding: .05rem .45rem;
+  border-radius: 999px;
+  background: var(--grund);
+  color: var(--tanne-dunkel);
+  vertical-align: 1px;
+}
+.merkmal-frist {
+  background: linear-gradient(transparent 0, var(--marker) 0);
+  color: var(--tinte);
+}
+.merkmal-aus { color: var(--tinte-leise); }

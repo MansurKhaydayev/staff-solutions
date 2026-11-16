@@ -1,5 +1,6 @@
 import * as api from "./api.js";
 import { fristende, datumAT, euro } from "./fristen.js";
+import { dienstzettelPruefen, heuteIso } from "./pruefungen.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -7,28 +8,49 @@ const $ = (sel) => document.querySelector(sel);
 const stand = {
   profil: null,
   organisation: null,
-  standorte: [],
+  standorte: [],          // alle sichtbaren Standorte
+  erfassbareStandorte: [],// wo diese Person Mitarbeiter anlegen darf
   gesellschaften: new Map(),
   tarifzonen: new Map(),
-  funktionen: [],
-  bruttoTabelle: [],     // nur für das Büro sichtbar
-  meineStandorte: null,  // nur bei Studio-/Regionalleitung
+  funktionen: [],         // alle
+  erfassbareFunktionen: [],
+  bruttoTabelle: [],      // nur für das Büro sichtbar
+  liste: [],              // Mitarbeiterliste (geladen)
 };
 
 const BUERO = ["admin", "geschaeftsfuehrung", "hr"];
 const LEITUNG = ["studioleitung", "regionalleitung"];
+const istBuero = () => BUERO.includes(stand.profil?.rolle);
+
+// Felder, die der Nutzer schon verlassen hat: nur dort zeigen wir Fehler sofort
+const beruehrt = new Set();
+let absendenVersucht = false;
 
 // ------------------------------------------------------------------ Start
 
 document.addEventListener("DOMContentLoaded", () => {
   $("#anmelde-formular").addEventListener("submit", anmelden);
   $("#abmelden").addEventListener("click", abmelden);
-  $("#dienstzettel").addEventListener("input", vorschauAktualisieren);
-  $("#dienstzettel").addEventListener("change", vorschauAktualisieren);
-  $("#dienstzettel").addEventListener("submit", speichern);
-  $("#dienstzettel").addEventListener("input", fehlerZuruecksetzen);
-  $("#dienstzettel").addEventListener("change", fehlerZuruecksetzen);
+
+  const form = $("#dienstzettel");
+  form.addEventListener("input", aktualisieren);
+  form.addEventListener("change", (e) => {
+    beruehrt.add(e.target.name);
+    if (e.target.name === "funktion") standorteFuellen();
+    aktualisieren();
+  });
+  form.addEventListener("focusout", (e) => {
+    if (e.target.name) beruehrt.add(e.target.name);
+    aktualisieren();
+  });
+  form.addEventListener("submit", speichern);
   $("#naechster").addEventListener("click", neuesFormular);
+
+  const filter = $("#filter");
+  filter.addEventListener("submit", (e) => e.preventDefault());
+  filter.addEventListener("input", listeZeigen);
+  filter.addEventListener("change", listeZeigen);
+
   window.addEventListener("hashchange", seiteZeigen);
   start();
 });
@@ -41,7 +63,7 @@ async function start() {
     seiteZeigen();
   } catch (fehler) {
     if (fehler.status === 401) return ansicht("anmeldung");
-    zeigeAnmeldeFehler(`Die Daten konnten nicht geladen werden: ${fehler.message}`);
+    zeigeAnmeldeFehler(fehler.message);
     ansicht("anmeldung");
   }
 }
@@ -60,14 +82,12 @@ async function anmelden(ereignis) {
   $("#anmelde-fehler").hidden = true;
   knopf.disabled = true;
   try {
-    await api.anmelden(daten.get("email").trim(), daten.get("passwort"));
+    await api.anmelden(String(daten.get("email")).trim(), daten.get("passwort"));
     await start();
   } catch (fehler) {
-    zeigeAnmeldeFehler(
-      fehler.status === 400
-        ? "E-Mail oder Passwort stimmen nicht."
-        : `Anmeldung nicht möglich: ${fehler.message}`
-    );
+    zeigeAnmeldeFehler(fehler.status === 400
+      ? "E-Mail oder Passwort stimmen nicht."
+      : `Anmeldung nicht möglich: ${fehler.message}`);
   } finally {
     knopf.disabled = false;
   }
@@ -91,35 +111,48 @@ async function stammdatenLaden() {
   const user = api.benutzer();
   const profile = await api.lesen("profil", `select=*&user_id=eq.${user.id}`);
   if (!profile.length) {
-    throw new api.ApiFehler(
-      "Dein Zugang ist noch keiner Firma zugeordnet. Bitte das Büro, dir eine Rolle zu geben.", 403
-    );
+    throw new api.ApiFehler("Dein Zugang ist noch keiner Firma zugeordnet. Bitte das Personalbüro, dir eine Rolle zu geben.", 403);
   }
   stand.profil = profile[0];
-  const buero = BUERO.includes(stand.profil.rolle);
+  const leitung = LEITUNG.includes(stand.profil.rolle);
 
   const [orgs, standorte, gesellschaften, zonen, funktionen, brutto, zust] = await Promise.all([
-    api.lesen("organisation", "select=id,name,befristung_monate"),
+    api.lesen("organisation", "select=id,name,befristung_monate,vollzeit_stunden,geringfuegig_grenze,max_stunden_tag"),
     api.lesen("standort", "select=id,name,art,vertragsbezeichnung,gesellschaft_id,tarifzone_id&order=name"),
     api.lesen("gesellschaft", "select=id,name,strasse,plz,ort"),
     api.lesen("tarifzone", "select=id,name"),
-    api.lesen("funktion", "select=id,name&order=name"),
-    buero ? api.lesen("brutto_tabelle", "select=tarifzone_id,netto,brutto,gueltig_ab&order=gueltig_ab.desc")
-          : Promise.resolve([]),
-    LEITUNG.includes(stand.profil.rolle) ? api.lesen("zustaendigkeit", "select=standort_id")
-                                         : Promise.resolve(null),
+    api.lesen("funktion", "select=id,name,bereich,anlegen_durch,leiterzulage_moeglich&order=name"),
+    istBuero() ? api.lesen("brutto_tabelle", "select=tarifzone_id,netto,brutto,gueltig_ab&order=gueltig_ab.desc")
+               : Promise.resolve([]),
+    leitung ? api.lesen("zustaendigkeit", "select=standort_id") : Promise.resolve(null),
   ]);
 
   stand.organisation = orgs[0];
   stand.gesellschaften = new Map(gesellschaften.map((g) => [g.id, g]));
   stand.tarifzonen = new Map(zonen.map((z) => [z.id, z]));
   stand.funktionen = funktionen;
+  stand.standorte = standorte;
   stand.bruttoTabelle = brutto;
-  stand.meineStandorte = zust ? new Set(zust.map((z) => z.standort_id)) : null;
-  stand.standorte = standorte.filter((s) => !stand.meineStandorte || stand.meineStandorte.has(s.id));
+
+  if (istBuero()) {
+    stand.erfassbareStandorte = standorte;
+    stand.erfassbareFunktionen = funktionen;
+  } else if (leitung) {
+    const meine = new Set(zust.map((z) => z.standort_id));
+    stand.erfassbareStandorte = standorte.filter((s) => meine.has(s.id) && s.art === "studio");
+    stand.erfassbareFunktionen = funktionen.filter((f) => (f.anlegen_durch || []).includes(stand.profil.rolle));
+  } else {
+    stand.erfassbareStandorte = [];
+    stand.erfassbareFunktionen = [];
+  }
 
   $("#wer").textContent = `${user.email}, ${rolleText(stand.profil.rolle)}`;
-  auswahlFuellen();
+  const darfErfassen = stand.erfassbareFunktionen.length > 0;
+  document.querySelector('[data-ziel="erfassen"]').hidden = !darfErfassen;
+
+  funktionenFuellen();
+  standorteFuellen();
+  filterFuellen();
 }
 
 function rolleText(rolle) {
@@ -129,22 +162,31 @@ function rolleText(rolle) {
   }[rolle] || rolle;
 }
 
-function auswahlFuellen() {
-  const studio = $('select[name="standort"]');
-  studio.innerHTML = '<option value="">Bitte wählen</option>' + stand.standorte
-    .map((s) => `<option value="${s.id}">${text(s.vertragsbezeichnung || s.name)}</option>`).join("");
-  const funktion = $('select[name="funktion"]');
-  funktion.innerHTML = '<option value="">Bitte wählen</option>' + stand.funktionen
-    .map((f) => `<option value="${f.id}">${text(f.name)}</option>`).join("");
+function funktionenFuellen() {
+  $('select[name="funktion"]').innerHTML = '<option value="">Bitte wählen</option>' +
+    stand.erfassbareFunktionen.map((f) => `<option value="${f.id}">${text(f.name)}</option>`).join("");
+}
+
+// Arbeitsorte passend zur gewählten Funktion (Büro-Funktionen nur im Büro und umgekehrt)
+function standorteFuellen() {
+  const select = $('select[name="standort"]');
+  const vorher = select.value;
+  const funktion = stand.funktionen.find((f) => f.id === $('select[name="funktion"]').value);
+  const passend = stand.erfassbareStandorte.filter((s) =>
+    !funktion || (funktion.bereich === "buero" ? s.art === "buero" : s.art !== "buero"));
+  select.innerHTML = `<option value="">${funktion ? "Bitte wählen" : "Zuerst Funktion wählen"}</option>` +
+    passend.map((s) => `<option value="${s.id}">${text(s.vertragsbezeichnung || s.name)}</option>`).join("");
+  if (passend.some((s) => s.id === vorher)) select.value = vorher;
+  else if (passend.length === 1) select.value = passend[0].id;
+  select.disabled = !funktion;
 }
 
 // ------------------------------------------------------------------ Seiten
 
 function seiteZeigen() {
-  const ziel = location.hash.replace("#", "") || "erfassen";
-  for (const name of ["erfassen", "mitarbeiter"]) {
-    $(`#seite-${name}`).hidden = name !== ziel;
-  }
+  let ziel = location.hash.replace("#", "") || "erfassen";
+  if (ziel === "erfassen" && !stand.erfassbareFunktionen.length) ziel = "mitarbeiter";
+  for (const name of ["erfassen", "mitarbeiter"]) $(`#seite-${name}`).hidden = name !== ziel;
   document.querySelectorAll(".navigation a").forEach((a) => {
     if (a.dataset.ziel === ziel) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
@@ -152,52 +194,105 @@ function seiteZeigen() {
   if (ziel === "mitarbeiter") listeLaden();
 }
 
-// ------------------------------------------------------------------ Vorschau (markierte Spalte)
+// ------------------------------------------------------------------ Formular lesen und prüfen
 
 function formWerte() {
-  const f = new FormData($("#dienstzettel"));
-  const zahl = (n) => (f.get(n) === "" || f.get(n) === null ? null : Number(f.get(n)));
+  const f = $("#dienstzettel").elements;
   return {
-    standort: stand.standorte.find((s) => s.id === f.get("standort")) || null,
-    funktion: stand.funktionen.find((x) => x.id === f.get("funktion")) || null,
-    eintritt: f.get("eintritt") || null,
-    art: f.get("beschaeftigungsart"),
-    stunden: zahl("wochenstunden"),
-    netto: zahl("netto"),
-    zulage: zahl("leiterzulage"),
-    sonderzahlung: f.get("sonderzahlung") === "on",
+    funktion: f.funktion.value, standort: f.standort.value,
+    eintritt: f.eintritt.value, beschaeftigungsart: f.beschaeftigungsart.value,
+    wochenstunden: f.wochenstunden.value, arbeitstage: f.arbeitstage.value,
+    anrede: f.anrede.value, vorname: f.vorname.value, nachname: f.nachname.value,
+    geburtsdatum: f.geburtsdatum.value, strasse: f.strasse.value, plz: f.plz.value, ort: f.ort.value,
+    telefon: f.telefon.value, email: f.email.value, staatsangehoerigkeit: f.staatsangehoerigkeit.value,
+    netto: f.netto.value, leiterzulage: $("#feld-zulage").hidden ? "" : f.leiterzulage.value,
+    sonderzahlung: f.sonderzahlung.checked,
+    svNummer: f.sv_nummer.value, svNachreichen: f.sv_nachreichen.checked,
+    iban: f.iban.value, bic: f.bic.value,
   };
 }
 
-function istLeitung(funktion) {
-  return Boolean(funktion && /leitung|regional/i.test(funktion.name));
+function auswahl(w) {
+  return {
+    funktion: stand.funktionen.find((x) => x.id === w.funktion) || null,
+    standort: stand.standorte.find((x) => x.id === w.standort) || null,
+  };
 }
 
-function bruttoSuchen(standort, netto, eintritt) {
-  return stand.bruttoTabelle.find(
-    (b) => b.tarifzone_id === standort.tarifzone_id && Number(b.netto) === netto && b.gueltig_ab <= eintritt
-  );
+// Fehlertext direkt unter dem Feld anzeigen oder entfernen
+function feldMeldung(feld, meldung) {
+  const label = feld.closest("label");
+  if (!label) return;
+  let el = label.querySelector(".feld-fehler");
+  if (meldung) {
+    if (!el) {
+      el = document.createElement("small");
+      el.className = "feld-fehler";
+      el.id = `fehler-${feld.name}`;
+      label.append(el);
+    }
+    el.textContent = meldung;
+    feld.setAttribute("aria-invalid", "true");
+    feld.setAttribute("aria-describedby", el.id);
+  } else {
+    el?.remove();
+    feld.removeAttribute("aria-invalid");
+    feld.removeAttribute("aria-describedby");
+  }
 }
 
-function setze(id, html) {
-  $(id).innerHTML = html;
+function aktualisieren() {
+  const form = $("#dienstzettel");
+  const w = formWerte();
+  const a = auswahl(w);
+
+  $("#feld-zulage").hidden = !a.funktion?.leiterzulage_moeglich;
+  form.elements.sv_nummer.disabled = w.svNachreichen;
+  if (w.svNachreichen) form.elements.sv_nummer.value = "";
+
+  const fehler = dienstzettelPruefen(w, stand.organisation, a);
+  for (const feld of form.elements) {
+    if (!feld.name || feld.type === "submit") continue;
+    const zeigen = absendenVersucht || beruehrt.has(feld.name);
+    feldMeldung(feld, zeigen ? fehler[feld.name] : null);
+  }
+  if (!Object.keys(fehler).length) $("#speicher-fehler").hidden = true;
+
+  rechnungZeigen(w);
+  vorschauZeigen(w, a);
+  return fehler;
 }
+
+// Zeigt die Arbeitszeit als Rechnung, damit Unstimmigkeiten sofort auffallen
+function rechnungZeigen(w) {
+  const el = $("#rechnung-stunden");
+  const stunden = Number(w.wochenstunden);
+  const tage = Number(w.arbeitstage);
+  if (stunden > 0 && tage >= 1) {
+    const proTag = (stunden / tage).toLocaleString("de-DE", { maximumFractionDigits: 2 });
+    el.textContent = `${stunden.toLocaleString("de-DE")} Stunden an ${tage} ${tage === 1 ? "Tag" : "Tagen"} ` +
+      `= ${proTag} Stunden pro Arbeitstag`;
+    el.hidden = false;
+  } else {
+    el.hidden = true;
+  }
+}
+
+// ------------------------------------------------------------------ Vorschau (markierte Spalte)
+
 const markiert = (wert, zusatz = "") =>
   `<span class="wert">${text(wert)}</span>${zusatz ? `<small>${text(zusatz)}</small>` : ""}`;
 const leer = (t) => `<span class="leer">${text(t)}</span>`;
+const setze = (id, html) => { $(id).innerHTML = html; };
 
-function vorschauAktualisieren() {
-  const w = formWerte();
-  const leitung = istLeitung(w.funktion);
-  $("#feld-zulage").hidden = !leitung;
-
-  if (w.standort) {
-    const g = stand.gesellschaften.get(w.standort.gesellschaft_id);
+function vorschauZeigen(w, { standort, funktion }) {
+  if (standort) {
+    const g = stand.gesellschaften.get(standort.gesellschaft_id);
     setze("#a-gmbh", markiert(g.name, [g.strasse, [g.plz, g.ort].filter(Boolean).join(" ")].filter(Boolean).join(", ")));
-    setze("#a-arbeitsort", markiert(w.standort.vertragsbezeichnung || w.standort.name));
+    setze("#a-arbeitsort", markiert(standort.vertragsbezeichnung || standort.name));
   } else {
-    setze("#a-gmbh", leer("Studio wählen"));
-    setze("#a-arbeitsort", leer("Studio wählen"));
+    setze("#a-gmbh", leer("Arbeitsort wählen"));
+    setze("#a-arbeitsort", leer("Arbeitsort wählen"));
   }
 
   const monate = stand.organisation?.befristung_monate ?? 3;
@@ -207,13 +302,15 @@ function vorschauAktualisieren() {
     setze("#a-befristung", leer(w.eintritt ? "unbefristet" : "Dienstantritt eintragen"));
   }
 
-  if (!BUERO.includes(stand.profil.rolle)) {
-    setze("#a-brutto", leer("ermittelt das Büro"));
-  } else if (w.netto === null || !w.standort || !w.eintritt) {
-    setze("#a-brutto", leer("Studio, Dienstantritt und Netto eintragen"));
+  const netto = w.netto === "" ? null : Number(w.netto);
+  if (!istBuero()) {
+    setze("#a-brutto", leer("ermittelt das Personalbüro"));
+  } else if (netto === null || !standort || !w.eintritt) {
+    setze("#a-brutto", leer("Arbeitsort, Dienstantritt und Netto eintragen"));
   } else {
-    const treffer = bruttoSuchen(w.standort, w.netto, w.eintritt);
-    const zone = stand.tarifzonen.get(w.standort.tarifzone_id)?.name;
+    const treffer = stand.bruttoTabelle.find((b) =>
+      b.tarifzone_id === standort.tarifzone_id && Number(b.netto) === netto && b.gueltig_ab <= w.eintritt);
+    const zone = stand.tarifzonen.get(standort.tarifzone_id)?.name;
     setze("#a-brutto", treffer
       ? markiert(`€ ${euro(treffer.brutto)}`, `Brutto-Tabelle, Tarifzone ${zone}`)
       : leer(`Nicht in der Tabelle (Tarifzone ${zone}). Wird als offen markiert.`));
@@ -221,114 +318,55 @@ function vorschauAktualisieren() {
 
   const vereinbarungen = [];
   if (w.sonderzahlung) vereinbarungen.push("Sonderzahlungen (13./14. Gehalt)");
-  if (leitung && w.zulage > 0) vereinbarungen.push(`Leiterzulage € ${euro(w.zulage)} netto`);
-  setze("#a-vereinbarungen", vereinbarungen.length
-    ? vereinbarungen.map((v) => markiert(v)).join("<br>")
-    : leer("keine"));
-
-  const hinweis = $("#hinweis-stunden");
-  let text_ = "";
-  if (w.art === "vollzeit" && w.stunden !== null && w.stunden < 38) {
-    text_ = `Vollzeit mit ${w.stunden} Stunden pro Woche. Stimmt das?`;
-  } else if (w.art === "teilzeit" && w.stunden !== null && w.stunden >= 40) {
-    text_ = `Teilzeit mit ${w.stunden} Stunden pro Woche. Ist Vollzeit gemeint?`;
+  if (funktion?.leiterzulage_moeglich && Number(w.leiterzulage) > 0) {
+    vereinbarungen.push(`Leiterzulage € ${euro(w.leiterzulage)} netto`);
   }
-  hinweis.textContent = text_;
-  hinweis.hidden = !text_;
+  setze("#a-vereinbarungen", vereinbarungen.length ? vereinbarungen.map((v) => markiert(v)).join("<br>") : leer("keine"));
 }
 
-// ------------------------------------------------------------------ Prüfen und speichern
-
-function ibanGueltig(iban) {
-  const s = iban.replace(/\s+/g, "").toUpperCase();
-  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(s)) return false;
-  const umgestellt = s.slice(4) + s.slice(0, 4);
-  const ziffern = umgestellt.replace(/[A-Z]/g, (c) => String(c.charCodeAt(0) - 55));
-  let rest = 0;
-  for (const z of ziffern) rest = (rest * 10 + Number(z)) % 97;
-  return rest === 1;
-}
-
-function pruefen(form) {
-  const fehler = [];
-  form.querySelectorAll("[aria-invalid]").forEach((el) => el.removeAttribute("aria-invalid"));
-  const markieren = (name, meldung) => {
-    form.elements[name].setAttribute("aria-invalid", "true");
-    fehler.push({ name, meldung });
-  };
-  const pflicht = {
-    standort: "Studio", funktion: "Funktion", eintritt: "Dienstantritt",
-    beschaeftigungsart: "Beschäftigungsart", wochenstunden: "Stunden pro Woche",
-    vorname: "Vorname", nachname: "Nachname", netto: "Netto pro Monat",
-  };
-  for (const [name, bezeichnung] of Object.entries(pflicht)) {
-    if (!String(form.elements[name].value).trim()) markieren(name, `${bezeichnung} fehlt.`);
-  }
-  const sv = form.elements.sv_nummer.value.replace(/\s+/g, "");
-  if (sv && !/^\d{10}$/.test(sv)) markieren("sv_nummer", "Die Versicherungsnummer hat 10 Ziffern.");
-  const iban = form.elements.iban.value;
-  if (iban.trim() && !ibanGueltig(iban)) markieren("iban", "Die IBAN ist nicht gültig. Bitte noch einmal prüfen.");
-  const zulage = form.elements.leiterzulage.value;
-  if (!$("#feld-zulage").hidden && zulage !== "" && Number(zulage) <= 0) {
-    markieren("leiterzulage", "Die Leiterzulage muss größer als 0 sein oder leer bleiben.");
-  }
-  return fehler;
-}
-
-// Sobald ein markiertes Feld ausgefüllt wird, verschwindet seine Markierung.
-// Sind alle behoben, verschwindet auch die Fehlermeldung.
-function fehlerZuruecksetzen(ereignis) {
-  const feld = ereignis.target;
-  if (feld.getAttribute?.("aria-invalid") === "true" && String(feld.value).trim()) {
-    feld.removeAttribute("aria-invalid");
-  }
-  if (!$("#dienstzettel").querySelector('[aria-invalid="true"]')) {
-    $("#speicher-fehler").hidden = true;
-  }
-}
+// ------------------------------------------------------------------ Speichern
 
 async function speichern(ereignis) {
   ereignis.preventDefault();
-  const form = ereignis.target;
+  absendenVersucht = true;
+  const fehler = aktualisieren();
   const fehlerEl = $("#speicher-fehler");
-  fehlerEl.hidden = true;
-
-  const fehler = pruefen(form);
-  if (fehler.length) {
-    fehlerEl.textContent = fehler.map((f) => f.meldung).join(" ");
+  const anzahl = Object.keys(fehler).length;
+  if (anzahl) {
+    fehlerEl.textContent = anzahl === 1
+      ? "1 Angabe fehlt oder stimmt nicht. Sie ist rot markiert."
+      : `${anzahl} Angaben fehlen oder stimmen nicht. Sie sind rot markiert.`;
     fehlerEl.hidden = false;
-    form.elements[fehler[0].name].focus();
+    $('#dienstzettel [aria-invalid="true"]')?.focus();
     return;
   }
 
-  const f = form.elements;
-  const leer = (v) => (String(v).trim() === "" ? null : String(v).trim());
-  const zahl = (v) => (String(v).trim() === "" ? null : Number(v));
-  const zulageSichtbar = !$("#feld-zulage").hidden;
-
+  const w = formWerte();
+  const leerZuNull = (v) => (String(v).trim() === "" ? null : String(v).trim());
   const parameter = {
-    p_standort_id: f.standort.value,
-    p_funktion_id: f.funktion.value,
-    p_vorname: f.vorname.value.trim(),
-    p_nachname: f.nachname.value.trim(),
-    p_eintritt: f.eintritt.value,
-    p_beschaeftigungsart: f.beschaeftigungsart.value,
-    p_wochenstunden: Number(f.wochenstunden.value),
-    p_netto: Number(f.netto.value),
-    p_anrede: leer(f.anrede.value),
-    p_geburtsdatum: leer(f.geburtsdatum.value),
-    p_strasse: leer(f.strasse.value),
-    p_plz: leer(f.plz.value),
-    p_ort: leer(f.ort.value),
-    p_telefon: leer(f.telefon.value),
-    p_email: leer(f.email.value),
-    p_staatsangehoerigkeit: leer(f.staatsangehoerigkeit.value),
-    p_sv_nummer: leer(f.sv_nummer.value),
-    p_iban: leer(f.iban.value),
-    p_bic: leer(f.bic.value),
-    p_arbeitstage_woche: zahl(f.arbeitstage.value),
-    p_sonderzahlung: f.sonderzahlung.checked,
-    p_leiterzulage_netto: zulageSichtbar ? zahl(f.leiterzulage.value) : null,
+    p_standort_id: w.standort,
+    p_funktion_id: w.funktion,
+    p_vorname: w.vorname.trim(),
+    p_nachname: w.nachname.trim(),
+    p_eintritt: w.eintritt,
+    p_beschaeftigungsart: w.beschaeftigungsart,
+    p_wochenstunden: Number(w.wochenstunden),
+    p_arbeitstage_woche: Number(w.arbeitstage),
+    p_netto: Number(w.netto),
+    p_anrede: w.anrede,
+    p_geburtsdatum: w.geburtsdatum,
+    p_strasse: w.strasse.trim(),
+    p_plz: w.plz.trim(),
+    p_ort: w.ort.trim(),
+    p_telefon: w.telefon.trim(),
+    p_email: w.email.trim(),
+    p_staatsangehoerigkeit: w.staatsangehoerigkeit.trim(),
+    p_iban: w.iban,
+    p_sv_nummer: w.svNachreichen ? null : leerZuNull(w.svNummer),
+    p_sv_nummer_nachreichen: w.svNachreichen,
+    p_bic: leerZuNull(w.bic),
+    p_sonderzahlung: w.sonderzahlung,
+    p_leiterzulage_netto: leerZuNull(w.leiterzulage) === null ? null : Number(w.leiterzulage),
   };
 
   const knopf = $("#speichern");
@@ -337,12 +375,13 @@ async function speichern(ereignis) {
   try {
     const dvId = await api.funktion("dienstzettel_erfassen", parameter);
     const [dv] = await api.lesen("dienstverhaeltnis", `select=befristet_bis&id=eq.${dvId}`);
-    const name = `${parameter.p_vorname} ${parameter.p_nachname}`;
     const studio = stand.standorte.find((s) => s.id === parameter.p_standort_id);
     $("#gespeichert-text").textContent =
-      `${name} ist ab ${datumAT(parameter.p_eintritt)} in ${studio.vertragsbezeichnung || studio.name} angelegt.` +
-      (dv?.befristet_bis ? ` Befristet bis ${datumAT(dv.befristet_bis)}.` : "");
-    form.hidden = true;
+      `${parameter.p_vorname} ${parameter.p_nachname} ist ab ${datumAT(parameter.p_eintritt)} ` +
+      `in ${studio.vertragsbezeichnung || studio.name} angelegt.` +
+      (dv?.befristet_bis ? ` Befristet bis ${datumAT(dv.befristet_bis)}.` : "") +
+      (w.svNachreichen ? " Die Versicherungsnummer ist als offen vermerkt." : "");
+    $("#dienstzettel").hidden = true;
     $("#gespeichert").hidden = false;
     $("#gespeichert").focus();
   } catch (fehler) {
@@ -357,45 +396,113 @@ async function speichern(ereignis) {
 function neuesFormular() {
   const form = $("#dienstzettel");
   form.reset();
+  beruehrt.clear();
+  absendenVersucht = false;
+  standorteFuellen();
   form.hidden = false;
   $("#gespeichert").hidden = true;
-  vorschauAktualisieren();
-  form.elements.standort.focus();
+  aktualisieren();
+  form.elements.funktion.focus();
 }
 
 // ------------------------------------------------------------------ Mitarbeiterliste
 
+function filterFuellen() {
+  $('#filter select[name="standort"]').innerHTML = '<option value="">Alle</option>' +
+    stand.standorte.map((s) => `<option value="${s.id}">${text(s.vertragsbezeichnung || s.name)}</option>`).join("");
+}
+
 async function listeLaden() {
-  const tbody = $("#liste");
-  tbody.innerHTML = "";
   try {
     const [dvs, personen] = await Promise.all([
       api.lesen("dienstverhaeltnis",
-        "select=id,mitarbeiter_id,heimstandort_id,funktion_id,beschaeftigungsart,wochenstunden,eintritt,befristet_bis,austritt&order=eintritt.desc"),
+        "select=id,mitarbeiter_id,heimstandort_id,funktion_id,beschaeftigungsart,wochenstunden,arbeitstage_woche,eintritt,befristet_bis,austritt,created_at"),
       api.lesen("mitarbeiter", "select=id,vorname,nachname"),
     ]);
     const person = new Map(personen.map((p) => [p.id, p]));
-    const studio = new Map(stand.standorte.map((s) => [s.id, s]));
-    const funktion = new Map(stand.funktionen.map((x) => [x.id, x]));
-    const art = { vollzeit: "Vollzeit", teilzeit: "Teilzeit", geringfuegig: "Geringfügig" };
-
-    $("#liste-leer").hidden = dvs.length > 0;
-    tbody.innerHTML = dvs.map((d) => {
-      const p = person.get(d.mitarbeiter_id);
-      const s = studio.get(d.heimstandort_id);
-      return `<tr>
-        <td>${text(p ? `${p.nachname} ${p.vorname}` : "–")}</td>
-        <td>${text(s ? s.vertragsbezeichnung || s.name : "–")}</td>
-        <td>${text(funktion.get(d.funktion_id)?.name || "–")}</td>
-        <td>${text(`${Number(d.wochenstunden).toLocaleString("de-AT")} h, ${art[d.beschaeftigungsart] || ""}`)}</td>
-        <td class="zahl">${datumAT(d.eintritt)}</td>
-        <td class="zahl">${d.befristet_bis ? datumAT(d.befristet_bis) : "unbefristet"}</td>
-      </tr>`;
-    }).join("");
+    stand.liste = dvs.map((d) => ({ ...d, person: person.get(d.mitarbeiter_id) }));
+    listeZeigen();
   } catch (fehler) {
+    stand.liste = [];
+    $("#liste").innerHTML = "";
+    $("#anzahl").textContent = "";
     $("#liste-leer").hidden = false;
     $("#liste-leer").textContent = `Die Liste konnte nicht geladen werden: ${fehler.message}`;
   }
+}
+
+const tageBis = (iso, heute) => Math.round((new Date(`${iso}T00:00:00Z`) - new Date(`${heute}T00:00:00Z`)) / 86400000);
+
+function listeZeigen() {
+  const f = $("#filter").elements;
+  const suche = f.suche.value.trim().toLowerCase();
+  const heute = heuteIso();
+  const studio = new Map(stand.standorte.map((s) => [s.id, s]));
+  const funktion = new Map(stand.funktionen.map((x) => [x.id, x]));
+  const art = { vollzeit: "Vollzeit", teilzeit: "Teilzeit", geringfuegig: "Geringfügig" };
+
+  const aktiv = (d) => !d.austritt || d.austritt >= heute;
+  const passt = {
+    aktiv,
+    neu: (d) => aktiv(d) && tageBis(heute, d.created_at.slice(0, 10)) <= 14,
+    befristung: (d) => aktiv(d) && d.befristet_bis && tageBis(d.befristet_bis, heute) >= 0 && tageBis(d.befristet_bis, heute) <= 30,
+    ausgetreten: (d) => !aktiv(d),
+    alle: () => true,
+  }[f.status.value];
+
+  let zeilen = stand.liste.filter((d) => {
+    if (!passt(d)) return false;
+    if (f.standort.value && d.heimstandort_id !== f.standort.value) return false;
+    if (suche) {
+      const name = `${d.person?.vorname || ""} ${d.person?.nachname || ""}`.toLowerCase();
+      if (!suche.split(/\s+/).every((teil) => name.includes(teil))) return false;
+    }
+    return true;
+  });
+
+  const sortierer = {
+    erfasst: (a, b) => b.created_at.localeCompare(a.created_at),
+    name: (a, b) => `${a.person?.nachname} ${a.person?.vorname}`.localeCompare(`${b.person?.nachname} ${b.person?.vorname}`, "de"),
+    eintritt: (a, b) => b.eintritt.localeCompare(a.eintritt),
+    befristung: (a, b) => {
+      const ende = (d) => (d.befristet_bis && d.befristet_bis >= heute ? d.befristet_bis : "9999");
+      return ende(a).localeCompare(ende(b));
+    },
+  }[f.sortierung.value];
+  zeilen = zeilen.sort(sortierer);
+
+  const gesamt = stand.liste.length;
+  $("#anzahl").textContent = gesamt ? `${zeilen.length} von ${gesamt} Einträgen` : "";
+  $("#liste-leer").hidden = zeilen.length > 0;
+  $("#liste-leer").innerHTML = gesamt
+    ? "Keine Treffer. Ändere die Suche oder die Filter."
+    : stand.erfassbareFunktionen.length
+      ? 'Noch keine Mitarbeiter erfasst. <a href="#erfassen">Ersten Dienstzettel erfassen</a>'
+      : "Noch keine Mitarbeiter erfasst.";
+
+  $("#liste").innerHTML = zeilen.map((d) => {
+    const p = d.person;
+    const s = studio.get(d.heimstandort_id);
+    const merkmale = [];
+    if (tageBis(heute, d.created_at.slice(0, 10)) <= 7) merkmale.push('<span class="merkmal">neu</span>');
+    // Nach Ablauf der Befristung läuft der Vertrag automatisch unbefristet weiter
+    let befristung = !d.befristet_bis || d.befristet_bis < heute ? "unbefristet" : datumAT(d.befristet_bis);
+    if (d.befristet_bis && aktiv(d)) {
+      const rest = tageBis(d.befristet_bis, heute);
+      if (rest >= 0 && rest <= 30) {
+        befristung = `<span class="merkmal merkmal-frist">${rest === 0 ? "heute" : `in ${rest} ${rest === 1 ? "Tag" : "Tagen"}`}</span> ${befristung}`;
+      }
+    }
+    if (d.austritt && d.austritt < heute) merkmale.push('<span class="merkmal merkmal-aus">ausgetreten</span>');
+    return `<tr>
+      <td><span class="name">${text(p ? `${p.nachname} ${p.vorname}` : "–")}</span> ${merkmale.join(" ")}</td>
+      <td>${text(s ? s.vertragsbezeichnung || s.name : "–")}</td>
+      <td>${text(funktion.get(d.funktion_id)?.name || "–")}</td>
+      <td>${text(`${Number(d.wochenstunden).toLocaleString("de-DE")} h, ${art[d.beschaeftigungsart] || ""}`)}</td>
+      <td class="zahl">${datumAT(d.eintritt)}</td>
+      <td class="zahl">${befristung}</td>
+    </tr>`;
+  }).join("");
 }
 
 // ------------------------------------------------------------------ Hilfen

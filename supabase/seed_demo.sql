@@ -16,8 +16,9 @@ delete from public.marke          where organisation_id = 'de000000-0000-0000-00
 delete from public.tarifzone      where organisation_id = 'de000000-0000-0000-0000-000000000001';
 delete from public.organisation   where id = 'de000000-0000-0000-0000-000000000001';
 
-insert into public.organisation (id, name, probezeit_monate, befristung_monate)
-values ('de000000-0000-0000-0000-000000000001', 'Demo Fitness Gruppe', 1, 3);
+insert into public.organisation (id, name, probezeit_monate, befristung_monate,
+                                 vollzeit_stunden, geringfuegig_grenze, max_stunden_tag)
+values ('de000000-0000-0000-0000-000000000001', 'Demo Fitness Gruppe', 1, 3, 40, 551.10, 10);
 
 insert into public.tarifzone (id, organisation_id, name) values
   ('de000000-0000-0000-0000-0000000000a1', 'de000000-0000-0000-0000-000000000001', 'Standard'),
@@ -50,11 +51,13 @@ insert into public.standort (id, organisation_id, gesellschaft_id, tarifzone_id,
   ('de000000-0000-0000-0000-0000000000e4', 'de000000-0000-0000-0000-000000000001', 'de000000-0000-0000-0000-0000000000d1',
    'de000000-0000-0000-0000-0000000000a1', 'Büro Graz', 'buero', 'Graz');
 
-insert into public.funktion (id, organisation_id, name) values
-  ('de000000-0000-0000-0000-0000000000f1', 'de000000-0000-0000-0000-000000000001', 'Servicekraft'),
-  ('de000000-0000-0000-0000-0000000000f2', 'de000000-0000-0000-0000-000000000001', 'Studioleitung'),
-  ('de000000-0000-0000-0000-0000000000f3', 'de000000-0000-0000-0000-000000000001', 'Reinigungskraft'),
-  ('de000000-0000-0000-0000-0000000000f4', 'de000000-0000-0000-0000-000000000001', 'Verwaltung');
+-- bereich: wo die Funktion arbeitet; anlegen_durch: wer außer dem Büro sie anlegen darf
+insert into public.funktion (id, organisation_id, name, bereich, anlegen_durch, leiterzulage_moeglich) values
+  ('de000000-0000-0000-0000-0000000000f1', 'de000000-0000-0000-0000-000000000001', 'Servicekraft',    'studio', '{studioleitung,regionalleitung}', false),
+  ('de000000-0000-0000-0000-0000000000f2', 'de000000-0000-0000-0000-000000000001', 'Studioleitung',   'studio', '{regionalleitung}',               true),
+  ('de000000-0000-0000-0000-0000000000f3', 'de000000-0000-0000-0000-000000000001', 'Reinigungskraft', 'studio', '{studioleitung,regionalleitung}', false),
+  ('de000000-0000-0000-0000-0000000000f4', 'de000000-0000-0000-0000-000000000001', 'Verwaltung',      'buero',  '{}',                              false),
+  ('de000000-0000-0000-0000-0000000000f5', 'de000000-0000-0000-0000-000000000001', 'Regionalleitung', 'studio', '{}',                              true);
 
 -- Erfundene Netto-Brutto-Werte (KEINE echte Berechnung!), 500 bis 2.500 € in 50-€-Schritten
 insert into public.brutto_tabelle (organisation_id, tarifzone_id, netto, brutto, gueltig_ab)

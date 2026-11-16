@@ -46,6 +46,7 @@
     <main id="seite-erfassen" class="seite" hidden>
       <h1 class="seitentitel">Dienstzettel erfassen</h1>
       <p class="einleitung">Trag die Angaben aus dem Gespräch mit dem neuen Mitarbeiter ein.
+        Alle Felder sind Pflicht, außer sie sind als freiwillig gekennzeichnet.
         Was rechts <mark>markiert</mark> ist, ermittelt das System selbst.</p>
 
       <form id="dienstzettel" class="erfassung" novalidate>
@@ -55,12 +56,12 @@
             <legend>Anstellung</legend>
             <div class="reihe">
               <label class="feld breit">
-                <span>Studio</span>
-                <select name="standort" required></select>
-              </label>
-              <label class="feld breit">
                 <span>Funktion</span>
                 <select name="funktion" required></select>
+              </label>
+              <label class="feld breit">
+                <span>Arbeitsort</span>
+                <select name="standort" required></select>
               </label>
             </div>
             <div class="reihe">
@@ -83,10 +84,10 @@
               </label>
               <label class="feld schmal">
                 <span>Arbeitstage pro Woche</span>
-                <input type="number" name="arbeitstage" min="1" max="7" step="1" inputmode="numeric">
+                <input type="number" name="arbeitstage" min="1" max="6" step="1" inputmode="numeric" required>
               </label>
             </div>
-            <p class="hinweis" id="hinweis-stunden" hidden></p>
+            <p class="rechnung" id="rechnung-stunden" hidden></p>
           </fieldset>
 
           <fieldset>
@@ -94,8 +95,8 @@
             <div class="reihe">
               <label class="feld schmal">
                 <span>Anrede</span>
-                <select name="anrede">
-                  <option value=""></option>
+                <select name="anrede" required>
+                  <option value="">Wählen</option>
                   <option>Frau</option>
                   <option>Herr</option>
                   <option>Divers</option>
@@ -111,36 +112,43 @@
               </label>
               <label class="feld">
                 <span>Geburtsdatum</span>
-                <input type="date" name="geburtsdatum">
+                <input type="date" name="geburtsdatum" required>
               </label>
             </div>
             <div class="reihe">
               <label class="feld breit">
                 <span>Straße und Hausnummer</span>
-                <input name="strasse" autocomplete="off">
+                <input name="strasse" autocomplete="off" required>
               </label>
               <label class="feld schmal">
                 <span>PLZ</span>
-                <input name="plz" inputmode="numeric" autocomplete="off">
+                <input name="plz" inputmode="numeric" maxlength="5" autocomplete="off" required>
               </label>
               <label class="feld">
                 <span>Ort</span>
-                <input name="ort" autocomplete="off">
+                <input name="ort" autocomplete="off" required>
               </label>
             </div>
             <div class="reihe">
               <label class="feld">
                 <span>Telefon</span>
-                <input type="tel" name="telefon" autocomplete="off">
+                <input type="tel" name="telefon" autocomplete="off" placeholder="+43 660 1234567" required>
               </label>
               <label class="feld">
                 <span>E-Mail</span>
-                <input type="email" name="email" autocomplete="off">
+                <input type="email" name="email" autocomplete="off" required>
               </label>
               <label class="feld">
                 <span>Staatsangehörigkeit</span>
-                <input name="staatsangehoerigkeit" autocomplete="off">
+                <input name="staatsangehoerigkeit" list="staaten" autocomplete="off" required>
               </label>
+              <datalist id="staaten">
+                <option>Österreich</option><option>Deutschland</option><option>Ungarn</option>
+                <option>Slowakei</option><option>Slowenien</option><option>Kroatien</option>
+                <option>Bosnien und Herzegowina</option><option>Serbien</option><option>Rumänien</option>
+                <option>Polen</option><option>Tschechien</option><option>Italien</option>
+                <option>Türkei</option><option>Ukraine</option><option>Syrien</option><option>Afghanistan</option>
+              </datalist>
             </div>
           </fieldset>
 
@@ -152,7 +160,7 @@
                 <input type="number" name="netto" min="0" step="0.01" inputmode="decimal" required>
               </label>
               <label class="feld" id="feld-zulage" hidden>
-                <span>Leiterzulage netto (€), falls vereinbart</span>
+                <span>Leiterzulage netto (€), freiwillig</span>
                 <input type="number" name="leiterzulage" min="0" step="0.01" inputmode="decimal">
               </label>
             </div>
@@ -164,21 +172,25 @@
 
           <fieldset>
             <legend>Für die Lohnverrechnung</legend>
-            <p class="einleitung klein">Diese Angaben sieht nach dem Speichern nur das Büro.</p>
+            <p class="einleitung klein">Diese Angaben sieht nach dem Speichern nur das Personalbüro.</p>
             <div class="reihe">
               <label class="feld">
                 <span>Versicherungsnummer</span>
-                <input name="sv_nummer" inputmode="numeric" autocomplete="off" placeholder="1234 010190">
+                <input name="sv_nummer" inputmode="numeric" autocomplete="off" placeholder="1238 010190" required>
               </label>
               <label class="feld breit">
                 <span>IBAN</span>
-                <input name="iban" autocomplete="off" placeholder="AT61 1904 3002 3457 3201">
+                <input name="iban" autocomplete="off" placeholder="AT61 1904 3002 3457 3201" required>
               </label>
               <label class="feld schmal">
-                <span>BIC</span>
+                <span>BIC, freiwillig</span>
                 <input name="bic" autocomplete="off">
               </label>
             </div>
+            <label class="ankreuzen">
+              <input type="checkbox" name="sv_nachreichen">
+              <span>Noch keine Versicherungsnummer, wird nachgereicht</span>
+            </label>
           </fieldset>
         </div>
 
@@ -186,8 +198,8 @@
         <aside class="ableitung" aria-labelledby="ableitung-titel" aria-live="polite">
           <h2 id="ableitung-titel">Trägt das System ein</h2>
           <dl>
-            <div><dt>Arbeitgeber</dt><dd id="a-gmbh"><span class="leer">Studio wählen</span></dd></div>
-            <div><dt>Arbeitsort im Vertrag</dt><dd id="a-arbeitsort"><span class="leer">Studio wählen</span></dd></div>
+            <div><dt>Arbeitgeber</dt><dd id="a-gmbh"><span class="leer">Arbeitsort wählen</span></dd></div>
+            <div><dt>Arbeitsort im Vertrag</dt><dd id="a-arbeitsort"><span class="leer">Arbeitsort wählen</span></dd></div>
             <div><dt>Befristet bis</dt><dd id="a-befristung"><span class="leer">Dienstantritt eintragen</span></dd></div>
             <div><dt>Brutto pro Monat</dt><dd id="a-brutto"><span class="leer">Netto eintragen</span></dd></div>
             <div><dt>Einzelvereinbarungen</dt><dd id="a-vereinbarungen"><span class="leer">keine</span></dd></div>
@@ -200,20 +212,54 @@
       <section id="gespeichert" class="gespeichert" hidden tabindex="-1">
         <h2>Dienstzettel gespeichert</h2>
         <p id="gespeichert-text"></p>
-        <button type="button" class="knopf knopf-haupt" id="naechster">Nächsten Mitarbeiter erfassen</button>
-        <a href="#mitarbeiter" class="knopf knopf-leise">Zur Mitarbeiterliste</a>
+        <div class="knopf-reihe">
+          <button type="button" class="knopf knopf-haupt" id="naechster">Nächsten Mitarbeiter erfassen</button>
+          <a href="#mitarbeiter" class="knopf knopf-leise">Zur Mitarbeiterliste</a>
+        </div>
       </section>
     </main>
 
     <!-- Mitarbeiterliste -->
     <main id="seite-mitarbeiter" class="seite" hidden>
       <h1 class="seitentitel">Mitarbeiter</h1>
+
+      <form class="filter" id="filter" role="search">
+        <label class="feld suche">
+          <span>Suchen</span>
+          <input type="search" name="suche" placeholder="Name eingeben" autocomplete="off">
+        </label>
+        <label class="feld">
+          <span>Arbeitsort</span>
+          <select name="standort"><option value="">Alle</option></select>
+        </label>
+        <label class="feld">
+          <span>Zeigen</span>
+          <select name="status">
+            <option value="aktiv">Aktive Mitarbeiter</option>
+            <option value="neu">Neu in den letzten 14 Tagen</option>
+            <option value="befristung">Befristung endet in 30 Tagen</option>
+            <option value="ausgetreten">Ausgetretene</option>
+            <option value="alle">Alle</option>
+          </select>
+        </label>
+        <label class="feld">
+          <span>Sortieren</span>
+          <select name="sortierung">
+            <option value="erfasst">Zuletzt erfasst</option>
+            <option value="name">Name A–Z</option>
+            <option value="eintritt">Dienstantritt</option>
+            <option value="befristung">Befristung endet</option>
+          </select>
+        </label>
+      </form>
+
+      <p class="anzahl" id="anzahl" aria-live="polite"></p>
       <div class="tabelle-rahmen">
         <table class="tabelle">
           <thead>
             <tr>
               <th scope="col">Name</th>
-              <th scope="col">Studio</th>
+              <th scope="col">Arbeitsort</th>
               <th scope="col">Funktion</th>
               <th scope="col">Stunden</th>
               <th scope="col" class="zahl">Dienstantritt</th>
@@ -223,8 +269,7 @@
           <tbody id="liste"></tbody>
         </table>
       </div>
-      <p class="leer-zustand" id="liste-leer" hidden>Noch keine Mitarbeiter erfasst.
-        <a href="#erfassen">Ersten Dienstzettel erfassen</a></p>
+      <p class="leer-zustand" id="liste-leer" hidden></p>
     </main>
   </div>
 </body>
