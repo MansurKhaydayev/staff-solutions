@@ -7,6 +7,8 @@ später Zeiterfassung, Urlaub, Krankenstand und Auswertungen.
 > **Stand:** Vorführversion. Alle Daten und Demo-Vorlagen sind erfunden.
 > Entwickelt privat von Mansur Khaydayev.
 
+**Handbuch für den Betreiber:** [docs/handbuch.md](docs/handbuch.md) – Aufbau, Rollen und Rechte, häufige Aufgaben, Fehlersuche.
+
 ## Aufbau
 
 | Ordner | Inhalt |

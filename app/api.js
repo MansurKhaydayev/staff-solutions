@@ -71,5 +71,17 @@ export async function abmelden() {
 
 export const lesen = (tabelle, abfrage = "select=*") => anfrage(`/rest/v1/${tabelle}?${abfrage}`);
 
-export const funktion = (name, parameter) =>
+export const funktion = (name, parameter = {}) =>
   anfrage(`/rest/v1/rpc/${name}`, { methode: "POST", koerper: parameter });
+
+// Ändert Zeilen und gibt sie zurück. Kommt nichts zurück, hat die Datenbank
+// die Änderung nicht erlaubt (Zugriffsregeln) – das melden wir als Fehler.
+export async function aendern(tabelle, filter, werte) {
+  const zeilen = await anfrage(`/rest/v1/${tabelle}?${filter}`, {
+    methode: "PATCH",
+    koerper: werte,
+    kopf: { Prefer: "return=representation" },
+  });
+  if (!zeilen?.length) throw new ApiFehler("Diese Änderung ist für deinen Zugang nicht erlaubt.", 403);
+  return zeilen;
+}

@@ -1,6 +1,7 @@
 import * as api from "./api.js";
 import { fristende, datumAT, euro } from "./fristen.js";
 import { dienstzettelPruefen, heuteIso } from "./pruefungen.js";
+import { einstellungenZeigen } from "./einstellungen.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -116,13 +117,17 @@ async function stammdatenLaden() {
   stand.profil = profile[0];
   const leitung = LEITUNG.includes(stand.profil.rolle);
 
+  // Rechte der eigenen Rolle (und aller Rollen, für die Einstellungen)
+  stand.rechte = await api.lesen("rollen_recht", "select=*");
+  stand.recht = stand.rechte.find((r) => r.rolle === stand.profil.rolle) || {};
+
   const [orgs, standorte, gesellschaften, zonen, funktionen, brutto, zust] = await Promise.all([
-    api.lesen("organisation", "select=id,name,befristung_monate,vollzeit_stunden,geringfuegig_grenze,max_stunden_tag"),
+    api.lesen("organisation", "select=id,name,probezeit_monate,befristung_monate,vollzeit_stunden,geringfuegig_grenze,max_stunden_tag"),
     api.lesen("standort", "select=id,name,art,vertragsbezeichnung,gesellschaft_id,tarifzone_id&order=name"),
     api.lesen("gesellschaft", "select=id,name,strasse,plz,ort"),
     api.lesen("tarifzone", "select=id,name"),
     api.lesen("funktion", "select=id,name,bereich,anlegen_durch,leiterzulage_moeglich&order=name"),
-    istBuero() ? api.lesen("brutto_tabelle", "select=tarifzone_id,netto,brutto,gueltig_ab&order=gueltig_ab.desc")
+    stand.recht.sieht_entgelt ? api.lesen("brutto_tabelle", "select=tarifzone_id,netto,brutto,gueltig_ab&order=gueltig_ab.desc")
                : Promise.resolve([]),
     leitung ? api.lesen("zustaendigkeit", "select=standort_id") : Promise.resolve(null),
   ]);
@@ -134,7 +139,10 @@ async function stammdatenLaden() {
   stand.standorte = standorte;
   stand.bruttoTabelle = brutto;
 
-  if (istBuero()) {
+  if (!stand.recht.darf_anlegen) {
+    stand.erfassbareStandorte = [];
+    stand.erfassbareFunktionen = [];
+  } else if (istBuero()) {
     stand.erfassbareStandorte = standorte;
     stand.erfassbareFunktionen = funktionen;
   } else if (leitung) {
@@ -149,6 +157,8 @@ async function stammdatenLaden() {
   $("#wer").textContent = `${user.email}, ${rolleText(stand.profil.rolle)}`;
   const darfErfassen = stand.erfassbareFunktionen.length > 0;
   document.querySelector('[data-ziel="erfassen"]').hidden = !darfErfassen;
+  document.querySelector('[data-ziel="einstellungen"]').hidden = !stand.recht.darf_verwalten;
+  $('#filter option[value="befristung"]').hidden = !stand.recht.sieht_personendaten;
 
   funktionenFuellen();
   standorteFuellen();
@@ -156,10 +166,7 @@ async function stammdatenLaden() {
 }
 
 function rolleText(rolle) {
-  return {
-    admin: "Admin", geschaeftsfuehrung: "Geschäftsführung", hr: "Personalbüro",
-    regionalleitung: "Regionalleitung", studioleitung: "Studioleitung", mitarbeiter: "Mitarbeiter",
-  }[rolle] || rolle;
+  return stand.rechte?.find((r) => r.rolle === rolle)?.bezeichnung || rolle;
 }
 
 function funktionenFuellen() {
@@ -186,12 +193,14 @@ function standorteFuellen() {
 function seiteZeigen() {
   let ziel = location.hash.replace("#", "") || "erfassen";
   if (ziel === "erfassen" && !stand.erfassbareFunktionen.length) ziel = "mitarbeiter";
-  for (const name of ["erfassen", "mitarbeiter"]) $(`#seite-${name}`).hidden = name !== ziel;
+  if (ziel === "einstellungen" && !stand.recht.darf_verwalten) ziel = "mitarbeiter";
+  for (const name of ["erfassen", "mitarbeiter", "einstellungen"]) $(`#seite-${name}`).hidden = name !== ziel;
   document.querySelectorAll(".navigation a").forEach((a) => {
     if (a.dataset.ziel === ziel) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
   if (ziel === "mitarbeiter") listeLaden();
+  if (ziel === "einstellungen") einstellungenZeigen(stand, async () => { await stammdatenLaden(); });
 }
 
 // ------------------------------------------------------------------ Formular lesen und prüfen
@@ -303,7 +312,7 @@ function vorschauZeigen(w, { standort, funktion }) {
   }
 
   const netto = w.netto === "" ? null : Number(w.netto);
-  if (!istBuero()) {
+  if (!stand.recht.sieht_entgelt) {
     setze("#a-brutto", leer("ermittelt das Personalbüro"));
   } else if (netto === null || !standort || !w.eintritt) {
     setze("#a-brutto", leer("Arbeitsort, Dienstantritt und Netto eintragen"));
@@ -414,13 +423,15 @@ function filterFuellen() {
 
 async function listeLaden() {
   try {
-    const [dvs, personen] = await Promise.all([
-      api.lesen("dienstverhaeltnis",
-        "select=id,mitarbeiter_id,heimstandort_id,funktion_id,beschaeftigungsart,wochenstunden,arbeitstage_woche,eintritt,befristet_bis,austritt,created_at"),
-      api.lesen("mitarbeiter", "select=id,vorname,nachname"),
-    ]);
-    const person = new Map(personen.map((p) => [p.id, p]));
-    stand.liste = dvs.map((d) => ({ ...d, person: person.get(d.mitarbeiter_id) }));
+    // Das Verzeichnis liefert nur die Spalten, die diese Rolle sehen darf
+    const zeilen = await api.funktion("mitarbeiter_verzeichnis");
+    stand.liste = zeilen.map((z) => ({
+      ...z,
+      id: z.dienstverhaeltnis_id,
+      heimstandort_id: z.standort_id,
+      created_at: z.erfasst_am,
+      person: { vorname: z.vorname, nachname: z.nachname },
+    }));
     listeZeigen();
   } catch (fehler) {
     stand.liste = [];
@@ -480,6 +491,17 @@ function listeZeigen() {
       ? 'Noch keine Mitarbeiter erfasst. <a href="#erfassen">Ersten Dienstzettel erfassen</a>'
       : "Noch keine Mitarbeiter erfasst.";
 
+  const r = stand.recht;
+  $("#liste-kopf").innerHTML = [
+    "<th scope=\"col\">Name</th>",
+    "<th scope=\"col\">Arbeitsort</th>",
+    "<th scope=\"col\">Funktion</th>",
+    r.sieht_kontakt ? "<th scope=\"col\">Kontakt</th>" : "",
+    r.sieht_personendaten ? "<th scope=\"col\">Stunden</th>" : "",
+    "<th scope=\"col\" class=\"zahl\">Dienstantritt</th>",
+    r.sieht_personendaten ? "<th scope=\"col\" class=\"zahl\">Befristet bis</th>" : "",
+  ].join("");
+
   $("#liste").innerHTML = zeilen.map((d) => {
     const p = d.person;
     const s = studio.get(d.heimstandort_id);
@@ -498,11 +520,19 @@ function listeZeigen() {
       <td><span class="name">${text(p ? `${p.nachname} ${p.vorname}` : "–")}</span> ${merkmale.join(" ")}</td>
       <td>${text(s ? s.vertragsbezeichnung || s.name : "–")}</td>
       <td>${text(funktion.get(d.funktion_id)?.name || "–")}</td>
-      <td>${text(`${Number(d.wochenstunden).toLocaleString("de-DE")} h, ${art[d.beschaeftigungsart] || ""}`)}</td>
+      ${r.sieht_kontakt ? `<td class="kontakt">${kontakt(d)}</td>` : ""}
+      ${r.sieht_personendaten ? `<td>${text(`${Number(d.wochenstunden).toLocaleString("de-DE")} h, ${art[d.beschaeftigungsart] || ""}`)}</td>` : ""}
       <td class="zahl">${datumAT(d.eintritt)}</td>
-      <td class="zahl">${befristung}</td>
+      ${r.sieht_personendaten ? `<td class="zahl">${befristung}</td>` : ""}
     </tr>`;
   }).join("");
+}
+
+function kontakt(d) {
+  const teile = [];
+  if (d.telefon) teile.push(`<a href="tel:${text(d.telefon.replace(/[^+0-9]/g, ""))}">${text(d.telefon)}</a>`);
+  if (d.email) teile.push(`<a href="mailto:${text(d.email)}">${text(d.email)}</a>`);
+  return teile.join("<br>") || "–";
 }
 
 // ------------------------------------------------------------------ Hilfen

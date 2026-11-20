@@ -37,6 +37,7 @@
       <nav class="navigation" aria-label="Hauptnavigation">
         <a href="#erfassen" data-ziel="erfassen">Neuer Mitarbeiter</a>
         <a href="#mitarbeiter" data-ziel="mitarbeiter">Mitarbeiter</a>
+        <a href="#einstellungen" data-ziel="einstellungen" hidden>Einstellungen</a>
       </nav>
       <span class="wer" id="wer"></span>
       <button type="button" class="knopf knopf-leise" id="abmelden">Abmelden</button>
@@ -257,19 +258,84 @@
       <div class="tabelle-rahmen">
         <table class="tabelle">
           <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Arbeitsort</th>
-              <th scope="col">Funktion</th>
-              <th scope="col">Stunden</th>
-              <th scope="col" class="zahl">Dienstantritt</th>
-              <th scope="col" class="zahl">Befristet bis</th>
-            </tr>
+            <tr id="liste-kopf"></tr>
           </thead>
           <tbody id="liste"></tbody>
         </table>
       </div>
       <p class="leer-zustand" id="liste-leer" hidden></p>
+    </main>
+
+    <!-- Einstellungen (nur für Rollen mit dem Recht "verwalten") -->
+    <main id="seite-einstellungen" class="seite" hidden>
+      <h1 class="seitentitel">Einstellungen</h1>
+      <p class="einleitung">Änderungen gelten sofort für alle Benutzer deiner Firma.</p>
+      <p class="status" id="einstellungen-status" role="status" aria-live="polite"></p>
+
+      <section class="einstellung" aria-labelledby="t-rechte">
+        <h2 id="t-rechte">Wer sieht was</h2>
+        <p class="einleitung klein">Name, Funktion, Arbeitsort und Dienstantritt sieht jeder mit Zugang.
+          Die Admin-Zeile ist gesperrt, damit sich niemand selbst aussperrt.</p>
+        <div class="tabelle-rahmen">
+          <table class="tabelle rechte">
+            <thead>
+              <tr>
+                <th scope="col">Rolle</th>
+                <th scope="col">Kontakt</th>
+                <th scope="col">Personen&shy;daten</th>
+                <th scope="col">Entgelt</th>
+                <th scope="col">Lohn&shy;verrechnung</th>
+                <th scope="col">Dokumente</th>
+                <th scope="col">Für welche Standorte</th>
+                <th scope="col">Darf anlegen</th>
+              </tr>
+            </thead>
+            <tbody id="rechte"></tbody>
+          </table>
+        </div>
+        <dl class="legende">
+          <div><dt>Kontakt</dt><dd>Telefon, E-Mail</dd></div>
+          <div><dt>Personendaten</dt><dd>Adresse, Geburtsdatum, Stunden, Befristung</dd></div>
+          <div><dt>Entgelt</dt><dd>Netto, Brutto, Zulagen</dd></div>
+          <div><dt>Lohnverrechnung</dt><dd>Versicherungsnummer, IBAN, Staatsangehörigkeit</dd></div>
+        </dl>
+      </section>
+
+      <section class="einstellung" aria-labelledby="t-funktionen">
+        <h2 id="t-funktionen">Funktionen</h2>
+        <p class="einleitung klein">Das Personalbüro darf jede Funktion anlegen. Hier legst du fest, wer zusätzlich darf.</p>
+        <div class="tabelle-rahmen">
+          <table class="tabelle">
+            <thead>
+              <tr>
+                <th scope="col">Funktion</th>
+                <th scope="col">Arbeitet im</th>
+                <th scope="col">Studioleitung darf anlegen</th>
+                <th scope="col">Regionalleitung darf anlegen</th>
+                <th scope="col">Leiterzulage möglich</th>
+              </tr>
+            </thead>
+            <tbody id="funktionen"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="einstellung" aria-labelledby="t-regeln">
+        <h2 id="t-regeln">Regeln für Dienstverträge</h2>
+        <form id="regeln" class="regeln">
+          <label class="feld schmal"><span>Vollzeit (Stunden pro Woche)</span>
+            <input type="number" name="vollzeit_stunden" min="1" max="48" step="0.5" required></label>
+          <label class="feld schmal"><span>Höchstens Stunden pro Tag</span>
+            <input type="number" name="max_stunden_tag" min="1" max="12" step="0.5" required></label>
+          <label class="feld schmal"><span>Geringfügigkeitsgrenze (€)</span>
+            <input type="number" name="geringfuegig_grenze" min="0" step="0.01"></label>
+          <label class="feld schmal"><span>Probezeit (Monate)</span>
+            <input type="number" name="probezeit_monate" min="0" max="12" step="1" required></label>
+          <label class="feld schmal"><span>Befristung (Monate)</span>
+            <input type="number" name="befristung_monate" min="0" max="24" step="1" required></label>
+          <button type="submit" class="knopf knopf-haupt">Regeln speichern</button>
+        </form>
+      </section>
     </main>
   </div>
 </body>
