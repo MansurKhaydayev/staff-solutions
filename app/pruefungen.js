@@ -38,6 +38,40 @@ function tageVersetzt(iso, tage) {
 const zahl = (n) => Number(n).toLocaleString("de-DE", { maximumFractionDigits: 1 });
 const geld = (n) => Number(n).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+// Arbeitszeit und Entgelt: gilt für Dienstzettel und Stundenanpassung gleich.
+// w = { beschaeftigungsart, wochenstunden, arbeitstage, netto } (Texte aus dem Formular)
+export function arbeitszeitPruefen(w, regeln) {
+  const f = {};
+  // Arbeitszeit
+  const stunden = w.wochenstunden === "" ? null : Number(w.wochenstunden);
+  const tage = w.arbeitstage === "" ? null : Number(w.arbeitstage);
+  if (tage !== null && (!Number.isInteger(tage) || tage < 1 || tage > 6)) {
+    f.arbeitstage = "1 bis 6 Arbeitstage pro Woche.";
+  }
+  if (stunden !== null && stunden <= 0) f.wochenstunden = "Stunden müssen größer als 0 sein.";
+  if (stunden && tage && !f.arbeitstage && stunden / tage > regeln.max_stunden_tag) {
+    f.wochenstunden = `${zahl(stunden)} Stunden an ${tage} ${tage === 1 ? "Tag" : "Tagen"} sind ` +
+      `${zahl(stunden / tage)} Stunden pro Tag. Höchstens ${zahl(regeln.max_stunden_tag)} sind möglich.`;
+  }
+  if (stunden && !f.wochenstunden) {
+    if (w.beschaeftigungsart === "vollzeit" && stunden !== Number(regeln.vollzeit_stunden)) {
+      f.wochenstunden = `Vollzeit sind ${zahl(regeln.vollzeit_stunden)} Stunden. Bei weniger bitte Teilzeit wählen.`;
+    }
+    if (["teilzeit", "geringfuegig"].includes(w.beschaeftigungsart) && stunden >= Number(regeln.vollzeit_stunden)) {
+      f.wochenstunden = `Mit ${zahl(stunden)} Stunden ist das Vollzeit.`;
+    }
+  }
+
+  // Entgelt
+  const netto = w.netto === "" ? null : Number(w.netto);
+  if (netto !== null && netto <= 0) f.netto = "Muss größer als 0 sein.";
+  if (netto && w.beschaeftigungsart === "geringfuegig" && regeln.geringfuegig_grenze &&
+      netto > Number(regeln.geringfuegig_grenze)) {
+    f.netto = `Geringfügig geht nur bis € ${geld(regeln.geringfuegig_grenze)} pro Monat.`;
+  }
+  return f;
+}
+
 // Liefert { feldname: "Meldung" } für alle Probleme.
 // w = Formularwerte, regeln = Einstellungen der Firma, auswahl = gewählte Funktion/Standort
 export function dienstzettelPruefen(w, regeln, auswahl) {
@@ -78,25 +112,7 @@ export function dienstzettelPruefen(w, regeln, auswahl) {
     }
   }
 
-  // Arbeitszeit
-  const stunden = w.wochenstunden === "" ? null : Number(w.wochenstunden);
-  const tage = w.arbeitstage === "" ? null : Number(w.arbeitstage);
-  if (tage !== null && (!Number.isInteger(tage) || tage < 1 || tage > 6)) {
-    f.arbeitstage = "1 bis 6 Arbeitstage pro Woche.";
-  }
-  if (stunden !== null && stunden <= 0) f.wochenstunden = "Stunden müssen größer als 0 sein.";
-  if (stunden && tage && !f.arbeitstage && stunden / tage > regeln.max_stunden_tag) {
-    f.wochenstunden = `${zahl(stunden)} Stunden an ${tage} ${tage === 1 ? "Tag" : "Tagen"} sind ` +
-      `${zahl(stunden / tage)} Stunden pro Tag. Höchstens ${zahl(regeln.max_stunden_tag)} sind möglich.`;
-  }
-  if (stunden && !f.wochenstunden) {
-    if (w.beschaeftigungsart === "vollzeit" && stunden !== Number(regeln.vollzeit_stunden)) {
-      f.wochenstunden = `Vollzeit sind ${zahl(regeln.vollzeit_stunden)} Stunden. Bei weniger bitte Teilzeit wählen.`;
-    }
-    if (["teilzeit", "geringfuegig"].includes(w.beschaeftigungsart) && stunden >= Number(regeln.vollzeit_stunden)) {
-      f.wochenstunden = `Mit ${zahl(stunden)} Stunden ist das Vollzeit.`;
-    }
-  }
+  Object.assign(f, arbeitszeitPruefen(w, regeln));
 
   // Daten
   const heute = heuteIso();
@@ -115,13 +131,6 @@ export function dienstzettelPruefen(w, regeln, auswahl) {
   if (w.telefon && !/^\+?[0-9 /()-]{6,}$/.test(w.telefon.trim())) f.telefon = "Nur Ziffern, Leerzeichen und +.";
   if (w.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(w.email.trim())) f.email = "Bitte eine gültige E-Mail-Adresse.";
 
-  // Entgelt
-  const netto = w.netto === "" ? null : Number(w.netto);
-  if (netto !== null && netto <= 0) f.netto = "Muss größer als 0 sein.";
-  if (netto && w.beschaeftigungsart === "geringfuegig" && regeln.geringfuegig_grenze &&
-      netto > Number(regeln.geringfuegig_grenze)) {
-    f.netto = `Geringfügig geht nur bis € ${geld(regeln.geringfuegig_grenze)} pro Monat.`;
-  }
   if (w.leiterzulage !== "" && w.leiterzulage !== null && Number(w.leiterzulage) <= 0) {
     f.leiterzulage = "Größer als 0 oder leer lassen.";
   }
