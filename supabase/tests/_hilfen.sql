@@ -6,21 +6,21 @@ revoke all on schema testhilfe from public, anon;
 grant usage on schema testhilfe to authenticated;
 
 -- Als angemeldete Person weiterarbeiten (wie ein Aufruf aus der App)
-create or replace function testhilfe.als(a_user uuid) returns void language plpgsql as $$
+create or replace function testhilfe.als(a_user uuid) returns void language plpgsql set search_path = '' as $$
 begin
   perform set_config('request.jwt.claims', json_build_object('sub', a_user, 'role', 'authenticated')::text, true);
   perform set_config('role', 'authenticated', true);
 end $$;
 
 -- Zurück zum Betreiber
-create or replace function testhilfe.zurueck() returns void language plpgsql as $$
+create or replace function testhilfe.zurueck() returns void language plpgsql set search_path = '' as $$
 begin
   perform set_config('role', 'postgres', true);
   perform set_config('request.jwt.claims', '', true);
 end $$;
 
 -- Führt SQL aus und scheitert, wenn KEIN Fehler mit diesem Textteil kommt
-create or replace function testhilfe.erwarte_fehler(a_sql text, a_text text) returns void language plpgsql as $$
+create or replace function testhilfe.erwarte_fehler(a_sql text, a_text text) returns void language plpgsql set search_path = '' as $$
 begin
   begin
     execute a_sql;
@@ -32,14 +32,14 @@ begin
 end $$;
 
 -- Wirft, wenn die Bedingung nicht stimmt
-create or replace function testhilfe.pruefe(a_ok boolean, a_was text) returns void language plpgsql as $$
+create or replace function testhilfe.pruefe(a_ok boolean, a_was text) returns void language plpgsql set search_path = '' as $$
 begin
   if a_ok is not true then raise exception 'FEHLER: %', a_was; end if;
 end $$;
 
 -- Legt in der laufenden Transaktion eine Person mit Rolle (und Zuständigkeiten) in der Demo-Firma an
 create or replace function testhilfe.benutzer(a_rolle text, a_standorte uuid[] default '{}')
-returns uuid language plpgsql as $$
+returns uuid language plpgsql set search_path = '' as $$
 declare v uuid := gen_random_uuid(); s uuid;
 begin
   insert into auth.users (id, email, aud, role) values (v, a_rolle || '-' || left(v::text, 8) || '@test.invalid', 'authenticated', 'authenticated');
@@ -54,7 +54,7 @@ end $$;
 
 -- Legt als Personalbüro einen Mitarbeiter per Dienstzettel an (teilzeit 20 h, 5 Tage, 1000 €, ab heute)
 create or replace function testhilfe.mitarbeiter_anlegen(a_hr uuid, a_standort uuid, a_funktion uuid,
-  a_nachreichen boolean default false) returns uuid language plpgsql as $$
+  a_nachreichen boolean default false) returns uuid language plpgsql set search_path = '' as $$
 declare v uuid;
 begin
   perform testhilfe.als(a_hr);
