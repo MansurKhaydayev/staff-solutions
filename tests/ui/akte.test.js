@@ -143,8 +143,95 @@ async function teilUebersicht(browser) {
   await v.close();
 }
 
+
+async function teilVerlauf(browser) {
+  console.log("\n# Anstellung & Verlauf");
+  const d = daten();
+  // Die geplante Anpassung wurde storniert (Tippfehler) – heute gilt nur der erste Stand
+  Object.assign(d.vertragsstand[1], { storniert_am: `${plus(-1)}T10:00:00Z`, storno_grund: "Tippfehler beim Datum" });
+  d.entgelt[1].storniert_am = `${plus(-1)}T10:00:00Z`;
+  const gesendet = [];
+  let aufrufe = 0;
+  const p = await neueSeite(browser, d, { rpc: rpcFuer(d, {
+    stunden_anpassen: (b) => {
+      gesendet.push(b);
+      aufrufe += 1;
+      if (aufrufe > 1) return { status: 400, body: { message: `Für den ${at(b.p_gueltig_ab)} gibt es schon einen Stand.` } };
+      d.vertragsstand.push({ id: "v3", dienstverhaeltnis_id: "d1", gueltig_ab: b.p_gueltig_ab, beschaeftigungsart: b.p_beschaeftigungsart,
+        wochenstunden: b.p_wochenstunden, arbeitstage_woche: b.p_arbeitstage_woche, storniert_am: null, storno_grund: null });
+      d.entgelt.push({ id: "e3", dienstverhaeltnis_id: "d1", vertragsstand_id: "v3", netto: b.p_netto, brutto: 1950, quelle: "tabelle",
+        gueltig_ab: b.p_gueltig_ab, storniert_am: null });
+      return "v3";
+    },
+    stand_stornieren: (b) => { gesendet.push(b); return null; },
+  }) });
+  await anmelden(p, "hr@demo.invalid");
+  await p.goto(`${ADRESSE}#akte/d1/verlauf`);
+  await p.waitForSelector("#verlauf-tabelle tbody tr");
+  const zeilen = await p.$$eval("#verlauf-tabelle tbody tr", (t) => t.map((x) => x.textContent.replace(/\s+/g, " ").trim()));
+  pruefe(zeilen.length === 2, `zwei Stände in der Tabelle (${zeilen.length})`);
+  pruefe(zeilen.some((z) => z.includes("Dienstzettel")), "erster Stand: Dienstzettel");
+  pruefe(zeilen.some((z) => z.includes("storniert") && z.includes("Tippfehler beim Datum")), "stornierter Stand mit Grund");
+  pruefe(await p.$eval("#verlauf-tabelle tbody tr.storniert", () => true).catch(() => false), "stornierter Stand ist markiert");
+
+  await p.click("text=Stundenanpassung eintragen");
+  const f = "#stundenanpassung";
+  pruefe(await p.inputValue(`${f} [name=wochenstunden]`) === "20", "Formular mit aktuellem Stand vorbelegt");
+  await p.fill(`${f} [name=gueltig_ab]`, plus(30));
+  await p.fill(`${f} [name=wochenstunden]`, "40");
+  await p.fill(`${f} [name=arbeitstage]`, "1");
+  await p.click(`${f} button[type=submit]`);
+  pruefe((await p.textContent(`${f} [data-fehler=wochenstunden]`)).includes("pro Tag"), "40 Stunden an 1 Tag: Feldmeldung");
+  pruefe(gesendet.length === 0, "bei Fehler wird nichts gesendet");
+  await p.selectOption(`${f} [name=beschaeftigungsart]`, "vollzeit");
+  await p.fill(`${f} [name=arbeitstage]`, "5");
+  await p.fill(`${f} [name=netto]`, "1500");
+  pruefe((await p.textContent(`${f} [data-fehler=wochenstunden]`)) === "", "Feldmeldung verschwindet nach der Korrektur");
+  const vorschau = await inhalt(p, "#anpassung-vorschau");
+  pruefe(vorschau.includes("20 → 40 Stunden") && vorschau.includes("€ 1.950,00"), `Vorschau vorher → nachher (${vorschau})`);
+  await p.screenshot({ path: `${OUT}/c-stundenanpassung.png`, fullPage: true });
+  await p.click(`${f} button[type=submit]`);
+  await p.waitForFunction(() => document.querySelectorAll("#verlauf-tabelle tbody tr").length === 3);
+  pruefe(JSON.stringify(Object.keys(gesendet[0]).sort()) === JSON.stringify(["p_arbeitstage_woche", "p_beschaeftigungsart",
+    "p_dienstverhaeltnis_id", "p_gueltig_ab", "p_netto", "p_wochenstunden"]), "genau die sechs Werte gesendet");
+  pruefe(gesendet[0].p_wochenstunden === 40 && gesendet[0].p_netto === 1500 && gesendet[0].p_gueltig_ab === plus(30), "Werte als Zahlen und Datum");
+  const neu = await inhalt(p, "#verlauf-tabelle");
+  pruefe(neu.includes("Nachweis fehlt"), "neue Anpassung zeigt „Nachweis fehlt“");
+
+  // Fehler aus der Datenbank erscheint im Formular
+  await p.click("text=Stundenanpassung eintragen");
+  await p.fill(`${f} [name=gueltig_ab]`, plus(60));
+  await p.click(`${f} button[type=submit]`);
+  await p.waitForSelector(`${f} .fehler:not(:empty)`);
+  pruefe((await p.textContent(`${f} .fehler`)).includes("gibt es schon einen Stand"), "Meldung der Datenbank im Formular");
+  await p.click(`${f} [data-aktion=abbrechen]`);
+
+  // Storno mit Pflichtgrund
+  await p.click("#verlauf-tabelle button[data-storno]");
+  await p.click("#storno-form button[type=submit]");
+  pruefe((await p.textContent("#storno-form .fehler")).includes("Grund"), "Storno ohne Grund wird nicht gesendet");
+  await p.fill("#storno-form [name=grund]", "Falsches Datum");
+  await p.click("#storno-form button[type=submit]");
+  await p.waitForTimeout(200);
+  pruefe(gesendet.at(-1).p_grund === "Falsches Datum" && gesendet.at(-1).p_vertragsstand_id === "v3", "Storno gesendet");
+  pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
+  await p.close();
+
+  // Ohne Büro-Recht: kein Knopf; ohne Entgelt-Recht: keine Beträge
+  d.rollen_recht.find((r) => r.rolle === "regionalleitung").sieht_entgelt = false;
+  const rl = await neueSeite(browser, d, { rpc: rpcFuer(d) });
+  await anmelden(rl, "rl@demo.invalid");
+  await rl.goto(`${ADRESSE}#akte/d1/verlauf`);
+  await rl.waitForSelector("#verlauf-tabelle tbody tr");
+  pruefe(!(await rl.$("text=Stundenanpassung eintragen")) && !(await rl.$("button[data-storno]")), "Regionalleitung: keine Knöpfe");
+  const kopfzeile = await inhalt(rl, "#verlauf-tabelle thead");
+  pruefe(!kopfzeile.includes("Netto") && !kopfzeile.includes("Brutto"), "ohne Entgelt-Recht keine Beträge");
+  pruefe(rl.jsFehler.length === 0, `keine JS-Fehler (${rl.jsFehler.join("; ")})`);
+  await rl.close();
+}
+
 // Weitere Teile kommen mit den nächsten Aufgaben
-const TEILE = [teilUebersicht];
+const TEILE = [teilUebersicht, teilVerlauf];
 
 (async () => {
   const server = await starteServer(APP);
