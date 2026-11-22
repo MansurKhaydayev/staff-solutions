@@ -127,19 +127,24 @@ export function dienstzettelPruefen(w, regeln, auswahl) {
   }
 
   // Kontakt und Adresse
-  if (w.plz && !/^\d{4,5}$/.test(w.plz.trim())) f.plz = "4 oder 5 Ziffern.";
-  if (w.telefon && !/^\+?[0-9 /()-]{6,}$/.test(w.telefon.trim())) f.telefon = "Nur Ziffern, Leerzeichen und +.";
-  if (w.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(w.email.trim())) f.email = "Bitte eine gültige E-Mail-Adresse.";
+  for (const feld of ["plz", "telefon", "email"]) {
+    const m = w[feld] ? stammdatenFeldPruefen(feld, w[feld]) : null;
+    if (m) f[feld] = m;
+  }
 
   if (w.leiterzulage !== "" && w.leiterzulage !== null && Number(w.leiterzulage) <= 0) {
     f.leiterzulage = "Größer als 0 oder leer lassen.";
   }
 
   // Lohnverrechnung
-  if (!w.svNachreichen && w.svNummer && !svNummerGueltig(w.svNummer)) {
-    f.sv_nummer = "Ungültig: Die Prüfziffer stimmt nicht. Bitte jede Ziffer vergleichen.";
+  if (!w.svNachreichen && w.svNummer) {
+    const m = stammdatenFeldPruefen("sv_nummer", w.svNummer);
+    if (m) f.sv_nummer = m;
   }
-  if (w.iban && !ibanGueltig(w.iban)) f.iban = "Ungültig: Bitte jede Stelle vergleichen.";
+  if (w.iban) {
+    const m = stammdatenFeldPruefen("iban", w.iban);
+    if (m) f.iban = m;
+  }
 
   return f;
 }
@@ -161,4 +166,17 @@ export function stundenanpassungPruefen(w, regeln, { eintritt, letzterStand, aus
     f.gueltig_ab = `Es gibt schon einen späteren Stand (ab ${datumText(letzterStand)}). Bitte zuerst diesen stornieren.`;
   }
   return f;
+}
+
+// Ein einzelnes Stammdaten-Feld prüfen (Dienstzettel und „Änderung eintragen“). Meldung oder null.
+export function stammdatenFeldPruefen(feld, wert) {
+  const v = String(wert ?? "").trim();
+  if (feld === "bic") return null;
+  if (v === "") return "Darf nicht leer sein.";
+  if (feld === "plz" && !/^\d{4,5}$/.test(v)) return "4 oder 5 Ziffern.";
+  if (feld === "telefon" && !/^\+?[0-9 /()-]{6,}$/.test(v)) return "Nur Ziffern, Leerzeichen und +.";
+  if (feld === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return "Bitte eine gültige E-Mail-Adresse.";
+  if (feld === "sv_nummer" && !svNummerGueltig(v)) return "Ungültig: Die Prüfziffer stimmt nicht. Bitte jede Ziffer vergleichen.";
+  if (feld === "iban" && !ibanGueltig(v)) return "Ungültig: Bitte jede Stelle vergleichen.";
+  return null;
 }

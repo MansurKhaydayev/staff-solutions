@@ -50,3 +50,22 @@ test("stundenanpassungPruefen: 40 Stunden an 1 Tag", () => {
 test("stundenanpassungPruefen: Datum fehlt", () => {
   assert.match(stundenanpassungPruefen(sa(""), regeln, kontext).gueltig_ab, /ab wann/);
 });
+
+import { stammdatenFeldPruefen } from "../../app/pruefungen.js";
+test("stammdatenFeldPruefen: PLZ zu kurz", () => {
+  assert.equal(stammdatenFeldPruefen("plz", "80"), "4 oder 5 Ziffern.");
+});
+test("stammdatenFeldPruefen: gültige IBAN mit Leerzeichen", () => {
+  assert.equal(stammdatenFeldPruefen("iban", "AT61 1904 3002 3457 3201"), null);
+});
+test("stammdatenFeldPruefen: falsche Prüfziffer der Versicherungsnummer", () => {
+  assert.match(stammdatenFeldPruefen("sv_nummer", "1238010191"), /Prüfziffer/);
+});
+test("stammdatenFeldPruefen: leeres Pflichtfeld, BIC darf leer sein", () => {
+  assert.match(stammdatenFeldPruefen("nachname", " "), /leer/);
+  assert.equal(stammdatenFeldPruefen("bic", ""), null);
+});
+test("dienstzettelPruefen meldet PLZ weiterhin gleich", () => {
+  assert.equal(dienstzettelPruefen({ plz: "80", leiterzulage: "", wochenstunden: "", arbeitstage: "", netto: "" }, regeln, {}).plz,
+    "4 oder 5 Ziffern.");
+});
