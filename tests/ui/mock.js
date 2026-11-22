@@ -84,6 +84,7 @@ function filtern(zeilen, suche) {
 // Neue Browser-Seite. optionen.rpc = { name: (body, seite) => antwort | { status, body } }
 async function neueSeite(browser, daten, optionen = {}) {
   const page = await browser.newPage({ viewport: optionen.groesse || { width: 1280, height: 900 }, locale: "de-AT" });
+  page.setDefaultTimeout(5000);
   page.jsFehler = [];
   page.anfragen = [];
   page.rolle = "hr";
