@@ -40,7 +40,10 @@ export async function zeigen(ziel, kopf, stand, neuLaden) {
     ${erlaubt.length ? '<div class="aktionen"><button type="button" class="knopf knopf-haupt" id="hochladen-oeffnen">Unterlage hochladen</button></div>' : ""}
     <div id="hochladen-bereich"></div>
     <section class="akte-block" id="dokumente-onboarding"><h2>Onboarding-Unterlagen</h2>
-      <ul class="checkliste">${checkliste.map((u) => checklistenZeile(u)).join("")}</ul></section>
+      <ul class="checkliste">${checkliste.map((u) => checklistenZeile(u) + (r.buero && u.status === "klaerung"
+        ? `<li class="klaerung-aktion"><button type="button" class="knopf knopf-leise" data-klaerung="${text(u.unterlage_id)}">Klärung schließen</button></li>`
+        : "")).join("")}</ul>
+      <div id="klaerung-bereich"></div></section>
     <div id="dokument-gruppen">${gruppenHtml(doks, r)}</div>`;
 
   const oeffnen = (vorgabe) => hochladenDialog($("#hochladen-bereich"), vorgabe, kopf, stand, neuLaden, checkliste);
@@ -48,6 +51,7 @@ export async function zeigen(ziel, kopf, stand, neuLaden) {
   ziel.addEventListener("click", async (e) => {
     const k = e.target.closest("button");
     if (!k) return;
+    if (k.dataset.klaerung) return klaerungZeigen($("#klaerung-bereich"), dv, k.dataset.klaerung, neuLaden);
     const dok = doks.find((x) => x.id === (k.dataset.ansehen || k.dataset.laden || k.dataset.nachweis || k.dataset.ersetzen));
     if (k.dataset.ansehen || k.dataset.laden) return dateiOeffnen(k, dok.datei_pfad, Boolean(k.dataset.laden));
     if (k.dataset.nachweis || k.dataset.ersetzen) {
@@ -239,4 +243,36 @@ function vermerkZeigen(form, unterlageId, kopf, bereich, fertig) {
       form.querySelector(".fehler").textContent = fehler.message;
     }
   });
+}
+
+// Klärung mit der Geschäftsführung schließen (nur Büro, mit Vermerk der Entscheidung)
+async function klaerungZeigen(bereich, dv, unterlageId, fertig) {
+  const [kl] = await api.lesen("onboarding_klaerung",
+    `select=id&dienstverhaeltnis_id=eq.${dv}&onboarding_unterlage_id=eq.${unterlageId}&geschlossen_am=is.null`);
+  if (!kl) return;
+  bereich.innerHTML = `
+    <form class="dialog" id="klaerung-form" novalidate>
+      <h3>Klärung schließen</h3>
+      <label class="feld"><span>Entscheidung der Geschäftsführung</span><input type="text" name="vermerk" maxlength="200"></label>
+      <p class="fehler" role="alert"></p>
+      <div class="knopf-reihe">
+        <button type="submit" class="knopf knopf-haupt">Klärung schließen</button>
+        <button type="button" class="knopf knopf-leise" data-aktion="abbrechen">Abbrechen</button>
+      </div>
+    </form>`;
+  const form = $("#klaerung-form");
+  form.querySelector("[data-aktion=abbrechen]").addEventListener("click", () => { bereich.innerHTML = ""; });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const vermerk = form.elements.vermerk.value.trim();
+    if (!vermerk) { form.querySelector(".fehler").textContent = "Bitte einen Vermerk angeben."; return; }
+    try {
+      await api.funktion("klaerung_schliessen", { p_klaerung_id: kl.id, p_vermerk: vermerk });
+      bereich.innerHTML = "";
+      await fertig();
+    } catch (f) {
+      form.querySelector(".fehler").textContent = f.message;
+    }
+  });
+  form.elements.vermerk.focus();
 }

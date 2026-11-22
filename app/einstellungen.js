@@ -25,9 +25,74 @@ export function einstellungenZeigen(s, nachAenderung) {
     $("#rechte").addEventListener("change", rechtAendern);
     $("#funktionen").addEventListener("change", funktionAendern);
     $("#regeln").addEventListener("submit", regelnSpeichern);
+    $("#onboarding-einstellungen").addEventListener("change", onboardingAendern);
+    $("#onboarding-neu").addEventListener("submit", onboardingAnlegen);
     eingerichtet = true;
   }
   zeichnen();
+  onboardingLaden();
+}
+
+// ---------------------------------------------------------------- Onboarding-Unterlagen
+const GILT = { beide: "Studio und Büro", studio: "nur Studio", buero: "nur Büro" };
+let unterlagen = [];
+
+async function onboardingLaden() {
+  try {
+    unterlagen = await api.lesen("onboarding_unterlage", "select=*&order=reihenfolge,bezeichnung");
+  } catch (e) {
+    meldung(`Onboarding-Unterlagen nicht geladen: ${e.message}`, true);
+    unterlagen = [];
+  }
+  onboardingZeichnen();
+}
+
+function onboardingZeichnen() {
+  $("#onboarding-einstellungen").innerHTML = unterlagen.map((u) => `<tr${u.aktiv ? "" : ' class="inaktiv"'}>
+    <th scope="row"><input type="text" data-id="${u.id}" data-feld="bezeichnung" value="${text(u.bezeichnung)}"
+      aria-label="Bezeichnung" maxlength="120"></th>
+    <td><input type="number" data-id="${u.id}" data-feld="reihenfolge" value="${text(u.reihenfolge)}" min="0" step="1"
+      aria-label="${text(u.bezeichnung)}: Reihenfolge"></td>
+    <td><input type="checkbox" data-id="${u.id}" data-feld="pflicht"${u.pflicht ? " checked" : ""}
+      aria-label="${text(u.bezeichnung)}: Pflicht"></td>
+    <td><select data-id="${u.id}" data-feld="gilt_fuer" aria-label="${text(u.bezeichnung)}: gilt für">${Object.entries(GILT).map(([w, t]) =>
+      `<option value="${w}"${u.gilt_fuer === w ? " selected" : ""}>${t}</option>`).join("")}</select></td>
+    <td><input type="checkbox" data-id="${u.id}" data-feld="aktiv"${u.aktiv ? " checked" : ""}
+      aria-label="${text(u.bezeichnung)}: aktiv"></td>
+  </tr>`).join("") || '<tr><td colspan="5">Noch keine Unterlagen.</td></tr>';
+}
+
+async function onboardingAendern(e) {
+  const el = e.target;
+  const u = unterlagen.find((x) => x.id === el.dataset.id);
+  if (!u) return;
+  let wert = el.type === "checkbox" ? el.checked : el.value;
+  if (el.dataset.feld === "reihenfolge") wert = Number(wert);
+  if (el.dataset.feld === "bezeichnung" && !String(wert).trim()) { meldung("Die Bezeichnung darf nicht leer sein.", true); return onboardingZeichnen(); }
+  try {
+    await api.aendern("onboarding_unterlage", `id=eq.${u.id}`, { [el.dataset.feld]: wert });
+    meldung(`Gespeichert: ${u.bezeichnung}.`);
+  } catch (f) {
+    meldung(`Nicht gespeichert: ${f.message}`, true);
+  }
+  await onboardingLaden();
+}
+
+async function onboardingAnlegen(e) {
+  e.preventDefault();
+  const f = e.target.elements;
+  const bezeichnung = f.bezeichnung.value.trim();
+  if (!bezeichnung) return;
+  const reihenfolge = Math.max(0, ...unterlagen.map((u) => Number(u.reihenfolge) || 0)) + 1;
+  try {
+    await api.anlegen("onboarding_unterlage", { organisation_id: stand.organisation.id, bezeichnung, reihenfolge,
+      pflicht: f.pflicht.checked, gilt_fuer: f.gilt_fuer.value });
+    meldung(`Hinzugefügt: ${bezeichnung}.`);
+    e.target.reset();
+  } catch (fehler) {
+    meldung(`Nicht gespeichert: ${fehler.message}`, true);
+  }
+  await onboardingLaden();
 }
 
 function zeichnen() {

@@ -424,3 +424,12 @@ a.name:hover { text-decoration: underline; }
 @media (max-width: 900px) { .dokument-gruppe .tabelle { table-layout: auto; } .knopf-zelle { white-space: normal; } }
 .frueher-werte { list-style: none; margin: .25rem 0 0; padding: 0; font-size: .875rem; color: var(--tinte-leise); }
 .frueher-angaben { margin: .75rem 0; }
+.offen-liste { display: grid; gap: .75rem; }
+.offen-person h2 { display: flex; gap: .75rem; align-items: baseline; flex-wrap: wrap; }
+.offen-person h2 small { font-weight: 400; color: var(--tinte-leise); font-size: .875rem; }
+.offen-person ul { margin: 0; padding-left: 1.25rem; display: grid; gap: .2rem; }
+.punkt-klaerung { color: var(--fehler); font-weight: 600; }
+tr.inaktiv th input, tr.inaktiv td { opacity: .6; }
+#onboarding-einstellungen input[type="text"] { min-width: 16rem; }
+#onboarding-einstellungen input[type="number"] { width: 5rem; }
+.klaerung-aktion { display: block !important; padding-left: 1.75rem; }

@@ -406,8 +406,120 @@ async function teilStammdaten(browser) {
   await b.close();
 }
 
-// Weitere Teile kommen mit den nächsten Aufgaben
-const TEILE = [teilUebersicht, teilVerlauf, teilDokumente, teilStammdaten];
+async function teilOffenUndEinstellungen(browser) {
+  console.log("\n# Offene Punkte, Protokoll, Einstellungen");
+  const d = daten();
+  d.mitarbeiter.push({ id: "m2", vorname: "Lukas", nachname: "Huber" });
+  d.dienstverhaeltnis.push({ id: "d2", mitarbeiter_id: "m2", heimstandort_id: "s3", funktion_id: "f2", beschaeftigungsart: "teilzeit",
+    wochenstunden: 15, eintritt: plus(-200), befristet_bis: null, austritt: null, created_at: `${plus(-201)}T10:00:00Z` });
+  let punkte = [
+    { dienstverhaeltnis_id: "d1", vorname: "Anna", nachname: "Berger", standort_id: "s1", art: "onboarding", beschreibung: "Bildaufnahme", datum: null },
+    { dienstverhaeltnis_id: "d1", vorname: "Anna", nachname: "Berger", standort_id: "s1", art: "nachweis_stunden", beschreibung: "Stundenanpassung", datum: plus(30) },
+    { dienstverhaeltnis_id: "d1", vorname: "Anna", nachname: "Berger", standort_id: "s1", art: "nachweis_stammdaten", beschreibung: "Nachname", datum: plus(-2) },
+    { dienstverhaeltnis_id: "d2", vorname: "Lukas", nachname: "Huber", standort_id: "s3", art: "klaerung", beschreibung: "Bildaufnahme", datum: null },
+    { dienstverhaeltnis_id: "d2", vorname: "Lukas", nachname: "Huber", standort_id: "s3", art: "sv_nummer", beschreibung: "Versicherungsnummer nachreichen", datum: null },
+  ];
+  d.onboarding_unterlage = [
+    { id: "b1", organisation_id: "o", bezeichnung: "Einverständnis Stundenaufzeichnung", reihenfolge: 1, pflicht: true, gilt_fuer: "beide", aktiv: true },
+    { id: "b4", organisation_id: "o", bezeichnung: "Aushändigung Arbeitskleidung", reihenfolge: 4, pflicht: true, gilt_fuer: "studio", aktiv: true },
+  ];
+  const rpc = rpcFuer(d, {
+    offene_punkte: () => punkte,
+    akte_protokoll: () => [
+      { zeitpunkt: `${plus(-1)}T09:15:00Z`, wer: "hr@demo.invalid", tabelle: "vertragsstand", aktion: "INSERT", alt: null,
+        neu: { gueltig_ab: plus(30), wochenstunden: 40 } },
+      { zeitpunkt: `${plus(-40)}T08:00:00Z`, wer: "hr@demo.invalid", tabelle: "dienstverhaeltnis", aktion: "INSERT", alt: null, neu: {} },
+    ],
+  });
+  const p = await neueSeite(browser, d, { rpc });
+  await anmelden(p, "admin@demo.invalid");
+  pruefe(!(await p.$eval('.navigation [data-ziel="offen"]', (a) => a.hidden)), "Navigation zeigt „Offene Punkte“");
+  await p.click('.navigation [data-ziel="offen"]');
+  await p.waitForSelector("#offen-liste .offen-person");
+  const liste = await inhalt(p, "#offen-liste");
+  pruefe(liste.includes("Onboarding fehlt: Bildaufnahme"), "Text Onboarding fehlt");
+  pruefe(liste.includes(`Nachweis fehlt: Stundenanpassung ab ${at(plus(30))}`), "Text Nachweis Stundenanpassung");
+  pruefe(liste.includes(`Nachweis fehlt: Änderung Nachname ab ${at(plus(-2))}`), "Text Nachweis Stammdaten");
+  pruefe(liste.includes("Klärung mit Geschäftsführung: Bildaufnahme") && liste.includes("Versicherungsnummer nachreichen"), "Klärung und Versicherungsnummer");
+  pruefe((await p.$$("#offen-liste .offen-person")).length === 2, "je Mitarbeiter gruppiert");
+  await p.selectOption("#offen-filter [name=art]", "klaerung");
+  pruefe((await p.$$("#offen-liste .offen-person")).length === 1, "Filter nach Art");
+  await p.selectOption("#offen-filter [name=art]", "");
+  await p.selectOption("#offen-filter [name=standort]", "s1");
+  pruefe((await inhalt(p, "#offen-liste")).includes("Berger") && !(await inhalt(p, "#offen-liste")).includes("Huber"), "Filter nach Arbeitsort");
+  await p.screenshot({ path: `${OUT}/f-offene-punkte.png`, fullPage: true });
+  await p.click("#offen-liste a.name");
+  await p.waitForSelector("#akte-kopf h1");
+  pruefe(p.url().endsWith("#akte/d1/uebersicht"), "Klick führt in die Akte");
+
+  await p.click("#akte-reiter >> text=Protokoll");
+  await p.waitForSelector("#protokoll-tabelle tbody tr");
+  const prot = await inhalt(p, "#protokoll-tabelle");
+  pruefe(prot.includes("hr@demo.invalid") && prot.includes("Arbeitszeit") && prot.includes("angelegt"), `Protokoll lesbar (${prot.slice(0, 120)})`);
+
+  punkte = [];
+  await p.goto(`${ADRESSE}#offen`);
+  await p.waitForSelector("#offen-leer:not([hidden])");
+  pruefe((await p.textContent("#offen-leer")).includes("Alles erledigt."), "leere Liste: „Alles erledigt.“");
+
+  // Einstellungen: Onboarding-Liste
+  await p.goto(`${ADRESSE}#einstellungen`);
+  await p.waitForSelector("#onboarding-einstellungen tr");
+  await p.fill("#onboarding-neu [name=bezeichnung]", "Arbeitsanweisung");
+  await p.check("#onboarding-neu [name=pflicht]");
+  await p.click("#onboarding-neu button[type=submit]");
+  await p.waitForFunction(() => document.querySelectorAll("#onboarding-einstellungen tr").length === 3);
+  const neu = p.anfragen.find((a) => a.methode === "POST" && a.pfad === "/rest/v1/onboarding_unterlage");
+  pruefe(neu && neu.body.bezeichnung === "Arbeitsanweisung" && neu.body.pflicht === true && neu.body.reihenfolge === 5, "neue Unterlage angelegt (Reihenfolge am Ende)");
+  await p.uncheck('#onboarding-einstellungen [data-id="b1"][data-feld="pflicht"]');
+  await p.waitForTimeout(200);
+  const patch = p.anfragen.filter((a) => a.methode === "PATCH" && a.pfad === "/rest/v1/onboarding_unterlage").at(-1);
+  pruefe(patch && patch.suche.includes("id=eq.b1") && patch.body.pflicht === false, "Pflicht umschalten");
+  await p.uncheck('#onboarding-einstellungen [data-id="b4"][data-feld="aktiv"]');
+  await p.waitForTimeout(200);
+  pruefe(p.anfragen.filter((a) => a.methode === "PATCH").at(-1).body.aktiv === false, "deaktivieren statt löschen");
+  pruefe(!p.anfragen.some((a) => a.methode === "DELETE") && !(await p.$("#onboarding-einstellungen >> text=Löschen")), "kein Löschen");
+  await p.screenshot({ path: `${OUT}/g-einstellungen-onboarding.png`, fullPage: true });
+  pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
+  await p.close();
+
+  const v = await neueSeite(browser, d, { rpc });
+  await anmelden(v, "verw@demo.invalid");
+  pruefe(await v.$eval('.navigation [data-ziel="offen"]', (a) => a.hidden), "Verwaltung: keine offenen Punkte in der Navigation");
+  await v.close();
+}
+
+async function teilKlaerung(browser) {
+  console.log("\n# Klärung schließen");
+  const d = daten();
+  d.onboarding_stand[1].status = "klaerung";
+  d.onboarding_klaerung = [{ id: "kl1", dienstverhaeltnis_id: "d1", onboarding_unterlage_id: "b2", geschlossen_am: null }];
+  const gesendet = [];
+  const rpc = rpcFuer(d, { klaerung_schliessen: (b) => { gesendet.push(b); d.onboarding_stand[1].status = "geklaert"; return null; } });
+  const p = await neueSeite(browser, d, { rpc });
+  await anmelden(p, "hr@demo.invalid");
+  await p.goto(`${ADRESSE}#akte/d1/dokumente`);
+  await p.waitForSelector("#dokumente-onboarding [data-klaerung='b2']");
+  await p.click("#dokumente-onboarding [data-klaerung='b2']");
+  await p.click("#klaerung-form button[type=submit]");
+  pruefe((await p.textContent("#klaerung-form .fehler")).includes("Vermerk"), "Vermerk ist Pflicht");
+  await p.fill("#klaerung-form [name=vermerk]", "GF: Zusammenarbeit möglich");
+  await p.click("#klaerung-form button[type=submit]");
+  await p.waitForSelector("#klaerung-form", { state: "detached" });
+  pruefe(gesendet[0]?.p_klaerung_id === "kl1" && gesendet[0]?.p_vermerk === "GF: Zusammenarbeit möglich", "Klärung geschlossen");
+  pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
+  await p.close();
+
+  const sl = await neueSeite(browser, d, { rpc });
+  d.onboarding_stand[1].status = "klaerung";
+  await anmelden(sl, "sl@demo.invalid");
+  await sl.goto(`${ADRESSE}#akte/d1/dokumente`);
+  await sl.waitForSelector("#dokumente-onboarding li");
+  pruefe(!(await sl.$("[data-klaerung]")), "Studioleitung kann keine Klärung schließen");
+  await sl.close();
+}
+
+const TEILE = [teilUebersicht, teilVerlauf, teilDokumente, teilStammdaten, teilOffenUndEinstellungen, teilKlaerung];
 
 (async () => {
   const server = await starteServer(APP);

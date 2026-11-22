@@ -3,6 +3,7 @@ import { fristende, datumAT, euro } from "./fristen.js";
 import { dienstzettelPruefen, heuteIso } from "./pruefungen.js";
 import { einstellungenZeigen } from "./einstellungen.js";
 import { akteZeigen, akteVergessen } from "./akte.js";
+import { offenePunkteZeigen } from "./offene_punkte.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -159,6 +160,7 @@ async function stammdatenLaden() {
   const darfErfassen = stand.erfassbareFunktionen.length > 0;
   document.querySelector('[data-ziel="erfassen"]').hidden = !darfErfassen;
   document.querySelector('[data-ziel="einstellungen"]').hidden = !stand.recht.darf_verwalten;
+  document.querySelector('[data-ziel="offen"]').hidden = !darfOffenePunkte();
   $('#filter option[value="befristung"]').hidden = !stand.recht.sieht_personendaten;
 
   funktionenFuellen();
@@ -191,7 +193,8 @@ function standorteFuellen() {
 
 // ------------------------------------------------------------------ Seiten
 
-const SEITEN = ["erfassen", "mitarbeiter", "akte", "einstellungen"];
+const SEITEN = ["erfassen", "mitarbeiter", "offen", "akte", "einstellungen"];
+const darfOffenePunkte = () => istBuero() || LEITUNG.includes(stand.profil?.rolle);
 
 function seiteZeigen() {
   const [teil, ...rest] = (location.hash.replace("#", "") || "erfassen").split("/");
@@ -200,6 +203,7 @@ function seiteZeigen() {
   if (ziel === "erfassen" && !stand.erfassbareFunktionen.length) ziel = "mitarbeiter";
   if (ziel === "einstellungen" && !stand.recht.darf_verwalten) ziel = "mitarbeiter";
   if (ziel === "akte" && !rest[0]) ziel = "mitarbeiter";
+  if (ziel === "offen" && !darfOffenePunkte()) ziel = "mitarbeiter";
   for (const name of SEITEN) $(`#seite-${name}`).hidden = name !== ziel;
   // In der Akte bleibt "Mitarbeiter" in der Navigation markiert
   const navZiel = ziel === "akte" ? "mitarbeiter" : ziel;
@@ -208,6 +212,7 @@ function seiteZeigen() {
     else a.removeAttribute("aria-current");
   });
   if (ziel === "akte") akteZeigen(stand, rest[0], rest[1]);
+  if (ziel === "offen") offenePunkteZeigen(stand);
   if (ziel === "mitarbeiter") listeLaden();
   if (ziel === "einstellungen") einstellungenZeigen(stand, async () => { await stammdatenLaden(); });
 }
