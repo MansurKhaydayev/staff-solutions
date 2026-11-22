@@ -45,7 +45,17 @@ umgeht, bekommt er keine Daten, die er nicht sehen darf.
 | `app/style.css` | Aussehen: Farben, Schrift, Abstände |
 | `app/app.js` | Ablauf der App: Daten laden, Formular, Mitarbeiterliste |
 | `app/pruefungen.js` | Prüfregeln im Formular (Stunden, SV-Nummer, IBAN …) |
-| `app/einstellungen.js` | Die Einstellungen-Seite |
+| `app/einstellungen.js` | Die Einstellungen-Seite (Rechte, Funktionen, Onboarding-Liste, Regeln) |
+| `app/akte.js` | Personalakte: Seite, Reiter, Übersicht |
+| `app/akte_verlauf.js` | Reiter „Anstellung & Verlauf“ und Stundenanpassung |
+| `app/akte_dokumente.js` | Reiter „Dokumente“: hochladen, ansehen, ersetzen, Klärung schließen |
+| `app/akte_stammdaten.js` | Reiter „Lohnverrechnung“ und „Änderung eintragen“ |
+| `app/akte_protokoll.js` | Reiter „Protokoll“ |
+| `app/offene_punkte.js` | Seite „Offene Punkte“ (wem fehlt was) |
+| `app/datei.js` | Dateien prüfen (Typ, Größe), Fingerabdruck, Ablageort |
+| `app/hilfen.js` | Kleine Hilfen für alle Seiten (Datum, Euro, Text) |
+| `tests/` | Tests ohne Datenbank (Einheitstests, Browser-Tests) |
+| `supabase/tests/` | Datenbank-Tests je Rolle |
 | `app/api.js` | Verbindung zu Supabase |
 | `app/config.js` | Adresse und öffentlicher Schlüssel der Datenbank |
 | `supabase/migrations/` | Alle Änderungen an der Datenbank, nummeriert in der Reihenfolge, in der sie eingespielt wurden |
@@ -190,9 +200,117 @@ Typische Meldungen:
 3. **Vor dem echten Einsatz** in Supabase den Schutz vor gehackten Passwörtern einschalten (Authentication → Settings) und einen Vertrag zur Auftragsverarbeitung abschließen.
 4. **Zum Testen nur erfundene Daten.**
 
+## 7. Die Personalakte
+
+Ein Klick auf einen Namen in der Mitarbeiterliste öffnet die Akte. Oben stehen Name, Funktion,
+Arbeitsort, GmbH und der Status. Darunter, rot umrandet, die offenen Punkte dieser Person
+(z. B. „Nachweis fehlt“). Die Reiter darunter zeigen nur, was die eigene Rolle sehen darf.
+
+| Reiter | Inhalt | Wer sieht ihn |
+|---|---|---|
+| Übersicht | Person, Kontakt, Anstellung heute, Entgelt heute, Onboarding, Urlaub (kommt später) | jeder in seiner Reichweite, Teile nach Datenstufen |
+| Stunden | Platzhalter, kommt mit der Stundenauswertung | jeder |
+| Anstellung & Verlauf | alle Stände der Arbeitszeit mit „gültig ab“ | Personendaten (Beträge nur mit Entgelt) |
+| Dokumente | Unterlagen nach Kategorie, Onboarding-Checkliste | Dokumente (je Kategorie zusätzlich die passende Stufe) |
+| Lohnverrechnung | Versicherungsnummer, IBAN, BIC, Staatsangehörigkeit mit früheren Werten | Lohnverrechnung |
+| Protokoll | wer hat wann was geändert | Personalbüro |
+
+Ändern dürfen nur Admin, Geschäftsführung und Personalbüro. Ausnahme: Studio- und
+Regionalleitung dürfen Onboarding-Unterlagen ihrer Studios hochladen.
+
+### Stundenanpassung eintragen
+
+1. Akte öffnen → **Anstellung & Verlauf** → **Stundenanpassung eintragen**.
+2. „Gültig ab“, Beschäftigung, Stunden, Tage und Netto eintragen. Das Brutto kommt aus der Brutto-Tabelle.
+3. Speichern. Es entstehen ein neuer Stand, ein Entgelt-Eintrag und eine Vereinbarung **ohne Datei**.
+   Bis die unterschriebene Vereinbarung hochgeladen ist, steht überall **„Nachweis fehlt“**.
+4. Unterschriebene Vereinbarung scannen → **Nachweis hochladen**.
+
+Es gelten dieselben Regeln wie beim Dienstzettel. Zusätzlich: nicht vor dem Dienstantritt, nicht vor
+dem letzten Stand, nicht nach dem Austritt, höchstens 1 Jahr im Voraus.
+
+**Tippfehler?** Ein Stand wird nie gelöscht. **Stornieren** (mit Grund) – er bleibt durchgestrichen
+sichtbar und zählt nicht mehr. Danach den richtigen Stand neu eintragen. Der Stand aus dem
+Dienstzettel kann nicht storniert werden.
+
+### Stammdaten ändern (Name, Adresse, Bank, Versicherungsnummer …)
+
+Es gibt kein freies Überschreiben. Stattdessen **Änderung eintragen** (Übersicht für Person und
+Kontakt, Reiter Lohnverrechnung für Bank und Versicherungsnummer): neuer Wert, gültig ab, Grund.
+Der alte Wert bleibt sichtbar („bis 12.11.2026: …“). Danach den Nachweis hochladen.
+Rückwirkend geht das höchstens 3 Monate, in die Zukunft gar nicht.
+
+Eine **nachgereichte Versicherungsnummer** ist keine Änderung: Reiter Lohnverrechnung →
+**Nummer eintragen**. Dafür braucht es keinen Nachweis.
+
+### Dokumente
+
+- Erlaubt sind PDF, JPG und PNG bis 10 MB. Am iPad kann man direkt fotografieren.
+- Dateien liegen in einem **privaten** Speicher (Supabase Storage, Bereich `personalakte`).
+  Ansehen geht nur über einen Link, der 5 Minuten gilt.
+- **Nichts wird gelöscht.** Eine falsche Datei wird **ersetzt** (nur Büro). Die alte bleibt unter
+  „frühere Fassungen“.
+- Jede Datei bekommt einen **Fingerabdruck** (SHA-256). Damit lässt sich später zeigen, dass sie
+  nicht verändert wurde.
+- Wer welche Kategorie sieht: Onboarding und Sonstiges → Dokumente; Vereinbarungen → Dokumente
+  und Entgelt; Anmeldung, Abmeldung, Nachweise zu Bank/Versicherung → Dokumente und
+  Lohnverrechnung; Nachweise zu Personendaten → Dokumente und Personendaten.
+
+### Onboarding-Unterlagen
+
+Die Liste pflegst du unter **Einstellungen → Onboarding-Unterlagen**: Bezeichnung, Reihenfolge,
+Pflicht, gilt für Studio/Büro/beide, aktiv. Nicht mehr benötigte Unterlagen **deaktivieren**
+(löschen geht nicht; abgelegte Dokumente bleiben).
+
+Beim Hochladen wählt man die Unterlage und das Ergebnis (unterschrieben oder abgelehnt).
+
+- Freiwillige Unterlage abgelehnt → zählt als erledigt.
+- **Pflichtunterlage abgelehnt** → „Klärung mit Geschäftsführung“. Nur das Personalbüro schließt
+  sie (Reiter Dokumente → **Klärung schließen**, mit der Entscheidung als Vermerk).
+- Ablehnung ohne Bogen (z. B. mündlich): Büro → Unterlage hochladen → **Ablehnung ohne Datei vermerken**.
+
+### Offene Punkte
+
+Die Seite **Offene Punkte** zeigt für alle aktiven Mitarbeiter: fehlende Onboarding-Unterlagen,
+offene Klärungen, Stundenanpassungen und Stammdatenänderungen ohne Nachweis, nachzureichende
+Versicherungsnummern. Filter nach Arbeitsort und Art. Leitungen sehen nur ihre Studios und nur
+die Punkte ihrer Datenstufen.
+
+### Wo das technisch steht
+
+| Tabelle / Funktion | Zweck |
+|---|---|
+| `vertragsstand` | jeder Stand der Arbeitszeit mit „gültig ab“ (einzige Quelle für die Stunden) |
+| `app.stand_am(dv, tag)` | welcher Stand an einem Tag gilt |
+| `stunden_anpassen`, `stand_stornieren` | Stundenanpassung und Storno |
+| `stammdaten_aenderung` | jede Stammdatenänderung mit altem und neuem Wert |
+| `stammdaten_aendern`, `sv_nummer_nachtragen` | Änderung eintragen, Nummer nachreichen |
+| `dokument` (+ Speicher `personalakte`) | Unterlagen; `dokument_ablegen` trägt eine hochgeladene Datei ein |
+| `onboarding_unterlage`, `onboarding_klaerung` | Onboarding-Liste und Klärungen |
+| `onboarding_stand(dv)` | Checkliste einer Person |
+| `akte_kopf(dv)` | alles für die Übersicht – nur, was die Rolle sehen darf |
+| `offene_punkte()`, `akte_protokoll(dv)` | Liste „Wem fehlt was“, Protokoll |
+
+Direktes Ändern der Stunden im Dienstverhältnis oder der Stammdaten ist in der Datenbank
+gesperrt. Nur du als Betreiber kannst im Notfall direkt per SQL ändern (dann ohne Nachweis –
+bitte nur, wenn es wirklich nicht anders geht).
+
 ---
 
-## 7. Begriffe
+## 8. Tests ausführen
+
+| Art | Wie | Bestanden, wenn |
+|---|---|---|
+| Einheitstests und Browser-Tests | im Terminal: `tests/lauf.sh` | am Ende „UI-Tests bestanden“ |
+| Datenbank-Tests | Inhalt einer Datei aus `supabase/tests/` im Supabase **SQL Editor** ausführen | Ergebnis „alle Tests bestanden“ |
+
+Die Datenbank-Tests legen Testpersonen nur innerhalb einer Transaktion an und machen am Ende
+alles rückgängig (`rollback`). Sie brauchen einmalig die Testhilfen aus `supabase/tests/_hilfen.sql`
+(Schema `testhilfe`, nur für den Betreiber nutzbar).
+
+---
+
+## 9. Begriffe
 
 | Begriff | Bedeutung |
 |---|---|
@@ -203,3 +321,8 @@ Typische Meldungen:
 | Deploy | Eine veröffentlichte Version der App auf Netlify |
 | Commit | Eine gespeicherte Änderung im Code auf GitHub |
 | Platzhalter | Stelle in einer Vorlage, z. B. `{{name}}`, die automatisch befüllt wird |
+| Stand | Arbeitszeit, die ab einem Datum gilt („gültig ab“) |
+| Storno | Ein Eintrag gilt nicht mehr, bleibt aber sichtbar |
+| Nachweis | Unterschriebenes oder amtliches Dokument, das eine Änderung belegt |
+| Fingerabdruck (SHA-256) | Prüfwert einer Datei; ändert sich die Datei, ändert sich der Wert |
+| Signierter Link | Zeitlich begrenzte Adresse, über die man eine private Datei öffnen kann |
