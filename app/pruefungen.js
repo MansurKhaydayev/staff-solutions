@@ -143,3 +143,22 @@ export function dienstzettelPruefen(w, regeln, auswahl) {
 
   return f;
 }
+
+const datumText = (iso) => iso.split("-").reverse().join(".");
+
+// Stundenanpassung: gleiche Regeln wie beim Dienstzettel, dazu die Datumsgrenzen.
+// w = { gueltig_ab, beschaeftigungsart, wochenstunden, arbeitstage, netto }
+// kontext = { eintritt, letzterStand, austritt } als ISO-Datum (austritt darf null sein)
+export function stundenanpassungPruefen(w, regeln, { eintritt, letzterStand, austritt }) {
+  const f = arbeitszeitPruefen(w, regeln);
+  const g = w.gueltig_ab;
+  if (!g) f.gueltig_ab = "Bitte angeben, ab wann die Anpassung gilt.";
+  else if (g < eintritt) f.gueltig_ab = `Kann nicht vor dem Dienstantritt (${datumText(eintritt)}) gelten.`;
+  else if (g > tageVersetzt(heuteIso(), 365)) f.gueltig_ab = "Liegt mehr als 1 Jahr in der Zukunft.";
+  else if (austritt && g > austritt) f.gueltig_ab = `Liegt nach dem Austritt (${datumText(austritt)}).`;
+  else if (letzterStand && g === letzterStand) f.gueltig_ab = `Für den ${datumText(g)} gibt es schon einen Stand.`;
+  else if (letzterStand && g < letzterStand) {
+    f.gueltig_ab = `Es gibt schon einen späteren Stand (ab ${datumText(letzterStand)}). Bitte zuerst diesen stornieren.`;
+  }
+  return f;
+}

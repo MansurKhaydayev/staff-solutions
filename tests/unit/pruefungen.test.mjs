@@ -23,3 +23,30 @@ test("dienstzettelPruefen nutzt dieselbe Meldung", () => {
   const f = dienstzettelPruefen({ ...w("teilzeit", 40, 1, 1000), leiterzulage: "" }, regeln, {});
   assert.match(f.wochenstunden, /40 Stunden an 1 Tag sind 40 Stunden pro Tag/);
 });
+
+import { stundenanpassungPruefen } from "../../app/pruefungen.js";
+const sa = (gueltig_ab, art = "teilzeit", std = 25, tage = 5, netto = 1000) =>
+  ({ gueltig_ab, beschaeftigungsart: art, wochenstunden: String(std), arbeitstage: String(tage), netto: String(netto) });
+const kontext = { eintritt: "2026-10-01", letzterStand: "2026-12-01", austritt: null };
+
+test("stundenanpassungPruefen: gültige Anpassung", () => {
+  assert.deepEqual(stundenanpassungPruefen(sa("2027-01-01"), regeln, kontext), {});
+});
+test("stundenanpassungPruefen: vor dem Dienstantritt", () => {
+  assert.match(stundenanpassungPruefen(sa("2026-09-30"), regeln, kontext).gueltig_ab, /Dienstantritt/);
+});
+test("stundenanpassungPruefen: am Tag des letzten Stands", () => {
+  assert.match(stundenanpassungPruefen(sa("2026-12-01"), regeln, kontext).gueltig_ab, /schon einen Stand/);
+});
+test("stundenanpassungPruefen: vor dem letzten Stand", () => {
+  assert.match(stundenanpassungPruefen(sa("2026-11-15"), regeln, kontext).gueltig_ab, /späteren Stand/);
+});
+test("stundenanpassungPruefen: nach dem Austritt", () => {
+  assert.match(stundenanpassungPruefen(sa("2027-01-01"), regeln, { ...kontext, austritt: "2026-12-31" }).gueltig_ab, /Austritt/);
+});
+test("stundenanpassungPruefen: 40 Stunden an 1 Tag", () => {
+  assert.match(stundenanpassungPruefen(sa("2027-01-01", "teilzeit", 40, 1), regeln, kontext).wochenstunden, /pro Tag/);
+});
+test("stundenanpassungPruefen: Datum fehlt", () => {
+  assert.match(stundenanpassungPruefen(sa(""), regeln, kontext).gueltig_ab, /ab wann/);
+});
