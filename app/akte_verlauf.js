@@ -2,6 +2,7 @@
 import * as api from "./api.js";
 import { stundenanpassungPruefen } from "./pruefungen.js";
 import { $, text, ART, stunden, geld, datum } from "./hilfen.js";
+import { hochladenDialog } from "./akte_dokumente.js";
 
 export async function zeigen(ziel, kopf, stand, neuLaden) {
   const r = kopf.rechte;
@@ -16,7 +17,11 @@ export async function zeigen(ziel, kopf, stand, neuLaden) {
   const vereinbarung = (s) => {
     if (s.storniert_am) return `storniert: ${text(s.storno_grund)}`;
     if (s.gueltig_ab === kopf.eintritt) return "Dienstzettel";
-    if (ohneNachweis.has(s.gueltig_ab)) return '<span class="merkmal merkmal-fehlt">Nachweis fehlt</span>';
+    if (ohneNachweis.has(s.gueltig_ab)) {
+      const knopf = r.buero && r.dokumente && r.entgelt
+        ? ` <button type="button" class="knopf knopf-leise" data-nachweis-stand="${text(s.id)}">Nachweis hochladen</button>` : "";
+      return `<span class="merkmal merkmal-fehlt">Nachweis fehlt</span>${knopf}`;
+    }
     return "vorhanden";
   };
 
@@ -56,6 +61,13 @@ export async function zeigen(ziel, kopf, stand, neuLaden) {
 
   $("#anpassung-oeffnen").addEventListener("click", () =>
     formularZeigen($("#anpassung-bereich"), { kopf, stand, letzter, letzterNetto, neuLaden }));
+  ziel.querySelectorAll("button[data-nachweis-stand]").forEach((k) => k.addEventListener("click", async () => {
+    const [dok] = await api.lesen("dokument",
+      `select=id,kategorie,bezeichnung&vertragsstand_id=eq.${k.dataset.nachweisStand}&datei_pfad=is.null&ersetzt_durch=is.null`);
+    if (!dok) return;
+    hochladenDialog($("#anpassung-bereich"), { kategorie: dok.kategorie, bezeichnung: dok.bezeichnung, dokumentId: dok.id },
+      kopf, stand, neuLaden);
+  }));
   ziel.querySelectorAll("button[data-storno]").forEach((k) => k.addEventListener("click", () =>
     stornoZeigen($("#storno-bereich"), k.dataset.storno, staende.find((s) => s.id === k.dataset.storno), neuLaden)));
 }

@@ -161,6 +161,8 @@ async function teilVerlauf(browser) {
         wochenstunden: b.p_wochenstunden, arbeitstage_woche: b.p_arbeitstage_woche, storniert_am: null, storno_grund: null });
       d.entgelt.push({ id: "e3", dienstverhaeltnis_id: "d1", vertragsstand_id: "v3", netto: b.p_netto, brutto: 1950, quelle: "tabelle",
         gueltig_ab: b.p_gueltig_ab, storniert_am: null });
+      d.dokument.push({ id: "k3", dienstverhaeltnis_id: "d1", kategorie: "vereinbarung", bezeichnung: "Vereinbarung Stundenanpassung",
+        vertragsstand_id: "v3", datei_pfad: null, ersetzt_durch: null, created_at: `${plus(0)}T09:00:00Z` });
       return "v3";
     },
     stand_stornieren: (b) => { gesendet.push(b); return null; },
@@ -197,6 +199,10 @@ async function teilVerlauf(browser) {
   pruefe(gesendet[0].p_wochenstunden === 40 && gesendet[0].p_netto === 1500 && gesendet[0].p_gueltig_ab === plus(30), "Werte als Zahlen und Datum");
   const neu = await inhalt(p, "#verlauf-tabelle");
   pruefe(neu.includes("Nachweis fehlt"), "neue Anpassung zeigt „Nachweis fehlt“");
+  await p.click("#verlauf-tabelle [data-nachweis-stand='v3']");
+  await p.waitForSelector("#hochladen-form");
+  pruefe((await inhalt(p, "#hochladen-form h3")).includes("Vereinbarung Stundenanpassung"), "„Nachweis hochladen“ öffnet den Dialog zur Vereinbarung");
+  await p.click("#hochladen-form [data-aktion=abbrechen]");
 
   // Fehler aus der Datenbank erscheint im Formular
   await p.click("text=Stundenanpassung eintragen");
@@ -230,8 +236,106 @@ async function teilVerlauf(browser) {
   await rl.close();
 }
 
+function dokumentDaten() {
+  const d = daten();
+  const datei = (id, kategorie, bezeichnung, extra = {}) => ({ id, dienstverhaeltnis_id: "d1", kategorie, bezeichnung,
+    datei_pfad: `o/d1/${kategorie}/${id}.pdf`, datei_typ: "application/pdf", datei_groesse: 120000, ersetzt_durch: null,
+    vertragsstand_id: null, onboarding_unterlage_id: null, onboarding_ergebnis: null,
+    hochgeladen_am: `${plus(-3)}T08:00:00Z`, created_at: `${plus(-3)}T08:00:00Z`, ...extra });
+  d.dokument = [
+    datei("s1", "sonstiges", "Strafregisterauszug"),
+    datei("o2alt", "onboarding", "Bildaufnahme", { onboarding_unterlage_id: "b2", onboarding_ergebnis: "unterschrieben", ersetzt_durch: "o2" }),
+    datei("o2", "onboarding", "Bildaufnahme", { onboarding_unterlage_id: "b2", onboarding_ergebnis: "unterschrieben" }),
+    datei("a1", "anmeldung", "Anmeldung ÖGK"),
+    { ...datei("k1", "vereinbarung", "Vereinbarung Stundenanpassung", { vertragsstand_id: "v2" }), datei_pfad: null, hochgeladen_am: null },
+  ];
+  return d;
+}
+
+async function teilDokumente(browser) {
+  console.log("\n# Dokumente");
+  const d = dokumentDaten();
+  let ablegenFehler = false;
+  const abgelegt = [];
+  const p = await neueSeite(browser, d, { rpc: rpcFuer(d, {
+    dokument_ablegen: (b) => {
+      abgelegt.push(b);
+      if (ablegenFehler) { ablegenFehler = false; return { status: 503, body: { message: "Verbindung unterbrochen" } }; }
+      const id = `neu${abgelegt.length}`;
+      d.dokument.push({ id, dienstverhaeltnis_id: "d1", kategorie: b.p_kategorie, bezeichnung: b.p_bezeichnung, datei_pfad: b.p_pfad,
+        ersetzt_durch: null, onboarding_unterlage_id: b.p_onboarding_unterlage_id, onboarding_ergebnis: b.p_onboarding_ergebnis,
+        hochgeladen_am: `${plus(0)}T09:00:00Z`, created_at: `${plus(0)}T09:00:00Z` });
+      return id;
+    },
+  }) });
+  await anmelden(p, "hr@demo.invalid");
+  await p.goto(`${ADRESSE}#akte/d1/dokumente`);
+  await p.waitForSelector("#dokument-gruppen h2");
+  const gruppen = await p.$$eval("#dokument-gruppen h2", (h) => h.map((x) => x.textContent.trim()));
+  pruefe(JSON.stringify(gruppen) === JSON.stringify(["Anmeldung", "Onboarding", "Vereinbarungen", "Sonstiges"]), `Gruppen in fester Reihenfolge (${gruppen})`);
+  pruefe((await inhalt(p, "#dokument-gruppen")).includes("frühere Fassungen"), "ersetzte Datei unter „frühere Fassungen“");
+  pruefe((await inhalt(p, "#dokument-gruppen")).includes("Datei fehlt"), "Vereinbarung ohne Datei: „Datei fehlt“");
+  const check = await inhalt(p, "#dokumente-onboarding");
+  pruefe(check.includes("Bildaufnahme") && check.includes("erledigt") && check.includes("fehlt"), "Onboarding-Checkliste");
+
+  // Falscher Dateityp: kein Hochladen
+  await p.click("text=Unterlage hochladen");
+  const f = "#hochladen-form";
+  await p.selectOption(`${f} [name=kategorie]`, "onboarding");
+  await p.selectOption(`${f} [name=unterlage]`, "b1");
+  await p.setInputFiles(`${f} [name=datei]`, { name: "bild.gif", mimeType: "image/gif", buffer: Buffer.from("GIF89a") });
+  await p.click(`${f} button[type=submit]`);
+  pruefe((await p.textContent(`${f} .fehler`)).includes("Nur PDF, JPG oder PNG."), "GIF wird abgelehnt");
+  pruefe(!p.anfragen.some((a) => a.methode === "POST" && a.pfad.startsWith("/storage/v1/object/personalakte")), "kein Hochladen bei falschem Typ");
+
+  // PDF hochladen, erster Eintrag scheitert, erneuter Versuch ohne zweites Hochladen
+  ablegenFehler = true;
+  await p.setInputFiles(`${f} [name=datei]`, { name: "scan.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 test") });
+  await p.click(`${f} button[type=submit]`);
+  await p.waitForSelector("text=Erneut versuchen");
+  const posts = () => p.anfragen.filter((a) => a.methode === "POST" && a.pfad.startsWith("/storage/v1/object/personalakte/"));
+  pruefe(posts().length === 1 && /^\/storage\/v1\/object\/personalakte\/o\/d1\/onboarding\/[0-9a-f-]{36}\.pdf$/.test(posts()[0].pfad),
+    `Datei unter Firma/Person/Kategorie abgelegt (${posts()[0]?.pfad})`);
+  pruefe((await p.textContent(`${f} .fehler`)).includes("Verbindung unterbrochen"), "Fehlermeldung beim Eintragen");
+  await p.click("text=Erneut versuchen");
+  await p.waitForSelector(`${f}`, { state: "detached" });
+  pruefe(posts().length === 1, "erneuter Versuch lädt die Datei nicht noch einmal hoch");
+  const letzter = abgelegt.at(-1);
+  pruefe(/^[0-9a-f]{64}$/.test(letzter.p_hash) && letzter.p_onboarding_unterlage_id === "b1" && letzter.p_kategorie === "onboarding"
+    && letzter.p_bezeichnung === "Einverständnis Stundenaufzeichnung", "Eintrag mit Fingerabdruck und Unterlage");
+
+  // Ansehen: signierter Link in neuem Tab
+  const [tab] = await Promise.all([p.context().waitForEvent("page"), p.click("#dokument-gruppen [data-ansehen='o2']")]);
+  pruefe(p.anfragen.some((a) => a.pfad === "/storage/v1/object/sign/personalakte/o/d1/onboarding/o2.pdf"), "signierter Link angefordert");
+  pruefe(Boolean(tab), "Datei öffnet in neuem Tab");
+  await tab.close();
+
+  // Nachweis zu bestehendem Eintrag hochladen
+  await p.click("#dokument-gruppen [data-nachweis='k1']");
+  await p.setInputFiles(`${f} [name=datei]`, { name: "vereinbarung.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 v") });
+  await p.click(`${f} button[type=submit]`);
+  await p.waitForSelector(`${f}`, { state: "detached" });
+  pruefe(abgelegt.at(-1).p_dokument_id === "k1" && abgelegt.at(-1).p_kategorie === "vereinbarung", "Nachweis wird am bestehenden Eintrag ergänzt");
+  pruefe(Boolean(await p.$("#dokument-gruppen [data-ersetzen='o2']")), "Büro kann ersetzen");
+  await p.screenshot({ path: `${OUT}/d-dokumente.png`, fullPage: true });
+  pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
+  await p.close();
+
+  // Studioleitung: nur Onboarding, kein Ersetzen
+  const sl = await neueSeite(browser, d, { rpc: rpcFuer(d) });
+  await anmelden(sl, "sl@demo.invalid");
+  await sl.goto(`${ADRESSE}#akte/d1/dokumente`);
+  await sl.waitForSelector("#dokument-gruppen h2");
+  pruefe(!(await sl.$("[data-ersetzen]")), "Studioleitung kann nicht ersetzen");
+  await sl.click("text=Unterlage hochladen");
+  const kat = await sl.$$eval("#hochladen-form [name=kategorie] option", (o) => o.map((x) => x.value));
+  pruefe(JSON.stringify(kat) === JSON.stringify(["onboarding"]), `Studioleitung: nur Onboarding (${kat})`);
+  pruefe(sl.jsFehler.length === 0, `keine JS-Fehler (${sl.jsFehler.join("; ")})`);
+  await sl.close();
+}
+
 // Weitere Teile kommen mit den nächsten Aufgaben
-const TEILE = [teilUebersicht, teilVerlauf];
+const TEILE = [teilUebersicht, teilVerlauf, teilDokumente];
 
 (async () => {
   const server = await starteServer(APP);

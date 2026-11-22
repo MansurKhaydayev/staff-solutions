@@ -413,3 +413,12 @@ a.name:hover { text-decoration: underline; }
 .knopf, .navigation a { min-height: 44px; }
 .akte-block a, .akte-inhalt a { color: var(--tanne); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.dokument-gruppe h2 { font-size: 1.0625rem; margin: 1.5rem 0 .5rem; }
+.knopf-zelle { text-align: right; white-space: nowrap; }
+.knopf-zelle .knopf { margin-left: .25rem; }
+.frueher summary { cursor: pointer; color: var(--tinte-leise); min-height: 44px; display: flex; align-items: center; }
+#dokumente-onboarding { max-width: 40rem; }
+.dokument-gruppe .tabelle { table-layout: fixed; }
+.dokument-gruppe td:first-child { width: 45%; }
+.dokument-gruppe td:nth-child(2) { width: 15%; }
+@media (max-width: 900px) { .dokument-gruppe .tabelle { table-layout: auto; } .knopf-zelle { white-space: normal; } }
