@@ -141,7 +141,7 @@ async function uebersichtZeichnen(ziel, k, stand, neuLaden) {
       <ul class="checkliste" id="onboarding-liste"></ul></section>`);
   }
   teile.push(`<section class="akte-block"><h2>Urlaub</h2>${liste([["Resturlaub", "kommt mit der Stundenauswertung"]])}</section>`);
-  ziel.innerHTML = `<div class="akte-raster">${teile.join("")}</div>`;
+  ziel.innerHTML = `<div id="uebersicht-dialog"></div><div class="akte-raster">${teile.join("")}</div>`;
 
   if (r.dokumente && k.onboarding) {
     try {
@@ -154,7 +154,7 @@ async function uebersichtZeichnen(ziel, k, stand, neuLaden) {
   if (r.buero && r.personendaten) {
     try {
       const { aenderungKnopf } = await import("./akte_stammdaten.js");
-      aenderungKnopf($("#aenderung-personendaten"), "personendaten", k, neuLaden);
+      aenderungKnopf($("#aenderung-personendaten"), "personendaten", k, stand, neuLaden, $("#uebersicht-dialog"));
     } catch {
       /* Änderungen eintragen kommt mit dem Modul Stammdaten */
     }

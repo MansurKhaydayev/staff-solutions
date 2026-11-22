@@ -422,3 +422,5 @@ a.name:hover { text-decoration: underline; }
 .dokument-gruppe td:first-child { width: 45%; }
 .dokument-gruppe td:nth-child(2) { width: 15%; }
 @media (max-width: 900px) { .dokument-gruppe .tabelle { table-layout: auto; } .knopf-zelle { white-space: normal; } }
+.frueher-werte { list-style: none; margin: .25rem 0 0; padding: 0; font-size: .875rem; color: var(--tinte-leise); }
+.frueher-angaben { margin: .75rem 0; }

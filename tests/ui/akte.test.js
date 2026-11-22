@@ -316,7 +316,7 @@ async function teilDokumente(browser) {
   await p.click(`${f} button[type=submit]`);
   await p.waitForSelector(`${f}`, { state: "detached" });
   pruefe(abgelegt.at(-1).p_dokument_id === "k1" && abgelegt.at(-1).p_kategorie === "vereinbarung", "Nachweis wird am bestehenden Eintrag ergänzt");
-  pruefe(Boolean(await p.$("#dokument-gruppen [data-ersetzen='o2']")), "Büro kann ersetzen");
+  pruefe(Boolean(await p.waitForSelector("#dokument-gruppen [data-ersetzen='o2']").catch(() => null)), "Büro kann ersetzen");
   await p.screenshot({ path: `${OUT}/d-dokumente.png`, fullPage: true });
   pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
   await p.close();
@@ -334,8 +334,80 @@ async function teilDokumente(browser) {
   await sl.close();
 }
 
+async function teilStammdaten(browser) {
+  console.log("\n# Stammdaten");
+  const d = daten();
+  d.mitarbeiter_sensibel = [{ mitarbeiter_id: "m1", sv_nummer: null, sv_nummer_nachreichen: true,
+    iban: "AT611904300234573201", bic: null, staatsangehoerigkeit: "Österreich" }];
+  d.stammdaten_aenderung = [{ id: "a1", mitarbeiter_id: "m1", feld: "iban", stufe: "lohnverrechnung", alt: "DE89370400440532013000",
+    neu: "AT611904300234573201", gueltig_ab: plus(-10), grund: "Bankwechsel", ist_ergaenzung: false, created_at: `${plus(-10)}T08:00:00Z` }];
+  const gesendet = [];
+  const p = await neueSeite(browser, d, { rpc: rpcFuer(d, {
+    stammdaten_aendern: (b) => { gesendet.push(b); return "n1"; },
+    sv_nummer_nachtragen: (b) => { gesendet.push(b); return null; },
+  }) });
+  await anmelden(p, "hr@demo.invalid");
+  await p.goto(`${ADRESSE}#akte/d1/lohn`);
+  await p.waitForSelector("#lohn-angaben");
+  const lohn = await inhalt(p, "#lohn-angaben");
+  pruefe(lohn.includes("wird nachgereicht") && lohn.includes("AT61 1904 3002 3457 3201") && lohn.includes("Österreich"), `Lohnverrechnungsdaten (${lohn})`);
+  pruefe(lohn.includes("DE89 3704 0044 0532 0130 00") && lohn.includes("Bankwechsel") && lohn.includes(at(plus(-10))), "früherer Wert mit Datum und Grund");
+
+  // Versicherungsnummer nachtragen
+  await p.click("text=Nummer eintragen");
+  await p.fill("#sv-form [name=sv_nummer]", "1238 010191");
+  await p.click("#sv-form button[type=submit]");
+  pruefe((await p.textContent("#sv-form .fehler")).includes("Prüfziffer"), "falsche Prüfziffer wird erkannt");
+  await p.fill("#sv-form [name=sv_nummer]", "1238 010190");
+  await p.click("#sv-form button[type=submit]");
+  await p.waitForSelector("#sv-form", { state: "detached" });
+  pruefe(gesendet.at(-1).p_sv_nummer === "1238010190", "Nummer ohne Leerzeichen gesendet");
+
+  // Änderung eintragen
+  await p.click("text=Änderung eintragen");
+  const f = "#aenderung-form";
+  await p.fill(`${f} [name=iban]`, "AT61 1904 3002 3457 3202");
+  await p.click(`${f} button[type=submit]`);
+  pruefe((await p.textContent(`${f} [data-fehler=iban]`)).includes("Ungültig"), "ungültige IBAN: Feldmeldung");
+  pruefe((await p.textContent(`${f} [data-fehler=grund]`)).length > 0, "Grund ist Pflicht");
+  const vorher = gesendet.length;
+  await p.fill(`${f} [name=iban]`, "de89 3704 0044 0532 0130 00");
+  await p.fill(`${f} [name=grund]`, "Bankwechsel");
+  await p.click(`${f} button[type=submit]`);
+  await p.waitForSelector("[data-aktion=nachweis]");
+  pruefe(gesendet.length === vorher + 1, "eine Änderung gesendet");
+  const g = gesendet.at(-1);
+  pruefe(JSON.stringify(g.p_werte) === JSON.stringify({ iban: "DE89370400440532013000" }), `nur das geänderte Feld (${JSON.stringify(g.p_werte)})`);
+  pruefe(g.p_gueltig_ab === plus(0) && g.p_grund === "Bankwechsel" && g.p_mitarbeiter_id === "m1", "Datum, Grund und Person gesendet");
+  await p.click("[data-aktion=nachweis]");
+  await p.waitForSelector("#hochladen-form");
+  pruefe((await inhalt(p, "#hochladen-form h3")).includes("Nachweis Stammdatenänderung"), "Nachweis-Dialog geöffnet");
+  await p.click("#hochladen-form [data-aktion=abbrechen]");
+
+  // Personendaten aus der Übersicht
+  await p.click("#akte-reiter >> text=Übersicht");
+  await p.waitForSelector("#aenderung-personendaten button");
+  await p.click("#aenderung-personendaten button");
+  await p.fill(`${f} [name=nachname]`, "Neumann");
+  await p.fill(`${f} [name=grund]`, "Heirat");
+  await p.click(`${f} button[type=submit]`);
+  await p.waitForSelector("[data-aktion=nachweis]");
+  pruefe(JSON.stringify(gesendet.at(-1).p_werte) === JSON.stringify({ nachname: "Neumann" }), "Namensänderung: nur Nachname gesendet");
+  await p.screenshot({ path: `${OUT}/e-aenderung.png`, fullPage: true });
+  pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
+  await p.close();
+
+  const b = await neueSeite(browser, d, { rpc: rpcFuer(d) });
+  await anmelden(b, "buch@demo.invalid");
+  await b.goto(`${ADRESSE}#akte/d1/lohn`);
+  await b.waitForSelector("#lohn-angaben");
+  pruefe(!(await b.$("text=Änderung eintragen")) && !(await b.$("text=Nummer eintragen")), "Buchhaltung: sieht, ändert nichts");
+  pruefe(b.jsFehler.length === 0, `keine JS-Fehler (${b.jsFehler.join("; ")})`);
+  await b.close();
+}
+
 // Weitere Teile kommen mit den nächsten Aufgaben
-const TEILE = [teilUebersicht, teilVerlauf, teilDokumente];
+const TEILE = [teilUebersicht, teilVerlauf, teilDokumente, teilStammdaten];
 
 (async () => {
   const server = await starteServer(APP);
@@ -343,7 +415,7 @@ const TEILE = [teilUebersicht, teilVerlauf, teilDokumente];
   try {
     for (const teil of TEILE) await teil(browser);
   } catch (e) {
-    pruefe(false, `Abbruch: ${e.message.split("\n")[0]}`);
+    pruefe(false, `Abbruch: ${e.message.split("\n").slice(0, 3).join(" | ")}`);
   } finally {
     await browser.close();
     server.close();
