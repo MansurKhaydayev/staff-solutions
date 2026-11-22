@@ -72,7 +72,7 @@
 
 ---
 
-### Aufgabe 1: Gemeinsame Prüfregeln und Test-Grundlage
+### Task 1: Gemeinsame Prüfregeln und Test-Grundlage
 
 **Dateien:**
 - Neu: `supabase/migrations/20261122000011_gemeinsame_pruefregeln.sql`, `supabase/tests/_hilfen.sql`, `supabase/tests/01_pruefregeln.sql`, `tests/unit/pruefungen.test.mjs`, `tests/ui/mock.js`
@@ -99,7 +99,7 @@
 - [ ] **Schritt 9:** `tests/ui/mock.js` aus dem bisherigen Scratchpad-Test (`ui-test/test.js`) erzeugen; einen Rauchtest (Anmelden als HR, Dienstzettel-Seite sichtbar, keine `pageerror`) direkt in `mock.js` unter `if (require.main === module)` laufen lassen → bestanden.
 - [ ] **Schritt 10: Commit** `git add -A supabase app/pruefungen.js tests && git commit -m "Prüfregeln gemeinsam nutzen, Testgrundlage im Repo"`
 
-### Aufgabe 2: Vertragsstand als einzige Quelle für Stunden
+### Task 2: Vertragsstand als einzige Quelle für Stunden
 
 **Dateien:**
 - Neu: `supabase/migrations/20261122000012_vertragsstand.sql`, `supabase/tests/02_vertragsstand.sql`
@@ -122,7 +122,7 @@
 - [ ] **Schritt 4:** `apply_migration`, Tests 01 und 02 → bestanden.
 - [ ] **Schritt 5: Commit** „Vertragsstand: Stunden mit gültig ab, Löschschutz“.
 
-### Aufgabe 3: Dokumente, Kategorien und Dateiablage
+### Task 3: Dokumente, Kategorien und Dateiablage
 
 **Dateien:**
 - Neu: `supabase/migrations/20261122000013_dokumente_ablage.sql`, `supabase/tests/03_dokumente.sql`, `app/datei.js`, `tests/unit/datei.test.mjs`
@@ -153,7 +153,7 @@
 - [ ] **Schritt 9:** `api.js` um `hochladen` und `dateiLink` ergänzen (gleicher Kopf wie `anfrage`, aber Körper = Datei, `Content-Type` = Dateityp).
 - [ ] **Schritt 10: Commit** „Dokumente: Kategorien, privater Speicher, nichts wird gelöscht“.
 
-### Aufgabe 4: Stundenanpassung und Storno
+### Task 4: Stundenanpassung und Storno
 
 **Dateien:**
 - Neu: `supabase/migrations/20261122000014_stundenanpassung.sql`, `supabase/tests/04_stundenanpassung.sql`
@@ -176,7 +176,7 @@
 - [ ] **Schritt 5: Einheitstest** für `stundenanpassungPruefen`: Datum vor `eintritt` → `gueltig_ab` gesetzt; Datum = `letzterStand` → `gueltig_ab` gesetzt; gültiger Fall → `{}`; 40 h / 1 Tag → `wochenstunden` gesetzt. FAIL → umsetzen → PASS.
 - [ ] **Schritt 6: Commit** „Stundenanpassung mit Nachweis-Pflicht und Storno“.
 
-### Aufgabe 5: Stammdatenänderungen mit altem Wert
+### Task 5: Stammdatenänderungen mit altem Wert
 
 **Dateien:**
 - Neu: `supabase/migrations/20261122000015_stammdatenaenderung.sql`, `supabase/tests/05_stammdaten.sql`
@@ -201,7 +201,7 @@
 - [ ] **Schritt 5: Einheitstest** `stammdatenFeldPruefen`: `("plz","80")` → „4 oder 5 Ziffern.“; `("iban","AT61 1904 3002 3457 3201")` → null; `("sv_nummer","1238010191")` → Prüfziffer-Meldung; `dienstzettelPruefen` unverändert. FAIL → umsetzen → PASS.
 - [ ] **Schritt 6: Commit** „Stammdatenänderungen mit altem Wert und Nachweis“.
 
-### Aufgabe 6: Onboarding-Unterlagen und Klärung
+### Task 6: Onboarding-Unterlagen und Klärung
 
 **Dateien:**
 - Neu: `supabase/migrations/20261122000016_onboarding.sql`, `supabase/tests/06_onboarding.sql`
@@ -227,7 +227,7 @@
 - [ ] **Schritt 2:** FAIL. **Schritt 3:** Migration 016 + Seed-Ergänzung (Seed einmal per `execute_sql` auf die Demo-Firma anwenden, nur die neuen Zeilen, mit `on conflict do nothing`). **Schritt 4:** Tests 01–06 → bestanden.
 - [ ] **Schritt 5: Commit** „Onboarding-Unterlagen mit Pflicht, Ablehnung und Klärung“.
 
-### Aufgabe 7: Akte-Kopf, Protokoll und „Wem fehlt was“
+### Task 7: Akte-Kopf, Protokoll und „Wem fehlt was“
 
 **Dateien:**
 - Neu: `supabase/migrations/20261122000017_akte_offene_punkte.sql`, `supabase/tests/07_akte.sql`
@@ -252,7 +252,7 @@
 - [ ] **Schritt 2:** FAIL. **Schritt 3:** Migration 017. **Schritt 4:** Tests 01–07 → bestanden; `get_advisors(security)` und `get_advisors(performance)` ansehen, neue Fremdschlüssel ohne Index ergänzen.
 - [ ] **Schritt 5: Commit** „Akte-Kopf, Protokoll und offene Punkte“.
 
-### Aufgabe 8: Akte-Seite mit Übersicht
+### Task 8: Akte-Seite mit Übersicht
 
 **Dateien:**
 - Neu: `app/akte.js`, `tests/ui/akte.test.js`
@@ -273,7 +273,7 @@
 - [ ] **Schritt 2:** Ausführen → FAIL. **Schritt 3:** Umsetzen. **Schritt 4:** PASS, Bildschirmfotos ansehen (Lesbarkeit, Reiter ≥ 44 px).
 - [ ] **Schritt 5: Commit** „Akte-Seite mit Übersicht“.
 
-### Aufgabe 9: Reiter „Anstellung & Verlauf“
+### Task 9: Reiter „Anstellung & Verlauf“
 
 **Dateien:**
 - Neu: `app/akte_verlauf.js`
@@ -287,7 +287,7 @@
 - [ ] **Schritt 2:** FAIL. **Schritt 3:** Umsetzen (Storno über Knopf je Zeile mit Pflichtfeld Grund, ohne `confirm()`-Dialog). **Schritt 4:** PASS.
 - [ ] **Schritt 5: Commit** „Verlauf und Stundenanpassung in der Akte“.
 
-### Aufgabe 10: Reiter „Dokumente“ und Hochladen
+### Task 10: Reiter „Dokumente“ und Hochladen
 
 **Dateien:**
 - Neu: `app/akte_dokumente.js`
@@ -302,7 +302,7 @@
 - [ ] **Schritt 2:** FAIL. **Schritt 3:** Umsetzen; „Nachweis hochladen“ in `akte_verlauf.js` nutzt `hochladenDialog`. **Schritt 4:** PASS.
 - [ ] **Schritt 5: Commit** „Dokumente hochladen, ansehen und ersetzen“.
 
-### Aufgabe 11: Reiter „Lohnverrechnung“ und „Änderung eintragen“
+### Task 11: Reiter „Lohnverrechnung“ und „Änderung eintragen“
 
 **Dateien:**
 - Neu: `app/akte_stammdaten.js`
@@ -316,7 +316,7 @@
 - [ ] **Schritt 2:** FAIL. **Schritt 3:** Umsetzen. **Schritt 4:** PASS.
 - [ ] **Schritt 5: Commit** „Stammdatenänderungen in der Akte“.
 
-### Aufgabe 12: Seite „Offene Punkte“, Protokoll und Onboarding-Einstellungen
+### Task 12: Seite „Offene Punkte“, Protokoll und Onboarding-Einstellungen
 
 **Dateien:**
 - Neu: `app/offene_punkte.js`
@@ -331,7 +331,7 @@
 - [ ] **Schritt 2:** FAIL. **Schritt 3:** Umsetzen. **Schritt 4:** PASS, alle Teile von `akte.test.js` und der Rauchtest aus `mock.js` laufen ohne `pageerror`.
 - [ ] **Schritt 5: Commit** „Offene Punkte, Protokoll, Onboarding-Liste in den Einstellungen“.
 
-### Aufgabe 13: Handbuch, Gesamtprüfung, Veröffentlichen
+### Task 13: Handbuch, Gesamtprüfung, Veröffentlichen
 
 **Dateien:**
 - Ändern: `docs/handbuch.md`, `README.md` (Verweis auf Tests)
