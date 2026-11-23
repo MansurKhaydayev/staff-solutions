@@ -361,3 +361,75 @@ select:disabled { color: var(--tinte-leise); background: var(--grund); cursor: n
 .regeln .feld.schmal { flex: 1 1 11rem; }
 .kontakt a { color: var(--tanne-dunkel); text-decoration: none; }
 .kontakt a:hover { text-decoration: underline; }
+
+/* ---------- Personalakte ---------- */
+.zurueck { margin: 0 0 .75rem; font-size: .9375rem; }
+.zurueck a, a.name { color: var(--tanne); }
+a.name { text-decoration: none; }
+a.name:hover { text-decoration: underline; }
+.akte-kopf .seitentitel { margin-bottom: .15rem; }
+.akte-unterzeile { margin: 0; color: var(--tinte-leise); }
+.akte-status { margin: .25rem 0 1rem; font-weight: 600; }
+.hinweise {
+  list-style: none; margin: 0 0 1.25rem; padding: .75rem 1rem;
+  border-left: 4px solid var(--fehler); background: var(--papier); border-radius: var(--radius);
+  display: grid; gap: .25rem;
+}
+.hinweise li { font-weight: 500; }
+.reiter {
+  display: flex; gap: .25rem; overflow-x: auto; border-bottom: 1px solid var(--linie); margin-bottom: 1.25rem;
+}
+.reiter a {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 1rem; white-space: nowrap;
+  color: var(--tinte-leise); text-decoration: none; border-bottom: 3px solid transparent; font-weight: 500;
+}
+.reiter a:hover { color: var(--tinte); }
+.reiter a[aria-current="page"] { color: var(--tinte); border-bottom-color: var(--tanne); }
+.akte-raster { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); }
+.akte-block { background: var(--papier); border: 1px solid var(--linie); border-radius: var(--radius); padding: 1rem 1.25rem; }
+.akte-block h2 { font-size: 1.0625rem; margin: 0 0 .75rem; }
+.akte-zahl { margin: 0 0 .5rem; font-weight: 600; }
+.angaben { margin: 0; display: grid; gap: .6rem; }
+.angaben dt { font-size: .8125rem; color: var(--tinte-leise); }
+.angaben dd { margin: .1rem 0 0; }
+.checkliste { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+.checkliste li { display: grid; grid-template-columns: 1.25rem 1fr auto; gap: .5rem; align-items: baseline; }
+.check-zeichen::before { content: "○"; color: var(--tinte-leise); }
+.check-erledigt .check-zeichen::before, .check-geklaert .check-zeichen::before,
+.check-abgelehnt .check-zeichen::before { content: "✓"; color: var(--tanne); font-weight: 700; }
+.check-klaerung .check-zeichen::before { content: "!"; color: var(--fehler); font-weight: 700; }
+.check-status { font-size: .8125rem; color: var(--tinte-leise); }
+.check-fehlt .check-status, .check-klaerung .check-status { color: var(--fehler); font-weight: 600; }
+.akte-inhalt .tabelle-rahmen { margin-bottom: 1rem; }
+.aktionen { display: flex; gap: .75rem; flex-wrap: wrap; margin: 1rem 0; }
+.dialog {
+  background: var(--papier); border: 1px solid var(--linie); border-radius: var(--radius);
+  padding: 1rem 1.25rem; margin: 1rem 0; display: grid; gap: 1rem; max-width: 52rem;
+}
+.dialog h3 { margin: 0; font-size: 1.0625rem; }
+.storniert td { text-decoration: line-through; color: var(--tinte-leise); }
+.storniert td.grund { text-decoration: none; }
+.merkmal-fehlt { background: var(--fehler); color: #fff; border-color: var(--fehler); }
+.knopf, .navigation a { min-height: 44px; }
+.akte-block a, .akte-inhalt a { color: var(--tanne); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.dokument-gruppe h2 { font-size: 1.0625rem; margin: 1.5rem 0 .5rem; }
+.knopf-zelle { text-align: right; white-space: nowrap; }
+.knopf-zelle .knopf { margin-left: .25rem; }
+.frueher summary { cursor: pointer; color: var(--tinte-leise); min-height: 44px; display: flex; align-items: center; }
+#dokumente-onboarding { max-width: 40rem; }
+.dokument-gruppe .tabelle { table-layout: fixed; }
+.dokument-gruppe td:first-child { width: 45%; }
+.dokument-gruppe td:nth-child(2) { width: 15%; }
+@media (max-width: 900px) { .dokument-gruppe .tabelle { table-layout: auto; } .knopf-zelle { white-space: normal; } }
+.frueher-werte { list-style: none; margin: .25rem 0 0; padding: 0; font-size: .875rem; color: var(--tinte-leise); }
+.frueher-angaben { margin: .75rem 0; }
+.offen-liste { display: grid; gap: .75rem; }
+.offen-person h2 { display: flex; gap: .75rem; align-items: baseline; flex-wrap: wrap; }
+.offen-person h2 small { font-weight: 400; color: var(--tinte-leise); font-size: .875rem; }
+.offen-person ul { margin: 0; padding-left: 1.25rem; display: grid; gap: .2rem; }
+.punkt-klaerung { color: var(--fehler); font-weight: 600; }
+tr.inaktiv th input, tr.inaktiv td { opacity: .6; }
+#onboarding-einstellungen input[type="text"] { min-width: 16rem; }
+#onboarding-einstellungen input[type="number"] { width: 5rem; }
+.klaerung-aktion { display: block !important; padding-left: 1.75rem; }

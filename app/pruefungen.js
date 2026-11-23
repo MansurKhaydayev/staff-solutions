@@ -38,6 +38,40 @@ function tageVersetzt(iso, tage) {
 const zahl = (n) => Number(n).toLocaleString("de-DE", { maximumFractionDigits: 1 });
 const geld = (n) => Number(n).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+// Arbeitszeit und Entgelt: gilt für Dienstzettel und Stundenanpassung gleich.
+// w = { beschaeftigungsart, wochenstunden, arbeitstage, netto } (Texte aus dem Formular)
+export function arbeitszeitPruefen(w, regeln) {
+  const f = {};
+  // Arbeitszeit
+  const stunden = w.wochenstunden === "" ? null : Number(w.wochenstunden);
+  const tage = w.arbeitstage === "" ? null : Number(w.arbeitstage);
+  if (tage !== null && (!Number.isInteger(tage) || tage < 1 || tage > 6)) {
+    f.arbeitstage = "1 bis 6 Arbeitstage pro Woche.";
+  }
+  if (stunden !== null && stunden <= 0) f.wochenstunden = "Stunden müssen größer als 0 sein.";
+  if (stunden && tage && !f.arbeitstage && stunden / tage > regeln.max_stunden_tag) {
+    f.wochenstunden = `${zahl(stunden)} Stunden an ${tage} ${tage === 1 ? "Tag" : "Tagen"} sind ` +
+      `${zahl(stunden / tage)} Stunden pro Tag. Höchstens ${zahl(regeln.max_stunden_tag)} sind möglich.`;
+  }
+  if (stunden && !f.wochenstunden) {
+    if (w.beschaeftigungsart === "vollzeit" && stunden !== Number(regeln.vollzeit_stunden)) {
+      f.wochenstunden = `Vollzeit sind ${zahl(regeln.vollzeit_stunden)} Stunden. Bei weniger bitte Teilzeit wählen.`;
+    }
+    if (["teilzeit", "geringfuegig"].includes(w.beschaeftigungsart) && stunden >= Number(regeln.vollzeit_stunden)) {
+      f.wochenstunden = `Mit ${zahl(stunden)} Stunden ist das Vollzeit.`;
+    }
+  }
+
+  // Entgelt
+  const netto = w.netto === "" ? null : Number(w.netto);
+  if (netto !== null && netto <= 0) f.netto = "Muss größer als 0 sein.";
+  if (netto && w.beschaeftigungsart === "geringfuegig" && regeln.geringfuegig_grenze &&
+      netto > Number(regeln.geringfuegig_grenze)) {
+    f.netto = `Geringfügig geht nur bis € ${geld(regeln.geringfuegig_grenze)} pro Monat.`;
+  }
+  return f;
+}
+
 // Liefert { feldname: "Meldung" } für alle Probleme.
 // w = Formularwerte, regeln = Einstellungen der Firma, auswahl = gewählte Funktion/Standort
 export function dienstzettelPruefen(w, regeln, auswahl) {
@@ -78,25 +112,7 @@ export function dienstzettelPruefen(w, regeln, auswahl) {
     }
   }
 
-  // Arbeitszeit
-  const stunden = w.wochenstunden === "" ? null : Number(w.wochenstunden);
-  const tage = w.arbeitstage === "" ? null : Number(w.arbeitstage);
-  if (tage !== null && (!Number.isInteger(tage) || tage < 1 || tage > 6)) {
-    f.arbeitstage = "1 bis 6 Arbeitstage pro Woche.";
-  }
-  if (stunden !== null && stunden <= 0) f.wochenstunden = "Stunden müssen größer als 0 sein.";
-  if (stunden && tage && !f.arbeitstage && stunden / tage > regeln.max_stunden_tag) {
-    f.wochenstunden = `${zahl(stunden)} Stunden an ${tage} ${tage === 1 ? "Tag" : "Tagen"} sind ` +
-      `${zahl(stunden / tage)} Stunden pro Tag. Höchstens ${zahl(regeln.max_stunden_tag)} sind möglich.`;
-  }
-  if (stunden && !f.wochenstunden) {
-    if (w.beschaeftigungsart === "vollzeit" && stunden !== Number(regeln.vollzeit_stunden)) {
-      f.wochenstunden = `Vollzeit sind ${zahl(regeln.vollzeit_stunden)} Stunden. Bei weniger bitte Teilzeit wählen.`;
-    }
-    if (["teilzeit", "geringfuegig"].includes(w.beschaeftigungsart) && stunden >= Number(regeln.vollzeit_stunden)) {
-      f.wochenstunden = `Mit ${zahl(stunden)} Stunden ist das Vollzeit.`;
-    }
-  }
+  Object.assign(f, arbeitszeitPruefen(w, regeln));
 
   // Daten
   const heute = heuteIso();
@@ -111,26 +127,56 @@ export function dienstzettelPruefen(w, regeln, auswahl) {
   }
 
   // Kontakt und Adresse
-  if (w.plz && !/^\d{4,5}$/.test(w.plz.trim())) f.plz = "4 oder 5 Ziffern.";
-  if (w.telefon && !/^\+?[0-9 /()-]{6,}$/.test(w.telefon.trim())) f.telefon = "Nur Ziffern, Leerzeichen und +.";
-  if (w.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(w.email.trim())) f.email = "Bitte eine gültige E-Mail-Adresse.";
-
-  // Entgelt
-  const netto = w.netto === "" ? null : Number(w.netto);
-  if (netto !== null && netto <= 0) f.netto = "Muss größer als 0 sein.";
-  if (netto && w.beschaeftigungsart === "geringfuegig" && regeln.geringfuegig_grenze &&
-      netto > Number(regeln.geringfuegig_grenze)) {
-    f.netto = `Geringfügig geht nur bis € ${geld(regeln.geringfuegig_grenze)} pro Monat.`;
+  for (const feld of ["plz", "telefon", "email"]) {
+    const m = w[feld] ? stammdatenFeldPruefen(feld, w[feld]) : null;
+    if (m) f[feld] = m;
   }
+
   if (w.leiterzulage !== "" && w.leiterzulage !== null && Number(w.leiterzulage) <= 0) {
     f.leiterzulage = "Größer als 0 oder leer lassen.";
   }
 
   // Lohnverrechnung
-  if (!w.svNachreichen && w.svNummer && !svNummerGueltig(w.svNummer)) {
-    f.sv_nummer = "Ungültig: Die Prüfziffer stimmt nicht. Bitte jede Ziffer vergleichen.";
+  if (!w.svNachreichen && w.svNummer) {
+    const m = stammdatenFeldPruefen("sv_nummer", w.svNummer);
+    if (m) f.sv_nummer = m;
   }
-  if (w.iban && !ibanGueltig(w.iban)) f.iban = "Ungültig: Bitte jede Stelle vergleichen.";
+  if (w.iban) {
+    const m = stammdatenFeldPruefen("iban", w.iban);
+    if (m) f.iban = m;
+  }
 
   return f;
+}
+
+const datumText = (iso) => iso.split("-").reverse().join(".");
+
+// Stundenanpassung: gleiche Regeln wie beim Dienstzettel, dazu die Datumsgrenzen.
+// w = { gueltig_ab, beschaeftigungsart, wochenstunden, arbeitstage, netto }
+// kontext = { eintritt, letzterStand, austritt } als ISO-Datum (austritt darf null sein)
+export function stundenanpassungPruefen(w, regeln, { eintritt, letzterStand, austritt }) {
+  const f = arbeitszeitPruefen(w, regeln);
+  const g = w.gueltig_ab;
+  if (!g) f.gueltig_ab = "Bitte angeben, ab wann die Anpassung gilt.";
+  else if (g < eintritt) f.gueltig_ab = `Kann nicht vor dem Dienstantritt (${datumText(eintritt)}) gelten.`;
+  else if (g > tageVersetzt(heuteIso(), 365)) f.gueltig_ab = "Liegt mehr als 1 Jahr in der Zukunft.";
+  else if (austritt && g > austritt) f.gueltig_ab = `Liegt nach dem Austritt (${datumText(austritt)}).`;
+  else if (letzterStand && g === letzterStand) f.gueltig_ab = `Für den ${datumText(g)} gibt es schon einen Stand.`;
+  else if (letzterStand && g < letzterStand) {
+    f.gueltig_ab = `Es gibt schon einen späteren Stand (ab ${datumText(letzterStand)}). Bitte zuerst diesen stornieren.`;
+  }
+  return f;
+}
+
+// Ein einzelnes Stammdaten-Feld prüfen (Dienstzettel und „Änderung eintragen“). Meldung oder null.
+export function stammdatenFeldPruefen(feld, wert) {
+  const v = String(wert ?? "").trim();
+  if (feld === "bic") return null;
+  if (v === "") return "Darf nicht leer sein.";
+  if (feld === "plz" && !/^\d{4,5}$/.test(v)) return "4 oder 5 Ziffern.";
+  if (feld === "telefon" && !/^\+?[0-9 /()-]{6,}$/.test(v)) return "Nur Ziffern, Leerzeichen und +.";
+  if (feld === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return "Bitte eine gültige E-Mail-Adresse.";
+  if (feld === "sv_nummer" && !svNummerGueltig(v)) return "Ungültig: Die Prüfziffer stimmt nicht. Bitte jede Ziffer vergleichen.";
+  if (feld === "iban" && !ibanGueltig(v)) return "Ungültig: Bitte jede Stelle vergleichen.";
+  return null;
 }

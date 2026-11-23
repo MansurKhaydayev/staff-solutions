@@ -37,6 +37,7 @@
       <nav class="navigation" aria-label="Hauptnavigation">
         <a href="#erfassen" data-ziel="erfassen">Neuer Mitarbeiter</a>
         <a href="#mitarbeiter" data-ziel="mitarbeiter">Mitarbeiter</a>
+        <a href="#offen" data-ziel="offen" hidden>Offene Punkte</a>
         <a href="#einstellungen" data-ziel="einstellungen" hidden>Einstellungen</a>
       </nav>
       <span class="wer" id="wer"></span>
@@ -266,6 +267,28 @@
       <p class="leer-zustand" id="liste-leer" hidden></p>
     </main>
 
+    <!-- Offene Punkte: wem fehlt was -->
+    <main id="seite-offen" class="seite" hidden>
+      <h1 class="seitentitel">Offene Punkte</h1>
+      <p class="einleitung">Fehlende Unterlagen und Nachweise aller aktiven Mitarbeiter, für die du zuständig bist.</p>
+      <form class="filter" id="offen-filter">
+        <label class="feld"><span>Arbeitsort</span><select name="standort"><option value="">Alle</option></select></label>
+        <label class="feld"><span>Art</span><select name="art"><option value="">Alle</option></select></label>
+      </form>
+      <p class="anzahl" id="offen-anzahl" aria-live="polite"></p>
+      <div id="offen-liste" class="offen-liste"></div>
+      <p class="leer-zustand" id="offen-leer" hidden></p>
+    </main>
+
+    <!-- Personalakte -->
+    <main id="seite-akte" class="seite" hidden>
+      <p class="zurueck"><a href="#mitarbeiter">Zur Mitarbeiterliste</a></p>
+      <header id="akte-kopf" class="akte-kopf"></header>
+      <div id="akte-hinweise" aria-live="polite"></div>
+      <nav id="akte-reiter" class="reiter" aria-label="Bereiche der Akte"></nav>
+      <section id="akte-inhalt" class="akte-inhalt"></section>
+    </main>
+
     <!-- Einstellungen (nur für Rollen mit dem Recht "verwalten") -->
     <main id="seite-einstellungen" class="seite" hidden>
       <h1 class="seitentitel">Einstellungen</h1>
@@ -318,6 +341,30 @@
             <tbody id="funktionen"></tbody>
           </table>
         </div>
+      </section>
+
+      <section class="einstellung" aria-labelledby="t-onboarding">
+        <h2 id="t-onboarding">Onboarding-Unterlagen</h2>
+        <p class="einleitung klein">Diese Unterlagen werden bei jedem neuen Dienstverhältnis erwartet. Pflichtunterlagen,
+          die jemand ablehnt, brauchen eine Klärung mit der Geschäftsführung. Nicht mehr benötigte Unterlagen deaktivieren
+          (bereits abgelegte Dokumente bleiben erhalten).</p>
+        <div class="tabelle-rahmen">
+          <table class="tabelle">
+            <thead><tr>
+              <th scope="col">Unterlage</th><th scope="col">Reihenfolge</th><th scope="col">Pflicht</th>
+              <th scope="col">Gilt für</th><th scope="col">Aktiv</th>
+            </tr></thead>
+            <tbody id="onboarding-einstellungen"></tbody>
+          </table>
+        </div>
+        <form id="onboarding-neu" class="regeln">
+          <label class="feld breit"><span>Neue Unterlage</span><input type="text" name="bezeichnung" maxlength="120" required></label>
+          <label class="ankreuzen"><input type="checkbox" name="pflicht"> Pflicht</label>
+          <label class="feld schmal"><span>Gilt für</span><select name="gilt_fuer">
+            <option value="beide">Studio und Büro</option><option value="studio">nur Studio</option><option value="buero">nur Büro</option>
+          </select></label>
+          <button type="submit" class="knopf knopf-haupt">Unterlage hinzufügen</button>
+        </form>
       </section>
 
       <section class="einstellung" aria-labelledby="t-regeln">

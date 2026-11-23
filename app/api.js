@@ -85,3 +85,39 @@ export async function aendern(tabelle, filter, werte) {
   if (!zeilen?.length) throw new ApiFehler("Diese Änderung ist für deinen Zugang nicht erlaubt.", 403);
   return zeilen;
 }
+
+export async function anlegen(tabelle, werte) {
+  return anfrage(`/rest/v1/${tabelle}`, { methode: "POST", koerper: werte, kopf: { Prefer: "return=representation" } });
+}
+
+// Dateien der Personalakte (privater Speicher "personalakte")
+const BUCKET = "personalakte";
+
+// Lädt eine Datei hoch. Vorhandene Dateien werden nie überschrieben (x-upsert: false).
+export async function hochladen(pfad, datei) {
+  const antwort = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${pfad}`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${sitzung?.access_token}`,
+      "Content-Type": datei.type,
+      "x-upsert": "false",
+    },
+    body: datei,
+  });
+  if (!antwort.ok) {
+    let meldung = "Hochladen hat nicht geklappt.";
+    try { const d = await antwort.json(); if (d?.message) meldung = `Hochladen hat nicht geklappt: ${d.message}`; } catch { /* leer */ }
+    throw new ApiFehler(meldung, antwort.status);
+  }
+}
+
+// Zeitlich begrenzter Link (5 Minuten) zum Ansehen oder Herunterladen
+export async function dateiLink(pfad, herunterladen = false) {
+  const d = await anfrage(`/storage/v1/object/sign/${BUCKET}/${pfad}`, {
+    methode: "POST",
+    koerper: { expiresIn: 300 },
+  });
+  const url = `${SUPABASE_URL}/storage/v1${d.signedURL}`;
+  return herunterladen ? `${url}&download` : url;
+}

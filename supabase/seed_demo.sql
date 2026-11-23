@@ -86,3 +86,11 @@ select 'GmbHs' as was, count(*) from public.gesellschaft where organisation_id =
 union all select 'Standorte', count(*) from public.standort where organisation_id = 'de000000-0000-0000-0000-000000000001'
 union all select 'Brutto-Zeilen', count(*) from public.brutto_tabelle where organisation_id = 'de000000-0000-0000-0000-000000000001'
 union all select 'Vorlagen', count(*) from public.vorlage where organisation_id = 'de000000-0000-0000-0000-000000000001';
+
+-- Onboarding-Unterlagen (Demo; die echte Liste pflegt die Firma in den Einstellungen)
+insert into public.onboarding_unterlage (id, organisation_id, bezeichnung, reihenfolge, pflicht, gilt_fuer) values
+  ('de000000-0000-0000-0000-0000000000b1', 'de000000-0000-0000-0000-000000000001', 'Einverständnis Stundenaufzeichnung', 1, true, 'beide'),
+  ('de000000-0000-0000-0000-0000000000b2', 'de000000-0000-0000-0000-000000000001', 'Bildaufnahme', 2, true, 'beide'),
+  ('de000000-0000-0000-0000-0000000000b3', 'de000000-0000-0000-0000-000000000001', 'Arbeitsanweisung', 3, true, 'beide'),
+  ('de000000-0000-0000-0000-0000000000b4', 'de000000-0000-0000-0000-000000000001', 'Aushändigung Arbeitskleidung', 4, true, 'studio')
+on conflict (id) do nothing;

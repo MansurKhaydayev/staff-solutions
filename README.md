@@ -47,3 +47,11 @@ python3 generator/vertrag_befuellen.py vorlagen/demo/Dienstvertrag_Servicekraft.
 ```
 
 Fehlt ein Wert, wird kein Dokument erzeugt.
+
+## Tests
+
+```bash
+tests/lauf.sh          # Einheitstests und Browser-Tests (braucht Node und Playwright)
+```
+
+Die Datenbank-Tests liegen in `supabase/tests/` (Ausführen: siehe `docs/handbuch.md`, Abschnitt 8).

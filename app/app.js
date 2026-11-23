@@ -2,6 +2,8 @@ import * as api from "./api.js";
 import { fristende, datumAT, euro } from "./fristen.js";
 import { dienstzettelPruefen, heuteIso } from "./pruefungen.js";
 import { einstellungenZeigen } from "./einstellungen.js";
+import { akteZeigen, akteVergessen } from "./akte.js";
+import { offenePunkteZeigen } from "./offene_punkte.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -158,6 +160,7 @@ async function stammdatenLaden() {
   const darfErfassen = stand.erfassbareFunktionen.length > 0;
   document.querySelector('[data-ziel="erfassen"]').hidden = !darfErfassen;
   document.querySelector('[data-ziel="einstellungen"]').hidden = !stand.recht.darf_verwalten;
+  document.querySelector('[data-ziel="offen"]').hidden = !darfOffenePunkte();
   $('#filter option[value="befristung"]').hidden = !stand.recht.sieht_personendaten;
 
   funktionenFuellen();
@@ -190,15 +193,26 @@ function standorteFuellen() {
 
 // ------------------------------------------------------------------ Seiten
 
+const SEITEN = ["erfassen", "mitarbeiter", "offen", "akte", "einstellungen"];
+const darfOffenePunkte = () => istBuero() || LEITUNG.includes(stand.profil?.rolle);
+
 function seiteZeigen() {
-  let ziel = location.hash.replace("#", "") || "erfassen";
+  const [teil, ...rest] = (location.hash.replace("#", "") || "erfassen").split("/");
+  let ziel = teil;
+  if (!SEITEN.includes(ziel)) ziel = "erfassen";
   if (ziel === "erfassen" && !stand.erfassbareFunktionen.length) ziel = "mitarbeiter";
   if (ziel === "einstellungen" && !stand.recht.darf_verwalten) ziel = "mitarbeiter";
-  for (const name of ["erfassen", "mitarbeiter", "einstellungen"]) $(`#seite-${name}`).hidden = name !== ziel;
+  if (ziel === "akte" && !rest[0]) ziel = "mitarbeiter";
+  if (ziel === "offen" && !darfOffenePunkte()) ziel = "mitarbeiter";
+  for (const name of SEITEN) $(`#seite-${name}`).hidden = name !== ziel;
+  // In der Akte bleibt "Mitarbeiter" in der Navigation markiert
+  const navZiel = ziel === "akte" ? "mitarbeiter" : ziel;
   document.querySelectorAll(".navigation a").forEach((a) => {
-    if (a.dataset.ziel === ziel) a.setAttribute("aria-current", "page");
+    if (a.dataset.ziel === navZiel) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
+  if (ziel === "akte") akteZeigen(stand, rest[0], rest[1]);
+  if (ziel === "offen") offenePunkteZeigen(stand);
   if (ziel === "mitarbeiter") listeLaden();
   if (ziel === "einstellungen") einstellungenZeigen(stand, async () => { await stammdatenLaden(); });
 }
@@ -422,6 +436,7 @@ function filterFuellen() {
 }
 
 async function listeLaden() {
+  akteVergessen();
   try {
     // Das Verzeichnis liefert nur die Spalten, die diese Rolle sehen darf
     const zeilen = await api.funktion("mitarbeiter_verzeichnis");
@@ -517,7 +532,7 @@ function listeZeigen() {
     }
     if (d.austritt && d.austritt < heute) merkmale.push('<span class="merkmal merkmal-aus">ausgetreten</span>');
     return `<tr>
-      <td><span class="name">${text(p ? `${p.nachname} ${p.vorname}` : "–")}</span> ${merkmale.join(" ")}</td>
+      <td><a class="name" href="#akte/${text(d.id)}/uebersicht">${text(p ? `${p.nachname} ${p.vorname}` : "–")}</a> ${merkmale.join(" ")}</td>
       <td>${text(s ? s.vertragsbezeichnung || s.name : "–")}</td>
       <td>${text(funktion.get(d.funktion_id)?.name || "–")}</td>
       ${r.sieht_kontakt ? `<td class="kontakt">${kontakt(d)}</td>` : ""}
