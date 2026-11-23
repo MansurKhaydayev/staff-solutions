@@ -310,6 +310,24 @@ alles rückgängig (`rollback`). Sie brauchen einmalig die Testhilfen aus `supab
 
 ---
 
+### Beispielwerte zum Testen
+
+Nie echte Daten zum Testen verwenden. Die Prüfung rechnet nur die Prüfziffer nach; sie fragt nicht bei
+Bank oder Sozialversicherung nach. Diese erfundenen Werte bestehen die Prüfung:
+
+| Feld | Beispielwerte |
+|---|---|
+| Versicherungsnummer | 1238 010190, 1231 150385, 4562 220791, 7892 010600 |
+| IBAN Österreich | AT61 1904 3002 3457 3201 |
+| IBAN Deutschland | DE89 3704 0044 0532 0130 00 |
+| IBAN Litauen (z. B. Revolut) | LT12 1000 0111 0100 1000 |
+| IBAN Irland | IE29 AIBK 9311 5212 3456 78 |
+
+Ändert man an einer gültigen IBAN oder Versicherungsnummer eine einzige Ziffer, wird sie ungültig.
+Genau dafür ist die Prüfziffer da: Sie fängt Tippfehler ab.
+
+---
+
 ## 9. Begriffe
 
 | Begriff | Bedeutung |
