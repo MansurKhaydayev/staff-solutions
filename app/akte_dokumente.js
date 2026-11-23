@@ -48,7 +48,8 @@ export async function zeigen(ziel, kopf, stand, neuLaden) {
 
   const oeffnen = (vorgabe) => hochladenDialog($("#hochladen-bereich"), vorgabe, kopf, stand, neuLaden, checkliste);
   $("#hochladen-oeffnen")?.addEventListener("click", () => oeffnen({}));
-  ziel.addEventListener("click", async (e) => {
+  // onclick statt addEventListener: ziel bleibt bestehen, sonst stapeln sich die Handler bei jedem Neuladen
+  ziel.onclick = async (e) => {
     const k = e.target.closest("button");
     if (!k) return;
     if (k.dataset.klaerung) return klaerungZeigen($("#klaerung-bereich"), dv, k.dataset.klaerung, neuLaden);
@@ -58,7 +59,7 @@ export async function zeigen(ziel, kopf, stand, neuLaden) {
       return oeffnen({ kategorie: dok.kategorie, bezeichnung: dok.bezeichnung, dokumentId: dok.id,
         onboardingUnterlageId: dok.onboarding_unterlage_id, ersetzen: Boolean(k.dataset.ersetzen) });
     }
-  });
+  };
 }
 
 function gruppenHtml(doks, r) {

@@ -52,7 +52,7 @@ function kopfFuer(d, rolle) {
   if (r.sieht_personendaten) {
     const aktiv = d.vertragsstand.filter((v) => !v.storniert_am);
     const heute = aktiv.filter((v) => v.gueltig_ab <= plus(0)).at(-1);
-    Object.assign(k, { anrede: "Frau", geburtsdatum: "1995-03-14", strasse: "Probegasse 7", plz: "8700", ort: "Leoben",
+    Object.assign(k, { anrede: d.ohneAnrede ? null : "Frau", geburtsdatum: "1995-03-14", strasse: "Probegasse 7", plz: "8700", ort: "Leoben",
       stand: { id: heute.id, gueltig_ab: heute.gueltig_ab, beschaeftigungsart: heute.beschaeftigungsart,
         wochenstunden: heute.wochenstunden, arbeitstage_woche: heute.arbeitstage_woche },
       kuenftig: aktiv.filter((v) => v.gueltig_ab > plus(0)),
@@ -310,6 +310,14 @@ async function teilDokumente(browser) {
   pruefe(Boolean(tab), "Datei öffnet in neuem Tab");
   await tab.close();
 
+  // Nach dem Neuladen darf „Ansehen“ genau einen Tab öffnen (keine doppelten Klick-Handler)
+  const vorher = p.context().pages().length;
+  await p.click("#dokument-gruppen [data-ansehen='o2']");
+  await p.waitForTimeout(500);
+  const neueTabs = p.context().pages().length - vorher;
+  pruefe(neueTabs === 1, `nach dem Neuladen genau ein Tab (${neueTabs})`);
+  for (const t of p.context().pages().slice(vorher)) await t.close();
+
   // Nachweis zu bestehendem Eintrag hochladen
   await p.click("#dokument-gruppen [data-nachweis='k1']");
   await p.setInputFiles(`${f} [name=datei]`, { name: "vereinbarung.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 v") });
@@ -337,6 +345,7 @@ async function teilDokumente(browser) {
 async function teilStammdaten(browser) {
   console.log("\n# Stammdaten");
   const d = daten();
+  d.ohneAnrede = true;
   d.mitarbeiter_sensibel = [{ mitarbeiter_id: "m1", sv_nummer: null, sv_nummer_nachreichen: true,
     iban: "AT611904300234573201", bic: null, staatsangehoerigkeit: "Österreich" }];
   d.stammdaten_aenderung = [{ id: "a1", mitarbeiter_id: "m1", feld: "iban", stufe: "lohnverrechnung", alt: "DE89370400440532013000",
@@ -384,7 +393,7 @@ async function teilStammdaten(browser) {
   pruefe((await inhalt(p, "#hochladen-form h3")).includes("Nachweis Stammdatenänderung"), "Nachweis-Dialog geöffnet");
   await p.click("#hochladen-form [data-aktion=abbrechen]");
 
-  // Personendaten aus der Übersicht
+  // Personendaten aus der Übersicht (Person ohne Anrede: darf nicht ungewollt „Frau“ bekommen)
   await p.click("#akte-reiter >> text=Übersicht");
   await p.waitForSelector("#aenderung-personendaten button");
   await p.click("#aenderung-personendaten button");

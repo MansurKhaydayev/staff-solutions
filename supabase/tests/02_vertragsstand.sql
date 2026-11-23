@@ -28,8 +28,10 @@ begin
   perform testhilfe.pruefe((select count(*) from public.vertragsstand where dienstverhaeltnis_id = dv) = 1,
     'Vertragsstand lässt sich nicht löschen');
   perform testhilfe.erwarte_fehler(format('delete from public.entgelt where dienstverhaeltnis_id = %L', dv), 'nie gelöscht');
+  perform testhilfe.zurueck();  -- Dokumente entstehen nur über Funktionen; hier direkt als Betreiber
   insert into public.dokument (organisation_id, dienstverhaeltnis_id, typ)
     values ('de000000-0000-0000-0000-000000000001', dv, 'sonstiges');
+  perform testhilfe.als(hr);
   perform testhilfe.erwarte_fehler(format('delete from public.dokument where dienstverhaeltnis_id = %L', dv), 'nie gelöscht');
   perform testhilfe.zurueck();
 

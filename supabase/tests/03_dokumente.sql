@@ -62,8 +62,10 @@ begin
     'kann nicht geändert werden');
 
   -- Fehlende Datei zu einem bestehenden Eintrag ergänzen (z. B. Nachweis)
+  perform testhilfe.zurueck();  -- Dokumente entstehen nur über Funktionen; hier direkt als Betreiber
   insert into public.dokument (organisation_id, dienstverhaeltnis_id, typ, kategorie, bezeichnung)
     values (org::uuid, dv, 'einzelvereinbarung', 'vereinbarung', 'Vereinbarung Stundenanpassung') returning id into dleer;
+  perform testhilfe.als(hr);
   perform testhilfe.pruefe(public.dokument_ablegen(org || '/' || dv || '/vereinbarung/e.pdf', h, 'vereinbarung', null, dv,
     p_dokument_id => dleer) = dleer, 'Datei wird am bestehenden Eintrag ergänzt');
   perform testhilfe.zurueck();

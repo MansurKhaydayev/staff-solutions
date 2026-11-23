@@ -88,8 +88,10 @@ export function aenderungDialog(bereich, stufe, aktuell, kopf, stand, fertig) {
   const eingabe = ([f, , typ]) => {
     const wert = aktuell[f] ?? "";
     if (typ === "auswahl") {
-      return `<select name="${f}">${["Frau", "Herr", "Divers"].map((o) =>
-        `<option${o === wert ? " selected" : ""}>${o}</option>`).join("")}</select>`;
+      // Ohne bisherige Anrede eine leere Wahl anbieten, damit sie nicht ungewollt mitgeändert wird
+      const optionen = ["Frau", "Herr", "Divers"].includes(wert) ? ["Frau", "Herr", "Divers"] : ["", "Frau", "Herr", "Divers"];
+      return `<select name="${f}">${optionen.map((o) =>
+        `<option value="${o}"${o === wert ? " selected" : ""}>${o || "–"}</option>`).join("")}</select>`;
     }
     const anzeigeWert = f === "iban" ? ibanText(wert) : f === "sv_nummer" ? svText(wert) : wert;
     return `<input type="${typ || "text"}" name="${f}" value="${text(anzeigeWert)}" autocomplete="off">`;
