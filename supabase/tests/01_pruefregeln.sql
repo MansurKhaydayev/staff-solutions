@@ -12,8 +12,9 @@ begin
     'Höchstens 10 Stunden pro Tag');
   perform testhilfe.erwarte_fehler(format('select app.arbeitszeit_pruefen(%L::public.organisation, %L, 30, 5, 1000)', org, 'vollzeit'),
     'Vollzeit sind bei euch 40 Stunden');
-  perform testhilfe.erwarte_fehler(format('select app.arbeitszeit_pruefen(%L::public.organisation, %L, 8, 2, 600)', org, 'geringfuegig'),
-    '551,10');
+  -- Grenze aus den Einstellungen der Firma (kann in den Einstellungen geändert werden)
+  perform testhilfe.erwarte_fehler(format('select app.arbeitszeit_pruefen(%L::public.organisation, %L, 8, 2, %s)', org, 'geringfuegig',
+    org.geringfuegig_grenze + 1), 'Geringfügig ist nur bis € ' || app.betrag(org.geringfuegig_grenze));
   perform app.arbeitszeit_pruefen(org, 'teilzeit', 20, 5, 1000);  -- gültig: kein Fehler
 
   perform testhilfe.pruefe(app.brutto_fuer(org.id, 'de000000-0000-0000-0000-0000000000a1', 1000, current_date) = 1300.00,
