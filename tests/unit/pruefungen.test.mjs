@@ -69,3 +69,30 @@ test("dienstzettelPruefen meldet PLZ weiterhin gleich", () => {
   assert.equal(dienstzettelPruefen({ plz: "80", leiterzulage: "", wochenstunden: "", arbeitstage: "", netto: "" }, regeln, {}).plz,
     "4 oder 5 Ziffern.");
 });
+
+// Dienstantritt: keine Vergangenheit, Fristregel, dringende Anmeldung
+const fristRegeln = { ...regeln, anmeldung_stichzeit: "12:00", tage_dazwischen_vor: 0, tage_dazwischen_nach: 1 };
+const freitagAbend = new Date("2026-11-27T17:00:00Z"); // Freitag 18:00 in Wien
+const dz = (extra) => ({ leiterzulage: "", wochenstunden: "", arbeitstage: "", netto: "", ...extra });
+
+test("Dienstantritt in der Vergangenheit wird abgelehnt", () => {
+  assert.equal(dienstzettelPruefen(dz({ eintritt: "2026-11-26" }), fristRegeln, {}, freitagAbend).eintritt,
+    "Der Dienstantritt kann nicht in der Vergangenheit liegen.");
+});
+
+test("Fristregel: Freitag 18 Uhr → Samstag zu knapp, Sonntag möglich", () => {
+  assert.equal(dienstzettelPruefen(dz({ eintritt: "2026-11-28" }), fristRegeln, {}, freitagAbend).eintritt,
+    "Zu kurzfristig. Frühester Dienstantritt ist Sonntag, 29.11.2026. Bei dringendem Bedarf „Dringende Anmeldung“ wählen.");
+  assert.equal(dienstzettelPruefen(dz({ eintritt: "2026-11-29" }), fristRegeln, {}, freitagAbend).eintritt, undefined);
+});
+
+test("Dringende Anmeldung: mit Grund erlaubt, ohne Grund Pflichtmeldung", () => {
+  const mit = dienstzettelPruefen(dz({ eintritt: "2026-11-28", dringend: true, dringendGrund: "Krankheitsausfall" }), fristRegeln, {}, freitagAbend);
+  assert.equal(mit.eintritt, undefined);
+  assert.equal(mit.dringend_grund, undefined);
+  const ohne = dienstzettelPruefen(dz({ eintritt: "2026-11-28", dringend: true, dringendGrund: "  " }), fristRegeln, {}, freitagAbend);
+  assert.equal(ohne.dringend_grund, "Bitte den Grund für die dringende Anmeldung angeben.");
+  // Vergangenheit bleibt auch dringend verboten
+  assert.equal(dienstzettelPruefen(dz({ eintritt: "2026-11-26", dringend: true, dringendGrund: "x" }), fristRegeln, {}, freitagAbend).eintritt,
+    "Der Dienstantritt kann nicht in der Vergangenheit liegen.");
+});

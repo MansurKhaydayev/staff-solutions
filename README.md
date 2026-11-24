@@ -54,4 +54,4 @@ Fehlt ein Wert, wird kein Dokument erzeugt.
 tests/lauf.sh          # Einheitstests und Browser-Tests (braucht Node und Playwright)
 ```
 
-Die Datenbank-Tests liegen in `supabase/tests/` (Ausführen: siehe `docs/handbuch.md`, Abschnitt 8).
+Die Datenbank-Tests liegen in `supabase/tests/` (Ausführen: siehe `docs/handbuch.md`, Abschnitt 9).

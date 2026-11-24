@@ -433,3 +433,73 @@ tr.inaktiv th input, tr.inaktiv td { opacity: .6; }
 #onboarding-einstellungen input[type="text"] { min-width: 16rem; }
 #onboarding-einstellungen input[type="number"] { width: 5rem; }
 .klaerung-aktion { display: block !important; padding-left: 1.75rem; }
+
+/* ---------------------------------------------------------------- Unterschriftsmappe (iPad) */
+.seite-mappe { max-width: 52rem; }
+.mappe-kopf .seitentitel { margin-bottom: .25rem; }
+.mappe-schritt { margin: 0 0 .75rem; color: var(--tinte-leise); }
+.mappe-fortschritt { list-style: none; padding: 0; margin: 0 0 1.25rem; display: flex; flex-wrap: wrap; gap: .4rem; }
+.mappe-fortschritt li {
+  border: 1px solid var(--linie); border-radius: var(--radius); padding: .35rem .6rem;
+  font-size: .875rem; background: var(--papier); display: grid; line-height: 1.25;
+}
+.mappe-fortschritt li small { color: var(--tinte-leise); font-size: .75rem; }
+.mappe-fortschritt li.aktuell { border-color: var(--tanne); box-shadow: inset 0 0 0 1px var(--tanne); }
+.mappe-fortschritt li.erledigt small { color: var(--tanne); }
+.mappe-fortschritt li.abgelehnt small { color: var(--fehler); }
+
+/* Das Blatt sieht aus wie der gedruckte Dienstzettel: weißes Papier, Firmenkopf, klare Tabelle */
+.mappe-blatt {
+  background: #fff; color: #111; border: 1px solid var(--linie); border-radius: 2px;
+  padding: 2rem 2.25rem; margin-bottom: 1.25rem; font-size: 1.0625rem; line-height: 1.55;
+  box-shadow: 0 1px 0 var(--linie), 0 2px 0 var(--grund), 0 3px 0 var(--linie);
+}
+.mappe-firma { margin: 0 0 1.5rem; font-size: .875rem; font-weight: 600; color: #444; }
+.mappe-firma span { font-weight: 400; }
+.mappe-blatt h2 { font-size: 1.5rem; letter-spacing: .02em; margin: 0; }
+.mappe-untertitel { margin: .1rem 0 1rem; color: #555; }
+.mappe-felder { margin: 1rem 0; border-top: 1px solid #ccc; }
+.mappe-felder div { display: grid; grid-template-columns: 11rem 1fr; gap: 1rem; padding: .45rem 0; border-bottom: 1px solid #e2e2e2; }
+.mappe-felder dt { font-weight: 600; }
+.mappe-felder dd { margin: 0; }
+.mappe-blatt section h3 { font-size: 1.0625rem; margin: 1.25rem 0 .25rem; }
+.mappe-blatt section p { margin: 0 0 .5rem; }
+
+.mappe-unterschrift { display: grid; gap: .75rem; }
+.mappe-ort { margin: .5rem 0 0; font-weight: 500; }
+.unterschrift-feld {
+  height: 200px; background: #fff; border: 1px dashed var(--tinte-leise); border-radius: var(--radius);
+  position: relative; cursor: crosshair; min-width: 0; overflow: hidden;
+}
+/* Linie, auf der unterschrieben wird */
+.unterschrift-feld::after {
+  content: ""; position: absolute; left: 1.5rem; right: 1.5rem; bottom: 2.25rem; border-bottom: 1px solid #999; pointer-events: none;
+}
+.unterschrift-feld canvas { display: block; position: absolute; inset: 0; z-index: 1; }
+.unterschrift-unter { display: flex; justify-content: space-between; align-items: center; color: var(--tinte-leise); font-size: .9375rem; }
+.mappe-dringend { border-left: 3px solid var(--marker); padding-left: .9rem; display: grid; gap: .5rem; }
+.mappe-dringend textarea { font: inherit; padding: .6rem; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--papier); color: var(--tinte); }
+.mappe-frage { display: inline-flex; align-items: center; gap: .5rem; }
+.mappe-unterschrift .knopf { min-height: 3rem; padding-inline: 1.4rem; }
+.mappe-ergebnis { font-size: 1.25rem; font-weight: 600; margin: 1rem 0; }
+@media (max-width: 800px) {
+  .mappe-blatt { padding: 1.25rem; }
+  .mappe-felder div { grid-template-columns: 1fr; gap: .1rem; }
+}
+.dringend-grund { display: grid; gap: .4rem; border-left: 3px solid var(--marker); padding-left: .9rem; }
+.vermerk { display: inline-block; color: var(--tinte-leise); font-size: .8125rem; margin-left: .25rem; }
+
+/* Zu unterschreiben (Arbeitgeber) */
+.ag-liste { list-style: none; padding: 0; margin: 0; display: grid; gap: .75rem; }
+.ag-eintrag { background: var(--papier); border: 1px solid var(--linie); border-radius: var(--radius); padding: 1rem 1.1rem; }
+.ag-eintrag.dringend { border-left: 4px solid var(--fehler); }
+.ag-zeile { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .75rem; align-items: center; }
+.ag-unterzeile { color: var(--tinte-leise); font-size: .9375rem; margin-top: .2rem; }
+.ag-grund { font-size: .9375rem; margin-top: .2rem; }
+.ag-bereich { margin-top: 1rem; border-top: 1px solid var(--linie); padding-top: 1rem; }
+.textbausteine { display: grid; gap: .75rem; margin: 1rem 0; }
+.baustein { border: 1px solid var(--linie); border-radius: var(--radius); padding: .75rem 1rem; background: var(--papier); display: grid; gap: .5rem; }
+.baustein.inaktiv { opacity: .6; }
+.baustein.geerbt p { margin: 0; }
+.baustein textarea, .text-zeile textarea { font: inherit; padding: .5rem; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--papier); color: var(--tinte); width: 100%; }
+.breit-zeile { flex-basis: 100%; margin: .5rem 0 0; }

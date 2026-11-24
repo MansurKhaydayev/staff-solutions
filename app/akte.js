@@ -40,7 +40,7 @@ export async function akteZeigen(stand, dvId, reiter = "uebersicht") {
     return akteZeigen(stand, dvId, "uebersicht");
   }
 
-  kopfZeichnen(kopf);
+  kopfZeichnen(kopf, stand);
   hinweiseZeichnen(kopf);
   $("#akte-reiter").innerHTML = erlaubt.map((r) =>
     `<a href="#akte/${text(dvId)}/${r.name}"${r === aktiv ? ' aria-current="page"' : ""}>${text(r.titel)}</a>`).join("");
@@ -75,16 +75,25 @@ function status(k, heute) {
   return "aktiv";
 }
 
-function kopfZeichnen(k) {
+// Unterschriftsmappe: Personalbüro und Leitungen mit Dokumente-Recht (prüft auch die Datenbank)
+const darfMappe = (k, stand) => k.rechte.buero || (k.rechte.dokumente && ["studioleitung", "regionalleitung"].includes(stand?.profil?.rolle));
+
+function kopfZeichnen(k, stand) {
+  const aktiv = !k.austritt || k.austritt >= heuteIso();
   $("#akte-kopf").innerHTML = `
     <h1 class="seitentitel">${text(`${k.nachname} ${k.vorname}`)}</h1>
     <p class="akte-unterzeile">${text([k.funktion, k.arbeitsort, k.gesellschaft].filter(Boolean).join(", "))}</p>
-    <p class="akte-status">${text(status(k, heuteIso()))}</p>`;
+    <p class="akte-status">${text(status(k, heuteIso()))}
+      ${aktiv && k.angemeldet === false ? '<span class="merkmal merkmal-fehlt">noch nicht angemeldet</span>' : ""}</p>
+    ${aktiv && darfMappe(k, stand) ? `<p class="akte-aktionen"><a class="knopf knopf-leise" href="#mappe/${text(k.dienstverhaeltnis_id)}">Unterschriftsmappe</a></p>` : ""}`;
 }
 
 function hinweiseZeichnen(k) {
   const heute = heuteIso();
   const h = [];
+  if (k.angemeldet === false && k.dringend_grund) {
+    h.push(`Dringende Anmeldung: ${k.dringend_grund}. Erst arbeiten lassen, wenn „angemeldet“ angezeigt wird.`);
+  }
   for (const tag of k.nachweis_fehlt || []) h.push(`Nachweis fehlt: Stundenanpassung ab ${datum(tag)}`);
   if (k.sv_nachreichen) h.push("Versicherungsnummer wird nachgereicht");
   if (k.befristet_bis && k.befristet_bis >= heute && (!k.austritt || k.austritt >= heute)) {

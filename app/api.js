@@ -121,3 +121,27 @@ export async function dateiLink(pfad, herunterladen = false) {
   const url = `${SUPABASE_URL}/storage/v1${d.signedURL}`;
   return herunterladen ? `${url}&download` : url;
 }
+
+// Unterschriftsmappe: die Edge Function erzeugt das PDF und legt es ab.
+// Fehler mit fehler.frist = true heißen: Dienstantritt zu knapp, Grund für dringende Anmeldung nötig.
+export async function mappe(aktion, daten) {
+  let antwort;
+  try {
+    antwort = await fetch(`${SUPABASE_URL}/functions/v1/mappe`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json", Authorization: `Bearer ${sitzung?.access_token}` },
+      body: JSON.stringify({ aktion, ...daten }),
+    });
+  } catch {
+    throw new ApiFehler("Keine Verbindung. Bitte Internet prüfen und noch einmal unterschreiben.", 0);
+  }
+  let d = null;
+  try { d = await antwort.json(); } catch { /* leer */ }
+  if (!antwort.ok) {
+    if (antwort.status === 401 && sitzung) merken(null);
+    const f = new ApiFehler(d?.meldung || d?.message || "Das Ablegen hat nicht geklappt.", antwort.status);
+    f.frist = Boolean(d?.frist);
+    throw f;
+  }
+  return d;
+}

@@ -54,6 +54,10 @@ umgeht, bekommt er keine Daten, die er nicht sehen darf.
 | `app/offene_punkte.js` | Seite „Offene Punkte“ (wem fehlt was) |
 | `app/datei.js` | Dateien prüfen (Typ, Größe), Fingerabdruck, Ablageort |
 | `app/hilfen.js` | Kleine Hilfen für alle Seiten (Datum, Euro, Text) |
+| `app/mappe.js`, `app/unterschrift.js` | Unterschriftsmappe am iPad, Unterschriftsfeld |
+| `app/arbeitgeber.js` | Seite „Zu unterschreiben“ (Arbeitgeber) |
+| `app/frist.js` | Fristregel für den Dienstantritt (Wiener Zeit) |
+| `supabase/functions/mappe/` | Edge Function: erzeugt und legt das PDF der Mappe ab |
 | `tests/` | Tests ohne Datenbank (Einheitstests, Browser-Tests) |
 | `supabase/tests/` | Datenbank-Tests je Rolle |
 | `app/api.js` | Verbindung zu Supabase |
@@ -297,11 +301,88 @@ bitte nur, wenn es wirklich nicht anders geht).
 
 ---
 
-## 8. Tests ausführen
+## 8. Die Unterschriftsmappe (iPad)
+
+Der neue Mitarbeiter unterschreibt den Dienstzettel und die Onboarding-Unterlagen direkt am iPad.
+Daraus entsteht ein PDF, das aussieht wie ein gedruckter Dienstzettel. Ein Muster liegt unter
+`docs/muster/dienstzettel-muster.pdf`.
+
+### Der Ablauf
+
+1. **Dienstzettel erfassen** (Leitung oder Büro). Danach erscheint der Knopf **Unterschriftsmappe öffnen**.
+   Die Mappe ist auch später über die Akte erreichbar (Knopf **Unterschriftsmappe**).
+2. **Mappe am iPad**: Zuerst der Dienstzettel, dann jede Onboarding-Unterlage. Der Mitarbeiter liest,
+   setzt das Häkchen „gelesen“ und unterschreibt mit dem Finger oder Stift. Onboarding-Unterlagen kann er
+   auch ablehnen („Lehnt ab“). **Später fortsetzen** ist jederzeit möglich.
+3. **Arbeitgeber-Unterschrift**: Wer das Recht „Arbeitgeber-Unterschrift“ hat (Voreinstellung: Admin und
+   Geschäftsführung), sieht den Menüpunkt **Zu unterschreiben**. Dringende Anmeldungen stehen oben.
+   „Ansehen“ öffnet das PDF mit der Mitarbeiter-Unterschrift, „Unterschreiben“ zeigt den Dienstzettel zur
+   Prüfung und das Unterschriftsfeld.
+4. **Büro**: Im Reiter **Dokumente** am fertigen Dienstzettel **An Lohnverrechner übermittelt** und
+   **Ausgehändigt …** (Ausdruck oder E-Mail) vermerken. Bis dahin steht es unter **Offene Punkte**.
+
+Die Leitung sieht den vollständigen Dienstzettel (auch Entgelt) nur **bis zur Unterschrift**. Danach
+nur noch „unterschrieben“.
+
+### Fristregel und dringende Anmeldung
+
+- Ein Dienstantritt in der Vergangenheit ist nicht möglich.
+- Wird der Dienstzettel **bis zur Stichzeit** (Voreinstellung 12:00, Wiener Zeit) erfasst, ist der früheste
+  Dienstantritt der **nächste Tag**. Danach liegt **ein Tag dazwischen**. Beispiel: Freitag 18:00 →
+  frühestens Sonntag.
+- Früher geht es nur mit dem Häkchen **Dringende Anmeldung** und einem **Grund**. Wer das setzt, übernimmt
+  die Verantwortung. Das Büro sieht den Grund unter Offene Punkte („Dringende Anmeldung: …“).
+- **„noch nicht angemeldet“** (rot) steht in Liste und Akte, bis das Büro die Anmeldebestätigung unter
+  der Kategorie **Anmeldung** hochlädt. Erst dann arbeiten lassen.
+- Stichzeit und Tage dazwischen änderst du unter **Einstellungen → Regeln für Dienstverträge**.
+
+### Wenn etwas nicht stimmt
+
+| Fall | Was tun |
+|---|---|
+| Fehler im Dienstzettel (z. B. Adresse falsch) | Büro: Dokumente → **Neu unterschreiben lassen** (Grund ist Pflicht). Daten korrigieren, Mappe erneut durchgehen. Der alte Dienstzettel bleibt unter „frühere Fassungen“. |
+| iPad defekt, auf Papier unterschrieben | Büro: Unterlage hochladen → **Dienstzettel (Papier, Notlösung)**. Wird als „Papier (Scan)“ gekennzeichnet. |
+| „Die Daten wurden geändert“ beim Unterschreiben | Jemand hat während der Unterschrift etwas geändert. Mappe neu öffnen und erneut unterschreiben. |
+| „Bitte erneut unterschreiben“ | Das iPad wurde gedreht. Die Unterschrift wird dabei gelöscht, damit sie nicht verzerrt wird. |
+
+### Textbausteine
+
+Unter **Einstellungen → Textbausteine für den Dienstzettel** stehen die Abschnitte, die auf jedem
+Dienstzettel stehen (Urlaub, Kündigung …). Eine GmbH kann einen Abschnitt abweichend festlegen. Die Texte
+der Onboarding-Unterlagen bearbeitest du bei den Onboarding-Unterlagen (**Text bearbeiten**).
+Die Demo-Texte sind Platzhalter – die echten Texte bitte rechtlich prüfen lassen.
+
+### Wie das PDF entsteht (Edge Function)
+
+Das PDF erzeugt nicht das iPad, sondern ein kleines Programm bei Supabase, die **Edge Function `mappe`**
+(Code: `supabase/functions/mappe/`). Sie prüft den Zugang, holt den Inhalt aus der Datenbank, vergleicht
+den **Fingerabdruck des Inhalts** (damit genau das unterschrieben wird, was angezeigt wurde), erzeugt das
+PDF, legt PDF und Unterschriftsbild im privaten Speicher ab und trägt alles ein. Den geheimen
+Schlüssel dafür kennt nur Supabase selbst; er steht nirgends im Code.
+
+Jedes PDF trägt unten **Dokument-Nr.** (steht auch im Dateinamen), den **Fingerabdruck des Inhalts**
+und die Seitenzahl. Nichts wird gelöscht: Jede neue Fassung ersetzt die alte, die alte bleibt erhalten.
+
+| Tabelle / Funktion | Zweck |
+|---|---|
+| `mappe_inhalt(dv)` | Schritte der Mappe mit Inhalt und Fingerabdruck |
+| `mappe_ablegen(…)`, `arbeitgeber_ablegen(…)` | Eintragen nach dem Unterschreiben – nur die Edge Function darf das |
+| `arbeitgeber_offen()`, `arbeitgeber_inhalt(dok)` | Liste „Zu unterschreiben“ |
+| `dienstzettel_neu_anfordern`, `dienstzettel_vermerken`, `dienstzettel_papier` | Büro-Aktionen |
+| `textbaustein` | Abschnitte des Dienstzettels, je GmbH überschreibbar |
+| `unterschrift` | wer wann wo in welcher Rolle unterschrieben hat |
+
+**Rechtlich (nur Orientierung):** Die Unterschrift am iPad ist eine einfache elektronische Signatur.
+Ob das für Dienstzettel und Einwilligungen reicht, bitte von der Chefin bzw. rechtlich klären lassen.
+Bis dahin nur mit erfundenen Daten testen.
+
+---
+
+## 9. Tests ausführen
 
 | Art | Wie | Bestanden, wenn |
 |---|---|---|
-| Einheitstests und Browser-Tests | im Terminal: `tests/lauf.sh` | am Ende „UI-Tests bestanden“ |
+| Einheitstests und Browser-Tests | im Terminal: `tests/lauf.sh` | am Ende „Mappe-Tests bestanden“, keine Zeile mit „FEHL“ |
 | Datenbank-Tests | Inhalt einer Datei aus `supabase/tests/` im Supabase **SQL Editor** ausführen | Ergebnis „alle Tests bestanden“ |
 
 Die Datenbank-Tests legen Testpersonen nur innerhalb einer Transaktion an und machen am Ende
@@ -328,7 +409,7 @@ Genau dafür ist die Prüfziffer da: Sie fängt Tippfehler ab.
 
 ---
 
-## 9. Begriffe
+## 10. Begriffe
 
 | Begriff | Bedeutung |
 |---|---|
@@ -344,3 +425,7 @@ Genau dafür ist die Prüfziffer da: Sie fängt Tippfehler ab.
 | Nachweis | Unterschriebenes oder amtliches Dokument, das eine Änderung belegt |
 | Fingerabdruck (SHA-256) | Prüfwert einer Datei; ändert sich die Datei, ändert sich der Wert |
 | Signierter Link | Zeitlich begrenzte Adresse, über die man eine private Datei öffnen kann |
+| Edge Function | Kleines Programm, das bei Supabase läuft (hier: erzeugt das PDF der Unterschriftsmappe) |
+| Einfache elektronische Signatur | Unterschrift auf dem Bildschirm; rechtlich schwächer als eine qualifizierte Signatur |
+| Fassung | Fingerabdruck des Inhalts, der unterschrieben wurde |
+| Dringende Anmeldung | Dienstantritt vor dem frühesten Termin, mit Grund und Verantwortung der Leitung |

@@ -38,6 +38,7 @@
         <a href="#erfassen" data-ziel="erfassen">Neuer Mitarbeiter</a>
         <a href="#mitarbeiter" data-ziel="mitarbeiter">Mitarbeiter</a>
         <a href="#offen" data-ziel="offen" hidden>Offene Punkte</a>
+        <a href="#unterschreiben" data-ziel="unterschreiben" hidden>Zu unterschreiben</a>
         <a href="#einstellungen" data-ziel="einstellungen" hidden>Einstellungen</a>
       </nav>
       <span class="wer" id="wer"></span>
@@ -88,6 +89,18 @@
                 <span>Arbeitstage pro Woche</span>
                 <input type="number" name="arbeitstage" min="1" max="6" step="1" inputmode="numeric" required>
               </label>
+            </div>
+            <label class="ankreuzen">
+              <input type="checkbox" name="dringend">
+              Dringende Anmeldung (Dienstantritt vor dem frühesten Termin)
+            </label>
+            <div id="dringend-grund-feld" class="dringend-grund" hidden>
+              <label class="feld breit">
+                <span>Grund für die dringende Anmeldung</span>
+                <input name="dringend_grund" maxlength="300" autocomplete="off">
+              </label>
+              <p class="hinweis">Mit dem Grund übernimmst du die Verantwortung, dass die Anmeldung rechtzeitig erledigt wird.
+                Erst arbeiten lassen, wenn in der Akte „angemeldet“ steht.</p>
             </div>
             <p class="rechnung" id="rechnung-stunden" hidden></p>
           </fieldset>
@@ -215,7 +228,8 @@
         <h2>Dienstzettel gespeichert</h2>
         <p id="gespeichert-text"></p>
         <div class="knopf-reihe">
-          <button type="button" class="knopf knopf-haupt" id="naechster">Nächsten Mitarbeiter erfassen</button>
+          <a href="#mitarbeiter" class="knopf knopf-haupt" id="mappe-oeffnen">Unterschriftsmappe öffnen</a>
+          <button type="button" class="knopf knopf-leise" id="naechster">Nächsten Mitarbeiter erfassen</button>
           <a href="#mitarbeiter" class="knopf knopf-leise">Zur Mitarbeiterliste</a>
         </div>
       </section>
@@ -289,6 +303,20 @@
       <section id="akte-inhalt" class="akte-inhalt"></section>
     </main>
 
+    <!-- Zu unterschreiben: Dienstzettel, die noch die Arbeitgeber-Unterschrift brauchen -->
+    <main id="seite-unterschreiben" class="seite seite-mappe" hidden>
+      <h1 class="seitentitel">Zu unterschreiben</h1>
+      <p class="einleitung">Dienstzettel, die der Mitarbeiter schon unterschrieben hat. Dringende Anmeldungen stehen oben.</p>
+      <p class="status" id="ag-status" role="status" aria-live="polite"></p>
+      <ul id="ag-liste" class="ag-liste"></ul>
+      <p class="leer-zustand" id="ag-leer" hidden>Nichts zu unterschreiben.</p>
+    </main>
+
+    <!-- Unterschriftsmappe (am iPad: Mitarbeiter unterschreibt Dienstzettel und Onboarding) -->
+    <main id="seite-mappe" class="seite seite-mappe" hidden>
+      <div id="mappe-inhalt"></div>
+    </main>
+
     <!-- Einstellungen (nur für Rollen mit dem Recht "verwalten") -->
     <main id="seite-einstellungen" class="seite" hidden>
       <h1 class="seitentitel">Einstellungen</h1>
@@ -311,6 +339,7 @@
                 <th scope="col">Dokumente</th>
                 <th scope="col">Für welche Standorte</th>
                 <th scope="col">Darf anlegen</th>
+                <th scope="col">Arbeitgeber-Unter&shy;schrift</th>
               </tr>
             </thead>
             <tbody id="rechte"></tbody>
@@ -321,6 +350,7 @@
           <div><dt>Personendaten</dt><dd>Adresse, Geburtsdatum, Stunden, Befristung</dd></div>
           <div><dt>Entgelt</dt><dd>Netto, Brutto, Zulagen</dd></div>
           <div><dt>Lohnverrechnung</dt><dd>Versicherungsnummer, IBAN, Staatsangehörigkeit</dd></div>
+          <div><dt>Arbeitgeber-Unterschrift</dt><dd>darf Dienstzettel als Arbeitgeber unterschreiben („Zu unterschreiben“)</dd></div>
         </dl>
       </section>
 
@@ -352,7 +382,7 @@
           <table class="tabelle">
             <thead><tr>
               <th scope="col">Unterlage</th><th scope="col">Reihenfolge</th><th scope="col">Pflicht</th>
-              <th scope="col">Gilt für</th><th scope="col">Aktiv</th>
+              <th scope="col">Gilt für</th><th scope="col">Aktiv</th><th scope="col">Text</th>
             </tr></thead>
             <tbody id="onboarding-einstellungen"></tbody>
           </table>
@@ -364,6 +394,20 @@
             <option value="beide">Studio und Büro</option><option value="studio">nur Studio</option><option value="buero">nur Büro</option>
           </select></label>
           <button type="submit" class="knopf knopf-haupt">Unterlage hinzufügen</button>
+        </form>
+      </section>
+
+      <section class="einstellung" aria-labelledby="t-textbausteine">
+        <h2 id="t-textbausteine">Textbausteine für den Dienstzettel</h2>
+        <p class="einleitung klein">Diese Abschnitte stehen auf jedem Dienstzettel (z. B. Urlaub, Kündigung). Eine GmbH kann
+          einen Abschnitt abweichend festlegen; sonst gilt der Text für alle. Nicht mehr benötigte Abschnitte deaktivieren.
+          Änderungen gelten für Dienstzettel, die ab jetzt unterschrieben werden.</p>
+        <label class="feld schmal"><span>Bearbeiten für</span><select id="textbaustein-gmbh"></select></label>
+        <div id="textbausteine" class="textbausteine"></div>
+        <form id="textbaustein-neu" class="regeln" data-nur-alle>
+          <label class="feld"><span>Neuer Abschnitt: Titel</span><input name="titel" maxlength="80" required></label>
+          <label class="feld breit"><span>Text</span><textarea name="text" rows="2"></textarea></label>
+          <button type="submit" class="knopf knopf-haupt">Abschnitt hinzufügen</button>
         </form>
       </section>
 
@@ -380,6 +424,15 @@
             <input type="number" name="probezeit_monate" min="0" max="12" step="1" required></label>
           <label class="feld schmal"><span>Befristung (Monate)</span>
             <input type="number" name="befristung_monate" min="0" max="24" step="1" required></label>
+          <p class="einleitung klein breit-zeile">Fristregel für den Dienstantritt: Wird der Dienstzettel bis zur Stichzeit erfasst,
+            ist der früheste Dienstantritt der nächste Tag plus „Tage dazwischen (bis Stichzeit)“; danach plus „Tage dazwischen (nach Stichzeit)“.
+            Mit „Dringende Anmeldung“ und Grund geht es früher.</p>
+          <label class="feld schmal"><span>Stichzeit</span>
+            <input type="time" name="anmeldung_stichzeit" required></label>
+          <label class="feld schmal"><span>Tage dazwischen (bis Stichzeit)</span>
+            <input type="number" name="tage_dazwischen_vor" min="0" max="7" step="1" required></label>
+          <label class="feld schmal"><span>Tage dazwischen (nach Stichzeit)</span>
+            <input type="number" name="tage_dazwischen_nach" min="0" max="7" step="1" required></label>
           <button type="submit" class="knopf knopf-haupt">Regeln speichern</button>
         </form>
       </section>

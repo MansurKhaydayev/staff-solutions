@@ -4,6 +4,8 @@ import { dienstzettelPruefen, heuteIso } from "./pruefungen.js";
 import { einstellungenZeigen } from "./einstellungen.js";
 import { akteZeigen, akteVergessen } from "./akte.js";
 import { offenePunkteZeigen } from "./offene_punkte.js";
+import { mappeZeigen } from "./mappe.js";
+import { arbeitgeberZeigen } from "./arbeitgeber.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -124,7 +126,8 @@ async function stammdatenLaden() {
   stand.recht = stand.rechte.find((r) => r.rolle === stand.profil.rolle) || {};
 
   const [orgs, standorte, gesellschaften, zonen, funktionen, brutto, zust] = await Promise.all([
-    api.lesen("organisation", "select=id,name,probezeit_monate,befristung_monate,vollzeit_stunden,geringfuegig_grenze,max_stunden_tag"),
+    api.lesen("organisation", "select=id,name,probezeit_monate,befristung_monate,vollzeit_stunden,geringfuegig_grenze,max_stunden_tag," +
+      "anmeldung_stichzeit,tage_dazwischen_vor,tage_dazwischen_nach"),
     api.lesen("standort", "select=id,name,art,vertragsbezeichnung,gesellschaft_id,tarifzone_id&order=name"),
     api.lesen("gesellschaft", "select=id,name,strasse,plz,ort"),
     api.lesen("tarifzone", "select=id,name"),
@@ -161,6 +164,7 @@ async function stammdatenLaden() {
   document.querySelector('[data-ziel="erfassen"]').hidden = !darfErfassen;
   document.querySelector('[data-ziel="einstellungen"]').hidden = !stand.recht.darf_verwalten;
   document.querySelector('[data-ziel="offen"]').hidden = !darfOffenePunkte();
+  document.querySelector('[data-ziel="unterschreiben"]').hidden = !stand.recht.darf_arbeitgeber_unterschreiben;
   $('#filter option[value="befristung"]').hidden = !stand.recht.sieht_personendaten;
 
   funktionenFuellen();
@@ -193,7 +197,7 @@ function standorteFuellen() {
 
 // ------------------------------------------------------------------ Seiten
 
-const SEITEN = ["erfassen", "mitarbeiter", "offen", "akte", "einstellungen"];
+const SEITEN = ["erfassen", "mitarbeiter", "offen", "unterschreiben", "akte", "mappe", "einstellungen"];
 const darfOffenePunkte = () => istBuero() || LEITUNG.includes(stand.profil?.rolle);
 
 function seiteZeigen() {
@@ -202,16 +206,19 @@ function seiteZeigen() {
   if (!SEITEN.includes(ziel)) ziel = "erfassen";
   if (ziel === "erfassen" && !stand.erfassbareFunktionen.length) ziel = "mitarbeiter";
   if (ziel === "einstellungen" && !stand.recht.darf_verwalten) ziel = "mitarbeiter";
-  if (ziel === "akte" && !rest[0]) ziel = "mitarbeiter";
+  if ((ziel === "akte" || ziel === "mappe") && !rest[0]) ziel = "mitarbeiter";
   if (ziel === "offen" && !darfOffenePunkte()) ziel = "mitarbeiter";
+  if (ziel === "unterschreiben" && !stand.recht.darf_arbeitgeber_unterschreiben) ziel = "mitarbeiter";
   for (const name of SEITEN) $(`#seite-${name}`).hidden = name !== ziel;
   // In der Akte bleibt "Mitarbeiter" in der Navigation markiert
-  const navZiel = ziel === "akte" ? "mitarbeiter" : ziel;
+  const navZiel = ziel === "akte" || ziel === "mappe" ? "mitarbeiter" : ziel;
   document.querySelectorAll(".navigation a").forEach((a) => {
     if (a.dataset.ziel === navZiel) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
   if (ziel === "akte") akteZeigen(stand, rest[0], rest[1]);
+  if (ziel === "mappe") mappeZeigen(stand, rest[0]);
+  if (ziel === "unterschreiben") arbeitgeberZeigen(stand);
   if (ziel === "offen") offenePunkteZeigen(stand);
   if (ziel === "mitarbeiter") listeLaden();
   if (ziel === "einstellungen") einstellungenZeigen(stand, async () => { await stammdatenLaden(); });
@@ -232,6 +239,7 @@ function formWerte() {
     sonderzahlung: f.sonderzahlung.checked,
     svNummer: f.sv_nummer.value, svNachreichen: f.sv_nachreichen.checked,
     iban: f.iban.value, bic: f.bic.value,
+    dringend: f.dringend.checked, dringendGrund: f.dringend_grund.value,
   };
 }
 
@@ -271,6 +279,7 @@ function aktualisieren() {
 
   $("#feld-zulage").hidden = !a.funktion?.leiterzulage_moeglich;
   form.elements.sv_nummer.disabled = w.svNachreichen;
+  $("#dringend-grund-feld").hidden = !w.dringend;
   if (w.svNachreichen) form.elements.sv_nummer.value = "";
 
   const fehler = dienstzettelPruefen(w, stand.organisation, a);
@@ -390,6 +399,7 @@ async function speichern(ereignis) {
     p_bic: leerZuNull(w.bic),
     p_sonderzahlung: w.sonderzahlung,
     p_leiterzulage_netto: leerZuNull(w.leiterzulage) === null ? null : Number(w.leiterzulage),
+    p_dringend_grund: w.dringend ? leerZuNull(w.dringendGrund) : null,
   };
 
   const knopf = $("#speichern");
@@ -404,6 +414,7 @@ async function speichern(ereignis) {
       `in ${studio.vertragsbezeichnung || studio.name} angelegt.` +
       (dv?.befristet_bis ? ` Befristet bis ${datumAT(dv.befristet_bis)}.` : "") +
       (w.svNachreichen ? " Die Versicherungsnummer ist als offen vermerkt." : "");
+    $("#mappe-oeffnen").href = `#mappe/${dvId}`;
     $("#dienstzettel").hidden = true;
     $("#gespeichert").hidden = false;
     $("#gespeichert").focus();
@@ -531,6 +542,7 @@ function listeZeigen() {
       }
     }
     if (d.austritt && d.austritt < heute) merkmale.push('<span class="merkmal merkmal-aus">ausgetreten</span>');
+    else if (d.angemeldet === false) merkmale.push('<span class="merkmal merkmal-fehlt">noch nicht angemeldet</span>');
     return `<tr>
       <td><a class="name" href="#akte/${text(d.id)}/uebersicht">${text(p ? `${p.nachname} ${p.vorname}` : "–")}</a> ${merkmale.join(" ")}</td>
       <td>${text(s ? s.vertragsbezeichnung || s.name : "–")}</td>
