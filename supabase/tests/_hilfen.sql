@@ -66,11 +66,20 @@ begin
     p_ort => 'Graz', p_telefon => '+43 660 1234567', p_email => 'test@example.com',
     p_staatsangehoerigkeit => 'Österreich', p_iban => 'AT611904300234573201',
     p_sv_nummer => case when a_nachreichen then null else '1238010190' end,
-    p_sv_nummer_nachreichen => a_nachreichen);
+    p_sv_nummer_nachreichen => a_nachreichen,
+    p_dringend_grund => 'Test');  -- Dienstantritt heute ist nur als dringende Anmeldung möglich
   perform testhilfe.zurueck();
   return v;
 end $$;
 
+-- Als Edge Function (service_role) weiterarbeiten
+create or replace function testhilfe.als_dienst() returns void language plpgsql set search_path = '' as $$
+begin
+  perform set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
+  perform set_config('role', 'service_role', true);
+end $$;
+
 revoke all on all functions in schema testhilfe from public, anon, authenticated;
-grant execute on function testhilfe.als(uuid), testhilfe.zurueck(), testhilfe.erwarte_fehler(text, text),
-  testhilfe.pruefe(boolean, text) to authenticated;
+grant usage on schema testhilfe to service_role;
+grant execute on function testhilfe.als(uuid), testhilfe.als_dienst(), testhilfe.zurueck(), testhilfe.erwarte_fehler(text, text),
+  testhilfe.pruefe(boolean, text) to authenticated, service_role;
