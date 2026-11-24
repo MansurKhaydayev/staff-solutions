@@ -127,9 +127,11 @@ export async function pdfErstellen(lib, inhalt, unterschriften = {}) {
   return dok.save();
 }
 
-// Zeichen, die die Standardschrift nicht kennt, ersetzen. WinAnsi kennt Umlaute, ß, €,
-// deutsche Anführungszeichen, Gedankenstriche und Auslassungspunkte.
+// Zeichen, die die Standardschrift (WinAnsi) nicht kennt, ersetzen. WinAnsi kennt Latin-1 (Umlaute, ß …)
+// und zusätzlich € ‚ ƒ „ … † ‡ ˆ ‰ Š ‹ Œ Ž ‘ ’ “ ” • – — ˜ ™ š › œ ž Ÿ.
+const WINANSI_EXTRA = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
 function text(t) {
-  return String(t ?? "").replace(/\t/g, " ")
-    .replace(/[^\n\x20-\x7E\u00A0-\u00FF€\u2013\u2014\u2018\u2019\u201A\u201C\u201D\u201E\u2022\u2026]/g, "?");
+  return [...String(t ?? "").replace(/\t/g, " ")]
+    .map((z) => (z === "\n" || (z >= "\x20" && z <= "\x7E") || (z >= "\u00A0" && z <= "\u00FF") || WINANSI_EXTRA.includes(z) ? z : "?"))
+    .join("");
 }

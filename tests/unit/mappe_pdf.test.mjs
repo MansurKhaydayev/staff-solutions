@@ -49,3 +49,10 @@ test("Abgelehnt: Vermerk statt Unterschrift", async () => {
   const t = (await pdfText(await pdfErstellen(pdfLib, i, { abgelehnt: { ort: "Leoben", datum: "24.11.2026" } }))).join(" ");
   assert.ok(t.includes("Abgelehnt am 24.11.2026"));
 });
+
+test("Namen mit Š, ž, Œ (WinAnsi) erscheinen richtig im PDF", async () => {
+  const i = demoDienstzettel();
+  i.felder = [["Arbeitnehmer/in", "Frau Šárka Žižková, Œuvre"]];
+  const t = (await pdfText(await pdfErstellen(pdfLib, i, {}))).join(" ");
+  assert.ok(t.includes("Šárka Žižková, Œuvre"), t);
+});
