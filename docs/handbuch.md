@@ -54,6 +54,10 @@ umgeht, bekommt er keine Daten, die er nicht sehen darf.
 | `app/offene_punkte.js` | Seite „Offene Punkte“ (wem fehlt was) |
 | `app/datei.js` | Dateien prüfen (Typ, Größe), Fingerabdruck, Ablageort |
 | `app/hilfen.js` | Kleine Hilfen für alle Seiten (Datum, Euro, Text) |
+| `app/mappe.js`, `app/unterschrift.js` | Unterschriftsmappe am iPad, Unterschriftsfeld |
+| `app/arbeitgeber.js` | Seite „Zu unterschreiben“ (Arbeitgeber) |
+| `app/frist.js` | Fristregel für den Dienstantritt (Wiener Zeit) |
+| `supabase/functions/mappe/` | Edge Function: erzeugt und legt das PDF der Mappe ab |
 | `tests/` | Tests ohne Datenbank (Einheitstests, Browser-Tests) |
 | `supabase/tests/` | Datenbank-Tests je Rolle |
 | `app/api.js` | Verbindung zu Supabase |
