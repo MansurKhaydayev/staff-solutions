@@ -23,6 +23,8 @@ begin
   -- Mitarbeiter unterschreiben (über die Edge-Function-Funktion)
   perform testhilfe.als(hr);
   f := public.mappe_inhalt(dv) -> 'schritte' -> 0 ->> 'fassung';
+  perform testhilfe.pruefe(public.mappe_inhalt(dv) ->> 'organisation_id' = org::text and public.mappe_inhalt(dv) ->> 'ort' is not null,
+    'Mappe: Organisation und Ort für die Edge Function');
   perform testhilfe.zurueck();
   perform testhilfe.als_dienst();
   dz := public.mappe_ablegen(sl, dv, 'dienstzettel', null, f, 'unterschrieben', org || '/' || dv || '/vereinbarung/m.pdf', h,
@@ -48,6 +50,8 @@ begin
   perform testhilfe.pruefe((public.arbeitgeber_inhalt(dz) ->> 'fassung') is not null
     and public.arbeitgeber_inhalt(dz) -> 'mitarbeiter' ->> 'png_pfad' like '%/unterschrift/m.png', 'Inhalt für die Arbeitgeber-Unterschrift');
   f := public.arbeitgeber_inhalt(dz) ->> 'fassung';
+  perform testhilfe.pruefe(public.arbeitgeber_inhalt(dz) ->> 'organisation_id' = org::text
+    and public.arbeitgeber_inhalt(dz) ->> 'dienstverhaeltnis_id' = dv::text, 'Arbeitgeber: Ablageort für die Edge Function');
   perform testhilfe.zurueck();
 
   -- Ablegen: nur service_role, nur mit Recht
