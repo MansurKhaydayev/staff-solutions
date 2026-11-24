@@ -68,8 +68,10 @@ export async function zeigen(ziel, kopf, stand, neuLaden) {
 
 // Knopf „Änderung eintragen“ und frühere Angaben im Block „Person“ der Übersicht
 export async function aenderungKnopf(ziel, stufe, kopf, stand, neuLaden, dialogZiel = null) {
+  if (!ziel) return;  // Reiter wurde inzwischen gewechselt
   const aenderungen = await api.lesen("stammdaten_aenderung",
     `select=*&mitarbeiter_id=eq.${kopf.mitarbeiter_id}&stufe=eq.${stufe}&order=created_at.desc`).catch(() => []);
+  if (!ziel.isConnected) return;
   const frueher = FELDER[stufe].map(([f, n]) => {
     const v = verlauf(aenderungen, f);
     return v ? `<div><dt>${text(n)} früher</dt><dd>${v}</dd></div>` : "";

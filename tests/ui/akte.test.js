@@ -306,6 +306,8 @@ async function teilDokumente(browser) {
 
   // Ansehen: signierter Link in neuem Tab
   const [tab] = await Promise.all([p.context().waitForEvent("page"), p.click("#dokument-gruppen [data-ansehen='o2']")]);
+  // Der Tab öffnet sofort (Safari), der Link wird erst danach geholt
+  await p.waitForRequest((r) => r.url().includes("/storage/v1/object/sign/"), { timeout: 2000 }).catch(() => {});
   pruefe(p.anfragen.some((a) => a.pfad === "/storage/v1/object/sign/personalakte/o/d1/onboarding/o2.pdf"), "signierter Link angefordert");
   pruefe(Boolean(tab), "Datei öffnet in neuem Tab");
   await tab.close();

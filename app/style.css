@@ -487,3 +487,13 @@ tr.inaktiv th input, tr.inaktiv td { opacity: .6; }
   .mappe-felder div { grid-template-columns: 1fr; gap: .1rem; }
 }
 .dringend-grund { display: grid; gap: .4rem; border-left: 3px solid var(--marker); padding-left: .9rem; }
+.vermerk { display: inline-block; color: var(--tinte-leise); font-size: .8125rem; margin-left: .25rem; }
+
+/* Zu unterschreiben (Arbeitgeber) */
+.ag-liste { list-style: none; padding: 0; margin: 0; display: grid; gap: .75rem; }
+.ag-eintrag { background: var(--papier); border: 1px solid var(--linie); border-radius: var(--radius); padding: 1rem 1.1rem; }
+.ag-eintrag.dringend { border-left: 4px solid var(--fehler); }
+.ag-zeile { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .75rem; align-items: center; }
+.ag-unterzeile { color: var(--tinte-leise); font-size: .9375rem; margin-top: .2rem; }
+.ag-grund { font-size: .9375rem; margin-top: .2rem; }
+.ag-bereich { margin-top: 1rem; border-top: 1px solid var(--linie); padding-top: 1rem; }

@@ -38,6 +38,7 @@
         <a href="#erfassen" data-ziel="erfassen">Neuer Mitarbeiter</a>
         <a href="#mitarbeiter" data-ziel="mitarbeiter">Mitarbeiter</a>
         <a href="#offen" data-ziel="offen" hidden>Offene Punkte</a>
+        <a href="#unterschreiben" data-ziel="unterschreiben" hidden>Zu unterschreiben</a>
         <a href="#einstellungen" data-ziel="einstellungen" hidden>Einstellungen</a>
       </nav>
       <span class="wer" id="wer"></span>
@@ -300,6 +301,15 @@
       <div id="akte-hinweise" aria-live="polite"></div>
       <nav id="akte-reiter" class="reiter" aria-label="Bereiche der Akte"></nav>
       <section id="akte-inhalt" class="akte-inhalt"></section>
+    </main>
+
+    <!-- Zu unterschreiben: Dienstzettel, die noch die Arbeitgeber-Unterschrift brauchen -->
+    <main id="seite-unterschreiben" class="seite seite-mappe" hidden>
+      <h1 class="seitentitel">Zu unterschreiben</h1>
+      <p class="einleitung">Dienstzettel, die der Mitarbeiter schon unterschrieben hat. Dringende Anmeldungen stehen oben.</p>
+      <p class="status" id="ag-status" role="status" aria-live="polite"></p>
+      <ul id="ag-liste" class="ag-liste"></ul>
+      <p class="leer-zustand" id="ag-leer" hidden>Nichts zu unterschreiben.</p>
     </main>
 
     <!-- Unterschriftsmappe (am iPad: Mitarbeiter unterschreibt Dienstzettel und Onboarding) -->

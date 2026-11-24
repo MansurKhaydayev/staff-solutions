@@ -8,6 +8,10 @@ const ARTEN = {
   nachweis_stunden: "Nachweis fehlt: Stundenanpassung",
   nachweis_stammdaten: "Nachweis fehlt: Stammdatenänderung",
   sv_nummer: "Versicherungsnummer nachreichen",
+  dienstzettel: "Dienstzettel fehlt",
+  arbeitgeber: "Arbeitgeber-Unterschrift fehlt",
+  uebermittlung: "An Lohnverrechner übermitteln",
+  dringend: "Dringende Anmeldung",
 };
 
 export function punktText(p) {

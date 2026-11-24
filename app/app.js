@@ -5,6 +5,7 @@ import { einstellungenZeigen } from "./einstellungen.js";
 import { akteZeigen, akteVergessen } from "./akte.js";
 import { offenePunkteZeigen } from "./offene_punkte.js";
 import { mappeZeigen } from "./mappe.js";
+import { arbeitgeberZeigen } from "./arbeitgeber.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -163,6 +164,7 @@ async function stammdatenLaden() {
   document.querySelector('[data-ziel="erfassen"]').hidden = !darfErfassen;
   document.querySelector('[data-ziel="einstellungen"]').hidden = !stand.recht.darf_verwalten;
   document.querySelector('[data-ziel="offen"]').hidden = !darfOffenePunkte();
+  document.querySelector('[data-ziel="unterschreiben"]').hidden = !stand.recht.darf_arbeitgeber_unterschreiben;
   $('#filter option[value="befristung"]').hidden = !stand.recht.sieht_personendaten;
 
   funktionenFuellen();
@@ -195,7 +197,7 @@ function standorteFuellen() {
 
 // ------------------------------------------------------------------ Seiten
 
-const SEITEN = ["erfassen", "mitarbeiter", "offen", "akte", "mappe", "einstellungen"];
+const SEITEN = ["erfassen", "mitarbeiter", "offen", "unterschreiben", "akte", "mappe", "einstellungen"];
 const darfOffenePunkte = () => istBuero() || LEITUNG.includes(stand.profil?.rolle);
 
 function seiteZeigen() {
@@ -206,6 +208,7 @@ function seiteZeigen() {
   if (ziel === "einstellungen" && !stand.recht.darf_verwalten) ziel = "mitarbeiter";
   if ((ziel === "akte" || ziel === "mappe") && !rest[0]) ziel = "mitarbeiter";
   if (ziel === "offen" && !darfOffenePunkte()) ziel = "mitarbeiter";
+  if (ziel === "unterschreiben" && !stand.recht.darf_arbeitgeber_unterschreiben) ziel = "mitarbeiter";
   for (const name of SEITEN) $(`#seite-${name}`).hidden = name !== ziel;
   // In der Akte bleibt "Mitarbeiter" in der Navigation markiert
   const navZiel = ziel === "akte" || ziel === "mappe" ? "mitarbeiter" : ziel;
@@ -215,6 +218,7 @@ function seiteZeigen() {
   });
   if (ziel === "akte") akteZeigen(stand, rest[0], rest[1]);
   if (ziel === "mappe") mappeZeigen(stand, rest[0]);
+  if (ziel === "unterschreiben") arbeitgeberZeigen(stand);
   if (ziel === "offen") offenePunkteZeigen(stand);
   if (ziel === "mitarbeiter") listeLaden();
   if (ziel === "einstellungen") einstellungenZeigen(stand, async () => { await stammdatenLaden(); });

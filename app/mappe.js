@@ -39,7 +39,7 @@ function fortschritt(m, aktuell) {
   }).join("")}</ol>`;
 }
 
-function blatt(inhalt) {
+export function blatt(inhalt) {
   return `<article id="mappe-blatt" class="mappe-blatt">
     <p class="mappe-firma">${text(inhalt.kopf?.firma)}<br><span>${text(inhalt.kopf?.adresse)}</span></p>
     <h2>${text(inhalt.titel)}</h2>
@@ -150,7 +150,7 @@ function fertigZeigen(m, dvId) {
     </section>`;
 }
 
-function base64(blob) {
+export function base64(blob) {
   return new Promise((ok, nein) => {
     const r = new FileReader();
     r.onload = () => ok(String(r.result).split(",")[1]);

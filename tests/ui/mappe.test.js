@@ -253,11 +253,157 @@ async function teilAkte(browser) {
   await v.close();
 }
 
+function mitAgRecht(d) {
+  for (const r of d.rollen_recht) r.darf_arbeitgeber_unterschreiben = ["admin", "geschaeftsfuehrung"].includes(r.rolle);
+  return d;
+}
+
+async function teilArbeitgeber(browser) {
+  console.log("\n# Zu unterschreiben (Arbeitgeber)");
+  const d = mitAgRecht(demoDaten());
+  let offen = [
+    { dokument_id: "z1", dienstverhaeltnis_id: "d1", vorname: "Anna", nachname: "Berger", arbeitsort: "DemoFit Leoben", eintritt: "2026-11-28",
+      unterschrieben_am: "2026-11-27T17:30:00Z", dringend_grund: "Krankheitsausfall im Studio", pdf_pfad: "o/d1/vereinbarung/a.pdf" },
+    { dokument_id: "z2", dienstverhaeltnis_id: "d2", vorname: "Bernd", nachname: "Huber", arbeitsort: "DemoFit Bruck an der Mur", eintritt: "2026-12-01",
+      unterschrieben_am: "2026-11-26T09:00:00Z", dringend_grund: null, pdf_pfad: "o/d2/vereinbarung/b.pdf" },
+  ];
+  const gesendet = [];
+  const rpc = {
+    mitarbeiter_verzeichnis: () => [],
+    arbeitgeber_offen: () => offen,
+    arbeitgeber_inhalt: (b) => ({ dokument_id: b.p_dokument_id, fassung: `f-${b.p_dokument_id}`, organisation_id: "o", dienstverhaeltnis_id: "d1",
+      inhalt: demoInhalt("dienstzettel", "DIENSTZETTEL", [{ rolle: "mitarbeiter", beschriftung: "Arbeitnehmer/in" }, { rolle: "arbeitgeber", beschriftung: "Arbeitgeber" }]),
+      mitarbeiter: { png_pfad: "o/d1/unterschrift/m.png", ort: "Leoben", datum: "2026-11-27T17:30:00Z" }, arbeitgeber_ort: "Graz" }),
+  };
+  const funktionen = { mappe: (b) => { gesendet.push(b); offen = offen.filter((x) => x.dokument_id !== b.dokument_id); return { body: { dokument_id: "fertig1" } }; } };
+
+  rpc.offene_punkte = () => [
+    { dienstverhaeltnis_id: "d1", vorname: "Anna", nachname: "Berger", standort_id: "s1", art: "dringend", beschreibung: "Dringende Anmeldung: Krankheitsausfall", datum: "2026-11-28" },
+    { dienstverhaeltnis_id: "d1", vorname: "Anna", nachname: "Berger", standort_id: "s1", art: "uebermittlung", beschreibung: "Dienstzettel an Lohnverrechner übermitteln", datum: "2026-11-28" },
+  ];
+  const hr = await neueSeite(browser, d, { rpc, funktionen });
+  await anmelden(hr, "hr@demo.invalid");
+  pruefe(await hr.$eval('.navigation [data-ziel="unterschreiben"]', (a) => a.hidden), "HR: kein „Zu unterschreiben“");
+  await hr.goto(`${ADRESSE}#offen`);
+  await hr.waitForSelector("#offen-liste li, #offen-liste tr");
+  const arten = await hr.$$eval("#offen-filter [name=art] option", (o) => o.map((x) => x.textContent));
+  pruefe(["Dienstzettel fehlt", "Arbeitgeber-Unterschrift fehlt", "An Lohnverrechner übermitteln", "Dringende Anmeldung"].every((a) => arten.includes(a)),
+    `Filter „Offene Punkte“ kennt die neuen Arten (${arten.join(", ")})`);
+  const offenText = (await hr.textContent("#offen-liste")).replace(/\s+/g, " ");
+  pruefe(offenText.includes("Dringende Anmeldung: Krankheitsausfall") && offenText.includes("Dienstzettel an Lohnverrechner übermitteln"),
+    "neue Punkte sichtbar");
+  await hr.close();
+
+  const p = await neueSeite(browser, d, { rpc, funktionen, groesse: { width: 1024, height: 768 } });
+  await anmelden(p, "admin@demo.invalid");
+  pruefe(!(await p.$eval('.navigation [data-ziel="unterschreiben"]', (a) => a.hidden)), "Admin: „Zu unterschreiben“ sichtbar");
+  await p.click('.navigation [data-ziel="unterschreiben"]');
+  await p.waitForSelector("#ag-liste li");
+  const eintraege = await p.$$eval("#ag-liste > li", (l) => l.map((x) => x.textContent.replace(/\s+/g, " ")));
+  pruefe(eintraege[0].includes("Berger") && eintraege[0].includes("Dringend") && eintraege[0].includes("Krankheitsausfall"), "dringend zuerst, mit Grund");
+  pruefe(eintraege[1].includes("Huber") && eintraege[1].includes("Dienstantritt 01.12.2026"), "zweiter Eintrag mit Dienstantritt");
+  await p.click('[data-unterschreiben="z1"]');
+  await p.waitForSelector("#ag-bereich #mappe-blatt");
+  await p.click("#ag-unterschreiben");
+  pruefe((await p.textContent("#ag-meldung")).includes("geprüft"), "ohne Häkchen → Meldung");
+  await p.check("#ag-geprueft");
+  await p.click("#ag-unterschreiben");
+  pruefe((await p.textContent("#ag-meldung")) === "Bitte unterschreiben.", "ohne Zeichnung → Meldung");
+  await zeichnen(p);
+  await p.screenshot({ path: `${OUT}/m-arbeitgeber.png` }); // ohne fullPage: das ändert kurz die Größe und löscht die Unterschrift
+  await p.click("#ag-unterschreiben");
+  await p.waitForFunction(() => document.querySelectorAll("#ag-liste > li").length === 1);
+  pruefe(gesendet.length === 1 && gesendet[0].aktion === "arbeitgeber" && gesendet[0].dokument_id === "z1" && gesendet[0].fassung === "f-z1"
+    && String(gesendet[0].png_base64).startsWith(PNG), "Anfrage aktion arbeitgeber mit Dokument und Fassung");
+  pruefe((await p.textContent("#ag-status")).includes("Berger"), "Bestätigung nach dem Unterschreiben");
+  offen = [];
+  await p.goto(`${ADRESSE}#mitarbeiter`);
+  await p.goto(`${ADRESSE}#unterschreiben`);
+  await p.waitForSelector("#ag-leer:not([hidden])");
+  pruefe((await p.textContent("#ag-leer")).includes("Nichts zu unterschreiben."), "leer → „Nichts zu unterschreiben.“");
+  pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
+  await p.close();
+}
+
+async function teilBueroAktionen(browser) {
+  console.log("\n# Dokumente: Büro-Aktionen am Dienstzettel");
+  const d = demoDaten();
+  d.dokument = [
+    { id: "x1", dienstverhaeltnis_id: "d1", typ: "dienstzettel", kategorie: "vereinbarung", bezeichnung: "Dienstzettel", status: "abgeschlossen",
+      datei_pfad: "o/d1/vereinbarung/x1.pdf", ersetzt_durch: null, neu_angefordert_am: null, papier: false,
+      uebermittelt_am: null, ausgehaendigt_am: null, hochgeladen_am: "2026-11-27T18:00:00Z", created_at: "2026-11-27T18:00:00Z" },
+    { id: "x0", dienstverhaeltnis_id: "d1", typ: "dienstzettel", kategorie: "vereinbarung", bezeichnung: "Dienstzettel", status: "unterschrieben",
+      datei_pfad: "o/d1/vereinbarung/x0.pdf", ersetzt_durch: "x1", neu_angefordert_am: null, papier: false,
+      hochgeladen_am: "2026-11-27T17:30:00Z", created_at: "2026-11-27T17:30:00Z" },
+  ];
+  const aufrufe = [];
+  const merken = (name) => (b) => { aufrufe.push({ name, b }); return null; };
+  const rpc = {
+    mitarbeiter_verzeichnis: () => [], onboarding_stand: () => [],
+    akte_kopf: () => kopf("hr", { angemeldet: true }),
+    dienstzettel_vermerken: merken("dienstzettel_vermerken"),
+    dienstzettel_neu_anfordern: merken("dienstzettel_neu_anfordern"),
+    dienstzettel_papier: merken("dienstzettel_papier"),
+  };
+  const p = await neueSeite(browser, d, { rpc });
+  await anmelden(p, "hr@demo.invalid");
+  await p.goto(`${ADRESSE}#akte/d1/dokumente`);
+  await p.waitForSelector('[data-uebermittelt="x1"]');
+  pruefe(!(await p.$('[data-ersetzen="x1"]')), "Dienstzettel wird nicht über „Ersetzen“ getauscht");
+  await p.click('[data-uebermittelt="x1"]');
+  await p.waitForFunction(() => true);
+  await p.waitForTimeout(100);
+  pruefe(aufrufe.at(-1)?.name === "dienstzettel_vermerken" && aufrufe.at(-1).b.p_dokument_id === "x1" && aufrufe.at(-1).b.p_was === "uebermittelt",
+    "„An Lohnverrechner übermittelt“ → RPC");
+  await p.waitForSelector('[data-ausgehaendigt="x1"]');
+  await p.click('[data-ausgehaendigt="x1"]');
+  await p.selectOption("#dz-aktion [name=art]", "email");
+  await p.click("#dz-aktion button[type=submit]");
+  await p.waitForTimeout(100);
+  pruefe(aufrufe.at(-1)?.b.p_was === "ausgehaendigt" && aufrufe.at(-1).b.p_art === "email", "„Ausgehändigt“ per E-Mail → RPC");
+  await p.waitForSelector('[data-neu="x1"]');
+  const vorher = aufrufe.length;
+  await p.click('[data-neu="x1"]');
+  await p.click("#dz-aktion button[type=submit]");
+  pruefe((await p.textContent("#dz-aktion .fehler")).includes("Grund"), "Neu unterschreiben lassen: Grund ist Pflicht");
+  pruefe(aufrufe.length === vorher, "ohne Grund nichts gesendet");
+  await p.fill("#dz-aktion [name=grund]", "Adresse falsch");
+  await p.click("#dz-aktion button[type=submit]");
+  await p.waitForTimeout(100);
+  pruefe(aufrufe.at(-1)?.name === "dienstzettel_neu_anfordern" && aufrufe.at(-1).b.p_grund === "Adresse falsch", "neu unterschreiben lassen → RPC");
+
+  // Anzeige: übermittelt, ausgehändigt, Papier, neu angefordert
+  Object.assign(d.dokument[0], { uebermittelt_am: "2026-11-28T08:00:00Z", ausgehaendigt_am: "2026-11-28T08:05:00Z", ausgehaendigt_art: "email" });
+  d.dokument.push({ id: "x2", dienstverhaeltnis_id: "d2", typ: "dienstzettel", kategorie: "vereinbarung", bezeichnung: "Dienstzettel (Papier)",
+    status: "abgeschlossen", datei_pfad: "o/d1/vereinbarung/x2.pdf", ersetzt_durch: null, papier: true, created_at: "2026-11-28T09:00:00Z" });
+  d.dokument[2].dienstverhaeltnis_id = "d1";
+  await p.goto(`${ADRESSE}#akte/d1/uebersicht`);
+  await p.goto(`${ADRESSE}#akte/d1/dokumente`);
+  await p.waitForSelector("#dokument-gruppen table");
+  const t = (await p.textContent("#dokument-gruppen")).replace(/\s+/g, " ");
+  pruefe(t.includes("übermittelt am 28.11.2026") && t.includes("ausgehändigt am 28.11.2026 (E-Mail)"), `Vermerke sichtbar`);
+  pruefe(t.includes("Papier (Scan)"), "Papier gekennzeichnet");
+
+  // Papier-Dienstzettel hochladen
+  await p.click("#hochladen-oeffnen");
+  await p.selectOption("#hochladen-form [name=kategorie]", "dienstzettel_papier");
+  pruefe(await p.$eval("#hochladen-form [name=bezeichnung]", (e) => e.closest("label").hidden), "Papier: keine Bezeichnung nötig");
+  await p.setInputFiles("#hochladen-form [name=datei]", { name: "dz.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 test") });
+  await p.click("#hochladen-form button[type=submit]");
+  await p.waitForTimeout(200);
+  const pap = aufrufe.find((a) => a.name === "dienstzettel_papier");
+  pruefe(pap && /^o\/d1\/vereinbarung\//.test(pap.b.p_pfad) && pap.b.p_dienstverhaeltnis_id === "d1" && /^[0-9a-f]{64}$/.test(pap.b.p_hash),
+    "Papier-Dienstzettel → dienstzettel_papier");
+  pruefe(!p.anfragen.some((a) => a.pfad === "/rest/v1/rpc/dokument_ablegen"), "nicht über dokument_ablegen");
+  pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
+  await p.close();
+}
+
 (async () => {
   const server = await starteServer(APP);
   const browser = await chromium.launch();
   try {
-    for (const teil of [teilAblauf, teilFehler, teilFormular, teilAkte]) await teil(browser);
+    for (const teil of [teilAblauf, teilFehler, teilFormular, teilAkte, teilArbeitgeber, teilBueroAktionen]) await teil(browser);
   } catch (e) {
     pruefe(false, `Abbruch: ${e.message.split("\n").slice(0, 3).join(" | ")}`);
   } finally {
