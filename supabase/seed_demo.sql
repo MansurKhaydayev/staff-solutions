@@ -94,3 +94,17 @@ insert into public.onboarding_unterlage (id, organisation_id, bezeichnung, reihe
   ('de000000-0000-0000-0000-0000000000b3', 'de000000-0000-0000-0000-000000000001', 'Arbeitsanweisung', 3, true, 'beide'),
   ('de000000-0000-0000-0000-0000000000b4', 'de000000-0000-0000-0000-000000000001', 'Aushändigung Arbeitskleidung', 4, true, 'studio')
 on conflict (id) do nothing;
+
+-- Demo-Texte für die Unterschriftsmappe (erfunden; der echte Wortlaut wird vom Lohnverrechner geprüft)
+insert into public.textbaustein (organisation_id, schluessel, titel, text, reihenfolge) values
+  ('de000000-0000-0000-0000-000000000001', 'entgelt_faelligkeit', 'Fälligkeit des Entgelts', 'Das Entgelt wird monatlich im Nachhinein bis zum 5. des Folgemonats auf das bekanntgegebene Konto überwiesen. (Demo-Text)', 1),
+  ('de000000-0000-0000-0000-000000000001', 'arbeitszeit_lage', 'Lage der Arbeitszeit', 'Die Lage der Arbeitszeit richtet sich nach dem Dienstplan des Studios. (Demo-Text)', 2),
+  ('de000000-0000-0000-0000-000000000001', 'kuendigung', 'Kündigung', 'Für die Kündigung gelten die gesetzlichen Fristen und Termine. Während der Probezeit kann das Dienstverhältnis von beiden Seiten jederzeit gelöst werden. (Demo-Text)', 3),
+  ('de000000-0000-0000-0000-000000000001', 'urlaub', 'Urlaub', 'Der Urlaubsanspruch richtet sich nach dem Urlaubsgesetz und beträgt 5 Wochen pro Arbeitsjahr. (Demo-Text)', 4),
+  ('de000000-0000-0000-0000-000000000001', 'mitarbeitervorsorge', 'Mitarbeitervorsorgekasse', 'Demo Vorsorgekasse AG, Beispielgasse 3, 1010 Wien. (Demo-Text)', 5),
+  ('de000000-0000-0000-0000-000000000001', 'sozialversicherung', 'Sozialversicherung', 'Österreichische Gesundheitskasse (ÖGK). (Demo-Text)', 6)
+on conflict do nothing;
+update public.onboarding_unterlage set text = 'Ich bestätige, dass ich darüber informiert wurde, wie die Arbeitszeit aufgezeichnet wird, und dass ich meine Stunden vollständig und wahrheitsgemäß erfasse. (Demo-Text)' where id = 'de000000-0000-0000-0000-0000000000b1' and text = '';
+update public.onboarding_unterlage set text = 'Ich bin einverstanden, dass im Rahmen meiner Tätigkeit Fotos und Videos von mir gemacht und für die Darstellung des Studios verwendet werden. Die Einwilligung ist freiwillig und jederzeit für die Zukunft widerrufbar. (Demo-Text)' where id = 'de000000-0000-0000-0000-0000000000b2' and text = '';
+update public.onboarding_unterlage set text = 'Ich habe die Arbeitsanweisung erhalten und gelesen (Arbeitskleidung, Namensschild, Verhalten gegenüber Mitgliedern, Videoüberwachung im Studio). (Demo-Text)' where id = 'de000000-0000-0000-0000-0000000000b3' and text = '';
+update public.onboarding_unterlage set text = 'Ich bestätige den Erhalt der Arbeitskleidung (2 T-Shirts, 1 Namensschild) und verpflichte mich, sie beim Austritt zurückzugeben. (Demo-Text)' where id = 'de000000-0000-0000-0000-0000000000b4' and text = '';
