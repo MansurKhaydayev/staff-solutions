@@ -4,6 +4,7 @@ import { dienstzettelPruefen, heuteIso } from "./pruefungen.js";
 import { einstellungenZeigen } from "./einstellungen.js";
 import { akteZeigen, akteVergessen } from "./akte.js";
 import { offenePunkteZeigen } from "./offene_punkte.js";
+import { mappeZeigen } from "./mappe.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -193,7 +194,7 @@ function standorteFuellen() {
 
 // ------------------------------------------------------------------ Seiten
 
-const SEITEN = ["erfassen", "mitarbeiter", "offen", "akte", "einstellungen"];
+const SEITEN = ["erfassen", "mitarbeiter", "offen", "akte", "mappe", "einstellungen"];
 const darfOffenePunkte = () => istBuero() || LEITUNG.includes(stand.profil?.rolle);
 
 function seiteZeigen() {
@@ -202,16 +203,17 @@ function seiteZeigen() {
   if (!SEITEN.includes(ziel)) ziel = "erfassen";
   if (ziel === "erfassen" && !stand.erfassbareFunktionen.length) ziel = "mitarbeiter";
   if (ziel === "einstellungen" && !stand.recht.darf_verwalten) ziel = "mitarbeiter";
-  if (ziel === "akte" && !rest[0]) ziel = "mitarbeiter";
+  if ((ziel === "akte" || ziel === "mappe") && !rest[0]) ziel = "mitarbeiter";
   if (ziel === "offen" && !darfOffenePunkte()) ziel = "mitarbeiter";
   for (const name of SEITEN) $(`#seite-${name}`).hidden = name !== ziel;
   // In der Akte bleibt "Mitarbeiter" in der Navigation markiert
-  const navZiel = ziel === "akte" ? "mitarbeiter" : ziel;
+  const navZiel = ziel === "akte" || ziel === "mappe" ? "mitarbeiter" : ziel;
   document.querySelectorAll(".navigation a").forEach((a) => {
     if (a.dataset.ziel === navZiel) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
   if (ziel === "akte") akteZeigen(stand, rest[0], rest[1]);
+  if (ziel === "mappe") mappeZeigen(stand, rest[0]);
   if (ziel === "offen") offenePunkteZeigen(stand);
   if (ziel === "mitarbeiter") listeLaden();
   if (ziel === "einstellungen") einstellungenZeigen(stand, async () => { await stammdatenLaden(); });

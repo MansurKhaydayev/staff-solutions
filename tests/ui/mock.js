@@ -82,6 +82,7 @@ function filtern(zeilen, suche) {
 }
 
 // Neue Browser-Seite. optionen.rpc = { name: (body, seite) => antwort | { status, body } }
+// optionen.funktionen = { name: (body, seite) => { status?, body } }  (Edge Functions)
 async function neueSeite(browser, daten, optionen = {}) {
   const page = await browser.newPage({ viewport: optionen.groesse || { width: 1280, height: 900 }, locale: "de-AT" });
   page.setDefaultTimeout(5000);
@@ -117,6 +118,13 @@ async function neueSeite(browser, daten, optionen = {}) {
     if (url.pathname.startsWith("/storage/v1/object/")) {
       if (optionen.storage) { const a = optionen.storage(req, page); if (a) return json(a.body, a.status); }
       return json({ Key: url.pathname.slice("/storage/v1/object/".length) });
+    }
+    if (url.pathname.startsWith("/functions/v1/")) {
+      const name = url.pathname.slice("/functions/v1/".length);
+      const h = optionen.funktionen && optionen.funktionen[name];
+      if (!h) return json({ meldung: `Funktion ${name} nicht simuliert` }, 404);
+      const a = await h(body || {}, page);
+      return json(a.body, a.status || 200);
     }
     if (url.pathname.startsWith("/rest/v1/rpc/")) {
       const name = url.pathname.slice("/rest/v1/rpc/".length);
