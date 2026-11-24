@@ -125,7 +125,8 @@ async function stammdatenLaden() {
   stand.recht = stand.rechte.find((r) => r.rolle === stand.profil.rolle) || {};
 
   const [orgs, standorte, gesellschaften, zonen, funktionen, brutto, zust] = await Promise.all([
-    api.lesen("organisation", "select=id,name,probezeit_monate,befristung_monate,vollzeit_stunden,geringfuegig_grenze,max_stunden_tag"),
+    api.lesen("organisation", "select=id,name,probezeit_monate,befristung_monate,vollzeit_stunden,geringfuegig_grenze,max_stunden_tag," +
+      "anmeldung_stichzeit,tage_dazwischen_vor,tage_dazwischen_nach"),
     api.lesen("standort", "select=id,name,art,vertragsbezeichnung,gesellschaft_id,tarifzone_id&order=name"),
     api.lesen("gesellschaft", "select=id,name,strasse,plz,ort"),
     api.lesen("tarifzone", "select=id,name"),
@@ -234,6 +235,7 @@ function formWerte() {
     sonderzahlung: f.sonderzahlung.checked,
     svNummer: f.sv_nummer.value, svNachreichen: f.sv_nachreichen.checked,
     iban: f.iban.value, bic: f.bic.value,
+    dringend: f.dringend.checked, dringendGrund: f.dringend_grund.value,
   };
 }
 
@@ -273,6 +275,7 @@ function aktualisieren() {
 
   $("#feld-zulage").hidden = !a.funktion?.leiterzulage_moeglich;
   form.elements.sv_nummer.disabled = w.svNachreichen;
+  $("#dringend-grund-feld").hidden = !w.dringend;
   if (w.svNachreichen) form.elements.sv_nummer.value = "";
 
   const fehler = dienstzettelPruefen(w, stand.organisation, a);
@@ -392,6 +395,7 @@ async function speichern(ereignis) {
     p_bic: leerZuNull(w.bic),
     p_sonderzahlung: w.sonderzahlung,
     p_leiterzulage_netto: leerZuNull(w.leiterzulage) === null ? null : Number(w.leiterzulage),
+    p_dringend_grund: w.dringend ? leerZuNull(w.dringendGrund) : null,
   };
 
   const knopf = $("#speichern");
@@ -406,6 +410,7 @@ async function speichern(ereignis) {
       `in ${studio.vertragsbezeichnung || studio.name} angelegt.` +
       (dv?.befristet_bis ? ` Befristet bis ${datumAT(dv.befristet_bis)}.` : "") +
       (w.svNachreichen ? " Die Versicherungsnummer ist als offen vermerkt." : "");
+    $("#mappe-oeffnen").href = `#mappe/${dvId}`;
     $("#dienstzettel").hidden = true;
     $("#gespeichert").hidden = false;
     $("#gespeichert").focus();
@@ -533,6 +538,7 @@ function listeZeigen() {
       }
     }
     if (d.austritt && d.austritt < heute) merkmale.push('<span class="merkmal merkmal-aus">ausgetreten</span>');
+    else if (d.angemeldet === false) merkmale.push('<span class="merkmal merkmal-fehlt">noch nicht angemeldet</span>');
     return `<tr>
       <td><a class="name" href="#akte/${text(d.id)}/uebersicht">${text(p ? `${p.nachname} ${p.vorname}` : "–")}</a> ${merkmale.join(" ")}</td>
       <td>${text(s ? s.vertragsbezeichnung || s.name : "–")}</td>

@@ -486,3 +486,4 @@ tr.inaktiv th input, tr.inaktiv td { opacity: .6; }
   .mappe-blatt { padding: 1.25rem; }
   .mappe-felder div { grid-template-columns: 1fr; gap: .1rem; }
 }
+.dringend-grund { display: grid; gap: .4rem; border-left: 3px solid var(--marker); padding-left: .9rem; }

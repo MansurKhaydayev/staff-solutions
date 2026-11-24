@@ -1,3 +1,5 @@
+import { fruehesterDienstantritt, fristMeldung, heuteWien } from "./frist.js";
+
 // Prüfregeln für den Dienstzettel. Dieselben Regeln prüft auch die Datenbank;
 // hier stehen sie, damit Fehler schon beim Tippen auffallen.
 
@@ -74,7 +76,8 @@ export function arbeitszeitPruefen(w, regeln) {
 
 // Liefert { feldname: "Meldung" } für alle Probleme.
 // w = Formularwerte, regeln = Einstellungen der Firma, auswahl = gewählte Funktion/Standort
-export function dienstzettelPruefen(w, regeln, auswahl) {
+// jetzt = Zeitpunkt der Prüfung (für Tests einstellbar); gerechnet wird in Wiener Zeit
+export function dienstzettelPruefen(w, regeln, auswahl, jetzt = new Date()) {
   const f = {};
   const pflicht = (name, wert, meldung) => {
     if (wert === null || wert === undefined || String(wert).trim() === "") f[name] = meldung;
@@ -115,10 +118,15 @@ export function dienstzettelPruefen(w, regeln, auswahl) {
   Object.assign(f, arbeitszeitPruefen(w, regeln));
 
   // Daten
-  const heute = heuteIso();
+  const heute = heuteWien(jetzt);
   if (w.eintritt) {
-    if (w.eintritt < tageVersetzt(heute, -90)) f.eintritt = "Liegt mehr als 3 Monate zurück.";
-    if (w.eintritt > tageVersetzt(heute, 365)) f.eintritt = "Liegt mehr als 1 Jahr in der Zukunft.";
+    const frueh = fruehesterDienstantritt(jetzt, regeln);
+    if (w.eintritt < heute) f.eintritt = "Der Dienstantritt kann nicht in der Vergangenheit liegen.";
+    else if (w.eintritt > tageVersetzt(heute, 365)) f.eintritt = "Liegt mehr als 1 Jahr in der Zukunft.";
+    else if (w.eintritt < frueh && !w.dringend) f.eintritt = fristMeldung(frueh);
+  }
+  if (w.dringend && !String(w.dringendGrund ?? "").trim()) {
+    f.dringend_grund = "Bitte den Grund für die dringende Anmeldung angeben.";
   }
   if (w.geburtsdatum && w.eintritt) {
     const alter = alterAm(w.geburtsdatum, w.eintritt);

@@ -144,11 +144,120 @@ async function teilFehler(browser) {
   await p.close();
 }
 
+async function formularFuellen(p, eintritt) {
+  await p.selectOption('#dienstzettel [name="funktion"]', "f2");
+  await p.selectOption('#dienstzettel [name="standort"]', "s1");
+  await p.fill('#dienstzettel [name="eintritt"]', eintritt);
+  await p.selectOption('#dienstzettel [name="beschaeftigungsart"]', "teilzeit");
+  await p.fill('#dienstzettel [name="wochenstunden"]', "20");
+  await p.fill('#dienstzettel [name="arbeitstage"]', "5");
+  await p.selectOption('#dienstzettel [name="anrede"]', "Frau");
+  for (const [n, v] of [["vorname", "Anna"], ["nachname", "Berger"], ["geburtsdatum", "1995-03-14"], ["strasse", "Probegasse 7"],
+    ["plz", "8700"], ["ort", "Leoben"], ["telefon", "+43 660 1111111"], ["email", "anna@demo.invalid"],
+    ["staatsangehoerigkeit", "Österreich"], ["netto", "1000"], ["iban", "AT611904300234573201"]]) {
+    await p.fill(`#dienstzettel [name="${n}"]`, v);
+  }
+  await p.check('#dienstzettel [name="sv_nachreichen"]');
+}
+
+async function teilFormular(browser) {
+  console.log("\n# Dienstzettel: Frist, dringende Anmeldung, Mappe öffnen, „noch nicht angemeldet“");
+  const d = demoDaten();
+  d.dienstverhaeltnis = [];
+  const erfasst = [];
+  const p = await neueSeite(browser, d, { rpc: {
+    dienstzettel_erfassen: (b) => { erfasst.push(b); return `dvneu${erfasst.length}`; },
+    mitarbeiter_verzeichnis: () => [
+      { dienstverhaeltnis_id: "d1", mitarbeiter_id: "m1", vorname: "Anna", nachname: "Berger", funktion_id: "f2", standort_id: "s1",
+        eintritt: "2026-11-28", austritt: null, erfasst_am: "2026-11-27T17:00:00Z", angemeldet: false },
+      { dienstverhaeltnis_id: "d2", mitarbeiter_id: "m2", vorname: "Bernd", nachname: "Huber", funktion_id: "f2", standort_id: "s1",
+        eintritt: "2026-10-01", austritt: null, erfasst_am: "2026-09-27T17:00:00Z", angemeldet: true },
+    ],
+  } });
+  await p.clock.setFixedTime(new Date("2026-11-27T17:00:00Z")); // Freitag 18:00 in Wien
+  await anmelden(p, "hr@demo.invalid");
+  await formularFuellen(p, "2026-11-28");
+  await p.click("#speichern");
+  const fehlerEintritt = await p.textContent("#fehler-eintritt");
+  pruefe(fehlerEintritt.includes("Zu kurzfristig. Frühester Dienstantritt ist Sonntag, 29.11.2026."), `Frist-Meldung am Feld (${fehlerEintritt})`);
+  pruefe(erfasst.length === 0, "nicht gespeichert");
+  pruefe(await p.$eval("#dringend-grund-feld", (e) => e.hidden), "Grund-Feld erst nach dem Häkchen");
+  await p.check('#dienstzettel [name="dringend"]');
+  pruefe(!(await p.$("#fehler-eintritt")), "mit „Dringende Anmeldung“ keine Frist-Meldung");
+  await p.click("#speichern");
+  pruefe((await p.textContent("#fehler-dringend_grund")).includes("Grund"), "Grund ist Pflicht");
+  await p.fill('#dienstzettel [name="dringend_grund"]', "Krankheitsausfall im Studio");
+  await p.click("#speichern");
+  await p.waitForSelector("#gespeichert:not([hidden])");
+  pruefe(erfasst[0]?.p_dringend_grund === "Krankheitsausfall im Studio" && erfasst[0]?.p_eintritt === "2026-11-28", "RPC mit Grund");
+  pruefe(await p.$('#gespeichert a[href="#mappe/dvneu1"]'), "Knopf „Unterschriftsmappe öffnen“");
+  pruefe((await p.textContent("#gespeichert")).includes("Unterschriftsmappe öffnen"), "Knopftext");
+  await p.screenshot({ path: `${OUT}/m-gespeichert.png`, fullPage: true });
+
+  // Nächster Mitarbeiter: Vergangenheit und regulärer Termin
+  await p.click("#naechster");
+  await formularFuellen(p, "2026-11-26");
+  await p.click("#speichern");
+  pruefe((await p.textContent("#fehler-eintritt")).includes("Vergangenheit"), "Vergangenheit abgelehnt");
+  await p.fill('#dienstzettel [name="eintritt"]', "2026-11-29");
+  pruefe(!(await p.$eval('#dienstzettel [name="dringend"]', (e) => e.checked)), "Häkchen nach neuem Formular leer");
+  await p.click("#speichern");
+  await p.waitForSelector("#gespeichert:not([hidden])");
+  pruefe(erfasst[1]?.p_dringend_grund === null, "regulär: kein Grund");
+
+  await p.goto(`${ADRESSE}#mitarbeiter`);
+  await p.waitForSelector("#liste tr");
+  const zeilen = await p.$$eval("#liste tr", (t) => t.map((x) => x.textContent.replace(/\s+/g, " ")));
+  pruefe(zeilen.find((z) => z.includes("Berger"))?.includes("noch nicht angemeldet"), "Liste: „noch nicht angemeldet“");
+  pruefe(!zeilen.find((z) => z.includes("Huber"))?.includes("noch nicht angemeldet"), "angemeldet: kein Merkmal");
+  pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
+  await p.close();
+}
+
+function kopf(rolle, extra = {}) {
+  const buero = ["admin", "geschaeftsfuehrung", "hr"].includes(rolle);
+  return { dienstverhaeltnis_id: "d1", mitarbeiter_id: "m1", vorname: "Anna", nachname: "Berger", funktion: "Servicekraft",
+    arbeitsort: "DemoFit Leoben", standort_id: "s1", gesellschaft: "DemoFit Steiermark GmbH", eintritt: "2026-11-28", austritt: null,
+    befristet_bis: null, angemeldet: false, dringend_grund: "Krankheitsausfall im Studio",
+    rechte: { kontakt: true, personendaten: buero, entgelt: buero, lohnverrechnung: buero, dokumente: rolle !== "verwaltung",
+      buero, hochladen_onboarding: rolle !== "verwaltung" }, ...extra };
+}
+
+async function teilAkte(browser) {
+  console.log("\n# Akte: noch nicht angemeldet, dringend, Knopf zur Mappe");
+  const d = demoDaten();
+  let k = kopf("studioleitung");
+  const p = await neueSeite(browser, d, { rpc: { akte_kopf: () => k, onboarding_stand: () => [], mitarbeiter_verzeichnis: () => [] } });
+  await p.clock.setFixedTime(new Date("2026-11-27T17:00:00Z"));
+  await anmelden(p, "sl@demo.invalid");
+  await p.goto(`${ADRESSE}#akte/d1/uebersicht`);
+  await p.waitForSelector("#akte-kopf h1");
+  const kopfText = (await p.textContent("#akte-kopf")).replace(/\s+/g, " ");
+  pruefe(kopfText.includes("noch nicht angemeldet"), "Akte-Kopf: „noch nicht angemeldet“");
+  const hinweise = (await p.textContent("#akte-hinweise")).replace(/\s+/g, " ");
+  pruefe(hinweise.includes("Dringende Anmeldung: Krankheitsausfall im Studio. Erst arbeiten lassen, wenn „angemeldet“ angezeigt wird."),
+    `Hinweis dringende Anmeldung (${hinweise})`);
+  pruefe(await p.$('#akte-kopf a[href="#mappe/d1"]'), "Leitung: Knopf „Unterschriftsmappe“");
+  await p.screenshot({ path: `${OUT}/m-akte-dringend.png`, fullPage: true });
+  await p.close();
+
+  k = kopf("verwaltung", { angemeldet: true, dringend_grund: "Krankheitsausfall im Studio" });
+  const v = await neueSeite(browser, d, { rpc: { akte_kopf: () => k, onboarding_stand: () => [], mitarbeiter_verzeichnis: () => [] } });
+  await anmelden(v, "verw@demo.invalid");
+  await v.goto(`${ADRESSE}#akte/d1/uebersicht`);
+  await v.waitForSelector("#akte-kopf h1");
+  pruefe(!(await v.$('#akte-kopf a[href="#mappe/d1"]')), "Verwaltung: kein Knopf zur Mappe");
+  pruefe(!(await v.textContent("#akte-kopf")).includes("noch nicht angemeldet"), "angemeldet: kein Merkmal");
+  pruefe(!(await v.textContent("#akte-hinweise")).includes("Dringende Anmeldung"), "angemeldet: kein Dringend-Hinweis");
+  pruefe(v.jsFehler.length === 0, `keine JS-Fehler (${v.jsFehler.join("; ")})`);
+  await v.close();
+}
+
 (async () => {
   const server = await starteServer(APP);
   const browser = await chromium.launch();
   try {
-    for (const teil of [teilAblauf, teilFehler]) await teil(browser);
+    for (const teil of [teilAblauf, teilFehler, teilFormular, teilAkte]) await teil(browser);
   } catch (e) {
     pruefe(false, `Abbruch: ${e.message.split("\n").slice(0, 3).join(" | ")}`);
   } finally {

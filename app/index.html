@@ -89,6 +89,18 @@
                 <input type="number" name="arbeitstage" min="1" max="6" step="1" inputmode="numeric" required>
               </label>
             </div>
+            <label class="ankreuzen">
+              <input type="checkbox" name="dringend">
+              Dringende Anmeldung (Dienstantritt vor dem frühesten Termin)
+            </label>
+            <div id="dringend-grund-feld" class="dringend-grund" hidden>
+              <label class="feld breit">
+                <span>Grund für die dringende Anmeldung</span>
+                <input name="dringend_grund" maxlength="300" autocomplete="off">
+              </label>
+              <p class="hinweis">Mit dem Grund übernimmst du die Verantwortung, dass die Anmeldung rechtzeitig erledigt wird.
+                Erst arbeiten lassen, wenn in der Akte „angemeldet“ steht.</p>
+            </div>
             <p class="rechnung" id="rechnung-stunden" hidden></p>
           </fieldset>
 
@@ -215,7 +227,8 @@
         <h2>Dienstzettel gespeichert</h2>
         <p id="gespeichert-text"></p>
         <div class="knopf-reihe">
-          <button type="button" class="knopf knopf-haupt" id="naechster">Nächsten Mitarbeiter erfassen</button>
+          <a href="#mitarbeiter" class="knopf knopf-haupt" id="mappe-oeffnen">Unterschriftsmappe öffnen</a>
+          <button type="button" class="knopf knopf-leise" id="naechster">Nächsten Mitarbeiter erfassen</button>
           <a href="#mitarbeiter" class="knopf knopf-leise">Zur Mitarbeiterliste</a>
         </div>
       </section>
