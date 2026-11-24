@@ -399,11 +399,80 @@ async function teilBueroAktionen(browser) {
   await p.close();
 }
 
+async function teilEinstellungen(browser) {
+  console.log("\n# Einstellungen: Fristregel, Textbausteine, Onboarding-Text, Arbeitgeber-Recht");
+  const d = mitAgRecht(demoDaten());
+  Object.assign(d.organisation[0], { anmeldung_stichzeit: "12:00:00", tage_dazwischen_vor: 0, tage_dazwischen_nach: 1 });
+  d.textbaustein = [
+    { id: "t1", organisation_id: "o", gesellschaft_id: null, schluessel: "urlaub", titel: "Urlaub", text: "5 Wochen.", reihenfolge: 1, aktiv: true },
+    { id: "t2", organisation_id: "o", gesellschaft_id: null, schluessel: "kuendigung", titel: "Kündigung", text: "Gesetzlich.", reihenfolge: 2, aktiv: true },
+  ];
+  d.onboarding_unterlage = [{ id: "b1", bezeichnung: "Bildaufnahme", reihenfolge: 1, pflicht: true, gilt_fuer: "beide", aktiv: true, text: "Alt." }];
+  const p = await neueSeite(browser, d, { rpc: { mitarbeiter_verzeichnis: () => [] } });
+  await anmelden(p, "admin@demo.invalid");
+  await p.goto(`${ADRESSE}#einstellungen`);
+  await p.waitForSelector("#textbausteine [data-id='t1']");
+  const patch = (tabelle) => p.anfragen.filter((a) => a.methode === "PATCH" && a.pfad === `/rest/v1/${tabelle}`).at(-1);
+  const post = (tabelle) => p.anfragen.filter((a) => a.methode === "POST" && a.pfad === `/rest/v1/${tabelle}`).at(-1);
+
+  // Fristregel
+  pruefe(await p.inputValue("#regeln [name=anmeldung_stichzeit]") === "12:00", "Stichzeit angezeigt");
+  await p.fill("#regeln [name=anmeldung_stichzeit]", "11:30");
+  await p.fill("#regeln [name=tage_dazwischen_nach]", "2");
+  await p.click("#regeln button[type=submit]");
+  await p.waitForTimeout(150);
+  const r = patch("organisation")?.body;
+  pruefe(r && r.anmeldung_stichzeit === "11:30" && r.tage_dazwischen_vor === 0 && r.tage_dazwischen_nach === 2 && r.vollzeit_stunden === 40,
+    `Regeln mit Fristregel gespeichert (${JSON.stringify(r)})`);
+
+  // Rechte: Spalte Arbeitgeber-Unterschrift
+  await p.check('#rechte [data-rolle="hr"][data-feld="darf_arbeitgeber_unterschreiben"]');
+  await p.waitForTimeout(150);
+  pruefe(patch("rollen_recht")?.body.darf_arbeitgeber_unterschreiben === true && patch("rollen_recht").suche.includes("rolle=eq.hr"),
+    "Recht Arbeitgeber-Unterschrift umschalten");
+  pruefe(await p.$eval('#rechte [data-rolle="admin"][data-feld="darf_arbeitgeber_unterschreiben"]', (e) => e.disabled), "Admin-Zeile gesperrt");
+
+  // Textbausteine für alle GmbHs
+  await p.fill("#textbausteine [data-id='t1'][data-feld='text']", "Fünf Wochen pro Jahr.");
+  await p.dispatchEvent("#textbausteine [data-id='t1'][data-feld='text']", "change");
+  await p.waitForTimeout(150);
+  pruefe(patch("textbaustein")?.suche.includes("id=eq.t1") && patch("textbaustein").body.text === "Fünf Wochen pro Jahr.", "Text ändern");
+  await p.uncheck("#textbausteine [data-id='t2'][data-feld='aktiv']");
+  await p.waitForTimeout(150);
+  pruefe(patch("textbaustein")?.body.aktiv === false, "deaktivieren statt löschen");
+  await p.fill("#textbaustein-neu [name=titel]", "Dienstort & Wechsel");
+  await p.fill("#textbaustein-neu [name=text]", "Der Arbeitsort kann gewechselt werden.");
+  await p.click("#textbaustein-neu button[type=submit]");
+  await p.waitForTimeout(150);
+  const neu = post("textbaustein")?.body;
+  pruefe(neu && neu.schluessel === "dienstort_wechsel" && neu.gesellschaft_id === null && neu.titel === "Dienstort & Wechsel"
+    && neu.reihenfolge === 3 && neu.organisation_id === "o", `neuer Baustein (${JSON.stringify(neu)})`);
+
+  // Je GmbH abweichend
+  await p.selectOption("#textbaustein-gmbh", "g2");
+  await p.waitForSelector("[data-abweichend='urlaub']");
+  await p.click("[data-abweichend='urlaub']");
+  await p.waitForTimeout(150);
+  const ab = post("textbaustein")?.body;
+  pruefe(ab && ab.gesellschaft_id === "g2" && ab.schluessel === "urlaub" && ab.text === "Fünf Wochen pro Jahr.", `GmbH-Fassung angelegt (${JSON.stringify(ab)})`);
+  pruefe(!p.anfragen.some((a) => a.methode === "DELETE"), "kein Löschen");
+
+  // Onboarding: Text der Unterlage
+  await p.click("#onboarding-einstellungen [data-text='b1']");
+  await p.fill("#onboarding-einstellungen textarea[data-id='b1']", "Neuer Text zur Bildaufnahme.");
+  await p.dispatchEvent("#onboarding-einstellungen textarea[data-id='b1']", "change");
+  await p.waitForTimeout(150);
+  pruefe(patch("onboarding_unterlage")?.body.text === "Neuer Text zur Bildaufnahme.", "Onboarding-Text speichern");
+  await p.screenshot({ path: `${OUT}/m-einstellungen.png`, fullPage: true });
+  pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
+  await p.close();
+}
+
 (async () => {
   const server = await starteServer(APP);
   const browser = await chromium.launch();
   try {
-    for (const teil of [teilAblauf, teilFehler, teilFormular, teilAkte, teilArbeitgeber, teilBueroAktionen]) await teil(browser);
+    for (const teil of [teilAblauf, teilFehler, teilFormular, teilAkte, teilArbeitgeber, teilBueroAktionen, teilEinstellungen]) await teil(browser);
   } catch (e) {
     pruefe(false, `Abbruch: ${e.message.split("\n").slice(0, 3).join(" | ")}`);
   } finally {

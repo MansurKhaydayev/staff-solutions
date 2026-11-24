@@ -339,6 +339,7 @@
                 <th scope="col">Dokumente</th>
                 <th scope="col">Für welche Standorte</th>
                 <th scope="col">Darf anlegen</th>
+                <th scope="col">Arbeitgeber-Unter&shy;schrift</th>
               </tr>
             </thead>
             <tbody id="rechte"></tbody>
@@ -349,6 +350,7 @@
           <div><dt>Personendaten</dt><dd>Adresse, Geburtsdatum, Stunden, Befristung</dd></div>
           <div><dt>Entgelt</dt><dd>Netto, Brutto, Zulagen</dd></div>
           <div><dt>Lohnverrechnung</dt><dd>Versicherungsnummer, IBAN, Staatsangehörigkeit</dd></div>
+          <div><dt>Arbeitgeber-Unterschrift</dt><dd>darf Dienstzettel als Arbeitgeber unterschreiben („Zu unterschreiben“)</dd></div>
         </dl>
       </section>
 
@@ -380,7 +382,7 @@
           <table class="tabelle">
             <thead><tr>
               <th scope="col">Unterlage</th><th scope="col">Reihenfolge</th><th scope="col">Pflicht</th>
-              <th scope="col">Gilt für</th><th scope="col">Aktiv</th>
+              <th scope="col">Gilt für</th><th scope="col">Aktiv</th><th scope="col">Text</th>
             </tr></thead>
             <tbody id="onboarding-einstellungen"></tbody>
           </table>
@@ -392,6 +394,20 @@
             <option value="beide">Studio und Büro</option><option value="studio">nur Studio</option><option value="buero">nur Büro</option>
           </select></label>
           <button type="submit" class="knopf knopf-haupt">Unterlage hinzufügen</button>
+        </form>
+      </section>
+
+      <section class="einstellung" aria-labelledby="t-textbausteine">
+        <h2 id="t-textbausteine">Textbausteine für den Dienstzettel</h2>
+        <p class="einleitung klein">Diese Abschnitte stehen auf jedem Dienstzettel (z. B. Urlaub, Kündigung). Eine GmbH kann
+          einen Abschnitt abweichend festlegen; sonst gilt der Text für alle. Nicht mehr benötigte Abschnitte deaktivieren.
+          Änderungen gelten für Dienstzettel, die ab jetzt unterschrieben werden.</p>
+        <label class="feld schmal"><span>Bearbeiten für</span><select id="textbaustein-gmbh"></select></label>
+        <div id="textbausteine" class="textbausteine"></div>
+        <form id="textbaustein-neu" class="regeln" data-nur-alle>
+          <label class="feld"><span>Neuer Abschnitt: Titel</span><input name="titel" maxlength="80" required></label>
+          <label class="feld breit"><span>Text</span><textarea name="text" rows="2"></textarea></label>
+          <button type="submit" class="knopf knopf-haupt">Abschnitt hinzufügen</button>
         </form>
       </section>
 
@@ -408,6 +424,15 @@
             <input type="number" name="probezeit_monate" min="0" max="12" step="1" required></label>
           <label class="feld schmal"><span>Befristung (Monate)</span>
             <input type="number" name="befristung_monate" min="0" max="24" step="1" required></label>
+          <p class="einleitung klein breit-zeile">Fristregel für den Dienstantritt: Wird der Dienstzettel bis zur Stichzeit erfasst,
+            ist der früheste Dienstantritt der nächste Tag plus „Tage dazwischen (bis Stichzeit)“; danach plus „Tage dazwischen (nach Stichzeit)“.
+            Mit „Dringende Anmeldung“ und Grund geht es früher.</p>
+          <label class="feld schmal"><span>Stichzeit</span>
+            <input type="time" name="anmeldung_stichzeit" required></label>
+          <label class="feld schmal"><span>Tage dazwischen (bis Stichzeit)</span>
+            <input type="number" name="tage_dazwischen_vor" min="0" max="7" step="1" required></label>
+          <label class="feld schmal"><span>Tage dazwischen (nach Stichzeit)</span>
+            <input type="number" name="tage_dazwischen_nach" min="0" max="7" step="1" required></label>
           <button type="submit" class="knopf knopf-haupt">Regeln speichern</button>
         </form>
       </section>

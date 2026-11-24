@@ -479,7 +479,7 @@ async function teilOffenUndEinstellungen(browser) {
   await p.fill("#onboarding-neu [name=bezeichnung]", "Arbeitsanweisung");
   await p.check("#onboarding-neu [name=pflicht]");
   await p.click("#onboarding-neu button[type=submit]");
-  await p.waitForFunction(() => document.querySelectorAll("#onboarding-einstellungen tr").length === 3);
+  await p.waitForFunction(() => document.querySelectorAll("#onboarding-einstellungen tr:not(.text-zeile)").length === 3);
   const neu = p.anfragen.find((a) => a.methode === "POST" && a.pfad === "/rest/v1/onboarding_unterlage");
   pruefe(neu && neu.body.bezeichnung === "Arbeitsanweisung" && neu.body.pflicht === true && neu.body.reihenfolge === 5, "neue Unterlage angelegt (Reihenfolge am Ende)");
   await p.uncheck('#onboarding-einstellungen [data-id="b1"][data-feld="pflicht"]');

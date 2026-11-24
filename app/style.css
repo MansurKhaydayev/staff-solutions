@@ -497,3 +497,9 @@ tr.inaktiv th input, tr.inaktiv td { opacity: .6; }
 .ag-unterzeile { color: var(--tinte-leise); font-size: .9375rem; margin-top: .2rem; }
 .ag-grund { font-size: .9375rem; margin-top: .2rem; }
 .ag-bereich { margin-top: 1rem; border-top: 1px solid var(--linie); padding-top: 1rem; }
+.textbausteine { display: grid; gap: .75rem; margin: 1rem 0; }
+.baustein { border: 1px solid var(--linie); border-radius: var(--radius); padding: .75rem 1rem; background: var(--papier); display: grid; gap: .5rem; }
+.baustein.inaktiv { opacity: .6; }
+.baustein.geerbt p { margin: 0; }
+.baustein textarea, .text-zeile textarea { font: inherit; padding: .5rem; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--papier); color: var(--tinte); width: 100%; }
+.breit-zeile { flex-basis: 100%; margin: .5rem 0 0; }
