@@ -204,6 +204,35 @@ test("technischer Fehler: 500 ohne interne Details", async () => {
   assert.ok(!r.body.meldung.includes("geheim"));
 });
 
+test("erneutes Absenden nach Netzfehler: dasselbe Dokument, nichts hochgeladen", async () => {
+  const { abh, log } = fakes();
+  const orig = abh.rpcAlsNutzer;
+  abh.rpcAlsNutzer = async (t, name, p) => {
+    if (name !== "mappe_inhalt") return orig(t, name, p);
+    const m = mappe();
+    m.schritte[0] = { art: "dienstzettel", status: "unterschrieben", dokument_id: "schon-da", fassung: "f-dz" };
+    return m;
+  };
+  const r = await bearbeiten({ token: "gut", daten: ma() }, abh);
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body, { dokument_id: "schon-da" });
+  assert.equal(log.uploads.length, 0);
+  assert.equal(log.dienst.length, 0);
+  // andere Fassung: wirklich erledigt
+  const r2 = await bearbeiten({ token: "gut", daten: ma({ fassung: "andere" }) }, abh);
+  assert.equal(r2.status, 400);
+  assert.match(r2.body.meldung, /schon erledigt/);
+});
+
+test("Arbeitgeber: erneutes Absenden nach Netzfehler liefert das fertige Dokument", async () => {
+  const { abh, log } = fakes();
+  abh.rpcAlsNutzer = async () => ({ erledigt: true, dokument_id: "fertig-1", fassung: "f-ag" });
+  const r = await bearbeiten({ token: "gut", daten: { aktion: "arbeitgeber", dokument_id: "dok-1", fassung: "f-ag", png_base64: b64(GROSS) } }, abh);
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body, { dokument_id: "fertig-1" });
+  assert.equal(log.uploads.length + log.dienst.length + log.geladen.length, 0);
+});
+
 test("unbekannte Aktion: 400", async () => {
   const { abh } = fakes();
   assert.equal((await bearbeiten({ token: "gut", daten: { aktion: "x" } }, abh)).status, 400);

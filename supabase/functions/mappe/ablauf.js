@@ -46,7 +46,11 @@ async function mitarbeiter(token, nutzer, d, abh) {
   const m = await abh.rpcAlsNutzer(token, "mappe_inhalt", { p_dienstverhaeltnis_id: d.dienstverhaeltnis_id });
   const schritt = (m.schritte || []).find((s) => s.art === d.art && (d.art === "dienstzettel" || s.unterlage_id === d.unterlage_id));
   if (!schritt) fehler("Diese Unterlage gehört nicht zu dieser Person.");
-  if (schritt.status !== "offen") fehler("Diese Unterlage ist schon erledigt.");
+  if (schritt.status !== "offen") {
+    // Erneutes Absenden derselben Fassung (z. B. Antwort ging im Netz verloren): dasselbe Dokument liefern
+    if (schritt.dokument_id && schritt.fassung === d.fassung) return schritt.dokument_id;
+    fehler("Diese Unterlage ist schon erledigt.");
+  }
   if (schritt.fassung !== d.fassung) fehler("Die Daten wurden geändert. Bitte die Mappe neu öffnen.");
   // Fristregel vor dem Hochladen prüfen (die Datenbank prüft beim Eintragen noch einmal)
   if (d.art === "dienstzettel" && m.frist?.verletzt && !d.dringend_grund?.trim()) fehler(`FRIST: ${fristMeldung(m.frist.fruehester)}`);
@@ -73,6 +77,10 @@ async function mitarbeiter(token, nutzer, d, abh) {
 
 async function arbeitgeber(token, nutzer, d, abh) {
   const a = await abh.rpcAlsNutzer(token, "arbeitgeber_inhalt", { p_dokument_id: d.dokument_id });
+  if (a.erledigt) {
+    if (a.fassung === d.fassung) return a.dokument_id;  // erneutes Absenden nach Netzfehler
+    fehler("Dieser Dienstzettel ist schon fertig unterschrieben.");
+  }
   if (a.fassung !== d.fassung) fehler("Die Daten wurden geändert. Bitte die Liste neu öffnen.");
   const png = pngLesen(d.png_base64);
   const pngMa = a.mitarbeiter?.png_pfad ? await abh.laden(a.mitarbeiter.png_pfad) : null;
