@@ -7,9 +7,11 @@ const WOCHENTAGE = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "
 function wienTeile(zeitpunkt) {
   const t = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Vienna", year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
   }).formatToParts(zeitpunkt).map((p) => [p.type, p.value]));
-  return { datum: `${t.year}-${t.month}-${t.day}`, minuten: Number(t.hour) * 60 + Number(t.minute) };
+  return { datum: `${t.year}-${t.month}-${t.day}`,
+    // Millisekunden hängen nicht von der Zeitzone ab
+    sekunden: Number(t.hour) * 3600 + Number(t.minute) * 60 + Number(t.second) + zeitpunkt.getUTCMilliseconds() / 1000 };
 }
 
 const plusTage = (iso, n) => {
@@ -19,9 +21,10 @@ const plusTage = (iso, n) => {
 };
 
 export function fruehesterDienstantritt(jetzt, regeln) {
-  const { datum, minuten } = wienTeile(jetzt);
-  const [h, m] = String(regeln.anmeldung_stichzeit || "12:00").split(":").map(Number);
-  const vorStichzeit = minuten <= h * 60 + m;
+  // Sekundengenau wie in der Datenbank (p_zeitpunkt::time <= anmeldung_stichzeit): 12:00:00 zählt noch, 12:00:01 nicht mehr
+  const { datum, sekunden } = wienTeile(jetzt);
+  const [h, m = 0, s = 0] = String(regeln.anmeldung_stichzeit || "12:00").split(":").map(Number);
+  const vorStichzeit = sekunden <= h * 3600 + m * 60 + s;
   const dazwischen = Number(vorStichzeit ? regeln.tage_dazwischen_vor ?? 0 : regeln.tage_dazwischen_nach ?? 1);
   return plusTage(datum, 1 + dazwischen);
 }
