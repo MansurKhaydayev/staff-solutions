@@ -2,7 +2,11 @@
 // und trägt das Dokument in der Datenbank ein. Die Schlüssel kommen nur aus Deno.env – nie aus dem Code.
 import * as pdfLib from "npm:pdf-lib@1.17.1";
 import fontkit from "npm:@pdf-lib/fontkit@1.1.1";
-import { DEJAVU_NORMAL, DEJAVU_FETT } from "./schrift.js";
+// Die Schrift (schrift.js, rund 300 KB) wird beim Hochladen der Edge Function von GitHub geholt und fest
+// eingebaut – zur Laufzeit braucht es kein Internet. Der Commit ist fest, damit sich nichts unbemerkt ändert.
+// Ändert sich schrift.js, hier den Commit anpassen (der Test „index.ts verweist auf den Commit …“ prüft das).
+import { DEJAVU_NORMAL, DEJAVU_FETT } from
+  "https://raw.githubusercontent.com/MansurKhaydayev/staff-solutions/f921495842c5ee2d3dc0670c0a2f727472a2ec65/supabase/functions/mappe/schrift.js";
 import { bearbeiten, Meldung } from "./ablauf.js";
 
 const URL_ = Deno.env.get("SUPABASE_URL")!;

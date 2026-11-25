@@ -104,3 +104,9 @@ liegen unverändert in Git). Es gehen dabei keine Daten verloren.
 Schriftfamilie und Lizenz). Die normale DejaVu Sans ist rund 13 % breiter als Helvetica, dadurch rutschten im
 Muster-Dienstzettel die Unterschriften auf eine zweite Seite. Condensed ist nur rund 2 % breiter, das Muster
 bleibt einseitig wie bisher. `schrift.js` ist damit rund 300 KB groß.
+
+**Nachtrag beim Deploy (25.11.2026):** Das Hochladen der Edge Function nimmt die Dateien als Text in der
+Anfrage entgegen; `schrift.js` (rund 300 KB Base64) ist dafür zu groß. `index.ts` importiert die Datei deshalb
+über eine feste GitHub-Adresse (Commit `f921495`). Supabase holt sie beim Hochladen einmal und baut sie fest
+ein. Zur Laufzeit braucht die Edge Function weiterhin kein Internet für die Schrift. Ein Test prüft, dass der
+Commit genau die aktuelle `schrift.js` enthält.

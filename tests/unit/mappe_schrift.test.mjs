@@ -20,3 +20,16 @@ test("Schrift: alle nötigen Zeichen vorhanden", () => {
 test("Schrift: klein genug", () => {
   assert.ok(statSync(new URL("../../supabase/functions/mappe/schrift.js", import.meta.url)).size < 450000);
 });
+
+// Die Edge Function lädt schrift.js beim Hochladen von GitHub (fest auf einen Commit), weil die Datei zu groß
+// ist, um sie direkt mitzuschicken. Dieser Test stellt sicher, dass der Commit genau die aktuelle Datei enthält.
+test("index.ts verweist auf den Commit mit der aktuellen schrift.js", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { execSync } = await import("node:child_process");
+  const index = readFileSync(new URL("../../supabase/functions/mappe/index.ts", import.meta.url), "utf8");
+  const treffer = index.match(/raw\.githubusercontent\.com\/MansurKhaydayev\/staff-solutions\/([0-9a-f]{40})\/supabase\/functions\/mappe\/schrift\.js/);
+  assert.ok(treffer, "index.ts importiert schrift.js nicht über einen festen Commit");
+  const damals = execSync(`git show ${treffer[1]}:supabase/functions/mappe/schrift.js`, { maxBuffer: 10e6 });
+  const jetzt = readFileSync(new URL("../../supabase/functions/mappe/schrift.js", import.meta.url));
+  assert.ok(damals.equals(jetzt), "schrift.js hat sich seit dem Commit geändert – Commit in index.ts anpassen");
+});
