@@ -3,11 +3,14 @@
 import { createRequire } from "node:module";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { pdfErstellen } from "./pdf.js";
+import { DEJAVU_NORMAL, DEJAVU_FETT } from "./schrift.js";
 
 const wurzel = process.env.NODE_PATH;
 const require = createRequire(`${wurzel}/`);
 const pdfLib = require(`${wurzel}/pdf-lib`);
 const sharp = require(`${wurzel}/sharp`);
+const fontkit = require(`${wurzel}/@pdf-lib/fontkit`);
+const schrift = { fontkit: fontkit.default ?? fontkit, normal: DEJAVU_NORMAL, fett: DEJAVU_FETT };
 const ziel = process.argv[2] || "docs/muster";
 mkdirSync(ziel, { recursive: true });
 
@@ -50,7 +53,7 @@ const dienstzettel = {
 writeFileSync(`${ziel}/dienstzettel-muster.pdf`, await pdfErstellen(pdfLib, dienstzettel, {
   mitarbeiter: { png: mitarbeiter, ort: "Leoben", datum: "24.11.2026" },
   arbeitgeber: { png: arbeitgeber, ort: "Graz", datum: "25.11.2026" },
-}));
+}, schrift));
 
 const onboarding = {
   art: "onboarding", dokument_nr: "2b9e04cd-demo", inhalt_hash: "9e107d9d372bb6826bd81d3542a419d6",
@@ -63,5 +66,5 @@ const onboarding = {
 };
 writeFileSync(`${ziel}/onboarding-muster.pdf`, await pdfErstellen(pdfLib, onboarding, {
   mitarbeiter: { png: mitarbeiter, ort: "Leoben", datum: "24.11.2026" },
-}));
+}, schrift));
 console.log(`Muster geschrieben nach ${ziel}`);

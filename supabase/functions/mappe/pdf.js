@@ -1,6 +1,7 @@
 // PDF für die Unterschriftsmappe: Dienstzettel und Onboarding-Unterlagen.
-// Reines Modul: die PDF-Bibliothek (pdf-lib) wird übergeben, damit es in der Edge Function (Deno)
-// und in den Tests (Node) gleich läuft.
+// Reines Modul: die PDF-Bibliothek (pdf-lib) und die Schrift werden übergeben, damit es in der
+// Edge Function (Deno) und in den Tests (Node) gleich läuft.
+// schrift = { fontkit, normal, fett }: gekürzte DejaVu Sans aus schrift.js (Latein, Griechisch, Kyrillisch).
 //
 // inhalt = { art, dokument_nr, inhalt_hash, kopf: { firma, adresse }, titel, untertitel?,
 //            felder: [[bezeichnung, wert]], abschnitte: [{ titel, text }],
@@ -14,13 +15,18 @@ const FUSS = 40;
 const SCHRIFT = 10;
 const ZEILE = 14;
 
-export async function pdfErstellen(lib, inhalt, unterschriften = {}) {
-  const { PDFDocument, StandardFonts, rgb } = lib;
+export async function pdfErstellen(lib, inhalt, unterschriften = {}, schrift) {
+  if (!schrift?.fontkit || !schrift.normal || !schrift.fett) throw new Error("Schrift fehlt");
+  const { PDFDocument, rgb } = lib;
   const dok = await PDFDocument.create();
+  dok.registerFontkit(schrift.fontkit);
   dok.setTitle(`${inhalt.titel} – ${inhalt.kopf?.firma || ""}`);
   dok.setCreator("Staff-Solutions");
-  const normal = await dok.embedFont(StandardFonts.Helvetica);
-  const fett = await dok.embedFont(StandardFonts.HelveticaBold);
+  // subset: nur die benutzten Buchstaben kommen ins PDF, es bleibt klein
+  const normal = await dok.embedFont(schrift.normal, { subset: true });
+  const fett = await dok.embedFont(schrift.fett, { subset: true });
+  const bekannt = new Map([normal, fett].map((f) => [f, new Set(f.getCharacterSet())]));
+  const text = (t, font = normal) => textFuer(t, bekannt.get(font));
   const breite = A4[0] - 2 * RAND;
   const schwarz = rgb(0, 0, 0);
   const grau = rgb(0.35, 0.35, 0.35);
@@ -31,7 +37,7 @@ export async function pdfErstellen(lib, inhalt, unterschriften = {}) {
     seite = dok.addPage(A4);
     y = A4[1] - RAND;
     // Kopf mit Firma und Adresse auf jeder Seite
-    seite.drawText(text(inhalt.kopf?.firma), { x: RAND, y, size: 9, font: fett, color: grau });
+    seite.drawText(text(inhalt.kopf?.firma, fett), { x: RAND, y, size: 9, font: fett, color: grau });
     y -= 12;
     seite.drawText(text(inhalt.kopf?.adresse), { x: RAND, y, size: 9, font: normal, color: grau });
     y -= 28;
@@ -41,12 +47,30 @@ export async function pdfErstellen(lib, inhalt, unterschriften = {}) {
   // Text in Zeilen umbrechen, die in die Breite passen
   const umbrechen = (t, font, groesse, max) => {
     const zeilen = [];
-    for (const absatz of text(t).split("\n")) {
+    for (const absatz of text(t, font).split("\n")) {
       let zeile = "";
       for (const wort of absatz.split(/\s+/).filter(Boolean)) {
         const probe = zeile ? `${zeile} ${wort}` : wort;
-        if (font.widthOfTextAtSize(probe, groesse) <= max) zeile = probe;
-        else { if (zeile) zeilen.push(zeile); zeile = wort; }
+        if (font.widthOfTextAtSize(probe, groesse) <= max) { zeile = probe; continue; }
+        if (zeile) zeilen.push(zeile);
+        // Ein Wort, das allein nicht in die Zeile passt, mit Bindestrich trennen
+        // Gemessen wird nur ein Stück, das höchstens in die Zeile passen kann (kein Zeichen ist schmaler als
+        // 0,2 × Schriftgröße), und die Trennstelle wird halbierend gesucht. So bleibt es auch bei
+        // tausenden Zeichen ohne Leerzeichen schnell.
+        const hoechstens = Math.ceil(max / (groesse * 0.2)) + 1;
+        let rest = wort;
+        while (rest.length > hoechstens || font.widthOfTextAtSize(rest, groesse) > max) {
+          let lo = 1; // mindestens ein Zeichen je Zeile, sonst Endlosschleife
+          let hi = Math.min(rest.length - 1, hoechstens);
+          while (lo < hi) {
+            const mitte = Math.ceil((lo + hi) / 2);
+            if (font.widthOfTextAtSize(`${rest.slice(0, mitte)}-`, groesse) <= max) lo = mitte;
+            else hi = mitte - 1;
+          }
+          zeilen.push(`${rest.slice(0, lo)}-`);
+          rest = rest.slice(lo);
+        }
+        zeile = rest;
       }
       zeilen.push(zeile);
     }
@@ -71,7 +95,7 @@ export async function pdfErstellen(lib, inhalt, unterschriften = {}) {
   for (const [bez, wert] of inhalt.felder || []) {
     const zeilen = umbrechen(wert, normal, SCHRIFT, breite - spalte);
     platz(ZEILE * zeilen.length + 4);
-    seite.drawText(text(bez), { x: RAND, y, size: SCHRIFT, font: fett });
+    seite.drawText(text(bez, fett), { x: RAND, y, size: SCHRIFT, font: fett });
     for (const z of zeilen) {
       seite.drawText(z, { x: RAND + spalte, y, size: SCHRIFT, font: normal });
       y -= ZEILE;
@@ -99,14 +123,14 @@ export async function pdfErstellen(lib, inhalt, unterschriften = {}) {
       const u = unterschriften[z.rolle];
       const unten = y - 80;
       if (u?.ort || u?.datum) {
-        seite.drawText(`${text(u.ort)}, ${text(u.datum)}`, { x, y, size: SCHRIFT, font: normal });
+        seite.drawText(text(`${u.ort ?? ""}, ${u.datum ?? ""}`), { x, y, size: SCHRIFT, font: normal });
       }
       if (u?.png) {
         const bild = await dok.embedPng(u.png);
         const mass = bild.scaleToFit(Math.min(180, spaltenBreite - 20), 55);
         seite.drawImage(bild, { x, y: unten + 6, width: mass.width, height: mass.height });
       } else if (z.rolle === "mitarbeiter" && unterschriften.abgelehnt) {
-        seite.drawText(`Abgelehnt am ${text(unterschriften.abgelehnt.datum)}`, { x, y: unten + 20, size: SCHRIFT, font: fett });
+        seite.drawText(text(`Abgelehnt am ${unterschriften.abgelehnt.datum ?? ""}`, fett), { x, y: unten + 20, size: SCHRIFT, font: fett });
       } else {
         seite.drawText("noch nicht unterschrieben", { x, y: unten + 20, size: 9, font: normal, color: grau });
       }
@@ -127,11 +151,10 @@ export async function pdfErstellen(lib, inhalt, unterschriften = {}) {
   return dok.save();
 }
 
-// Zeichen, die die Standardschrift (WinAnsi) nicht kennt, ersetzen. WinAnsi kennt Latin-1 (Umlaute, ß …)
-// und zusätzlich € ‚ ƒ „ … † ‡ ˆ ‰ Š ‹ Œ Ž ‘ ’ “ ” • – — ˜ ™ š › œ ž Ÿ.
-const WINANSI_EXTRA = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
-function text(t) {
-  return [...String(t ?? "").replace(/\t/g, " ")]
-    .map((z) => (z === "\n" || (z >= "\x20" && z <= "\x7E") || (z >= "\u00A0" && z <= "\u00FF") || WINANSI_EXTRA.includes(z) ? z : "?"))
+// Zeichen, die die Schrift nicht kennt (z. B. Emoji, Chinesisch), werden zu „?“ – so entsteht das PDF immer.
+// NFC setzt zerlegte Akzente (z. B. „C“ + Akut) zu einem Zeichen („Ć“) zusammen.
+function textFuer(t, bekannt) {
+  return [...String(t ?? "").replace(/\r\n?/g, "\n").replace(/\t/g, " ").normalize("NFC")]
+    .map((z) => (z === "\n" || bekannt.has(z.codePointAt(0)) ? z : "?"))
     .join("");
 }

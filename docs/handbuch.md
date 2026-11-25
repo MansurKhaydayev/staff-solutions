@@ -307,6 +307,16 @@ Der neue Mitarbeiter unterschreibt den Dienstzettel und die Onboarding-Unterlage
 Daraus entsteht ein PDF, das aussieht wie ein gedruckter Dienstzettel. Ein Muster liegt unter
 `docs/muster/dienstzettel-muster.pdf`.
 
+**Schrift und Sonderzeichen im PDF:** Das PDF nutzt die freie Schrift **DejaVu Sans Condensed** (sie ist
+ungefähr so breit wie das frühere Helvetica). Damit erscheinen auch Namen wie „Ćirić“, „Işık“, „Олена“ oder „Αλέξανδρος“
+richtig. Ein Zeichen, das die Schrift nicht kennt (z. B. ein Emoji), wird als „?“ gedruckt. Sehr lange
+Wörter werden am Zeilenende mit Bindestrich getrennt. Die Schrift liegt gekürzt in
+`supabase/functions/mappe/schrift.js`. Neu erzeugen nur mit `generator/schrift_kuerzen.py` (Anleitung im Kopf
+des Skripts), nie von Hand. Weil die Datei zu groß ist, um sie beim Hochladen der Edge Function direkt
+mitzuschicken, holt `index.ts` sie beim Hochladen von GitHub, fest auf einen Commit. Wird `schrift.js` neu
+erzeugt, muss dieser Commit in `index.ts` angepasst werden; ein Test meldet es sonst. Kopfzeile, Feldbezeichnungen, Ort und Unterschriftsbeschriftung werden nicht
+umbrochen; sehr lange Einträge dort können weiterhin über den Rand laufen.
+
 ### Der Ablauf
 
 1. **Dienstzettel erfassen** (Leitung oder Büro). Danach erscheint der Knopf **Unterschriftsmappe öffnen**.

@@ -19,3 +19,22 @@ export async function pdfText(bytes) {
 // Kleines gültiges PNG (1×1 Pixel, schwarz)
 export const MINI_PNG = Uint8Array.from(Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"));
+// Schrift für die PDFs (gekürzte DejaVu Sans) und fontkit zum Einbetten
+export const fontkit = require(`${wurzel}/@pdf-lib/fontkit`).default ?? require(`${wurzel}/@pdf-lib/fontkit`);
+export async function schriftLaden() {
+  const { DEJAVU_NORMAL, DEJAVU_FETT } = await import("../../supabase/functions/mappe/schrift.js");
+  return { fontkit, normal: DEJAVU_NORMAL, fett: DEJAVU_FETT };
+}
+// Alle Textstücke mit Position und Breite (für Prüfungen am Seitenrand)
+export async function pdfZeilen(bytes) {
+  const pdfjs = await import(pathToFileURL(`${wurzel}/pdfjs-dist/legacy/build/pdf.mjs`).href);
+  const dok = await pdfjs.getDocument({ data: new Uint8Array(bytes), disableFontFace: true, verbosity: 0,
+    standardFontDataUrl: `${wurzel}/pdfjs-dist/standard_fonts/` }).promise;
+  const zeilen = [];
+  for (let i = 1; i <= dok.numPages; i++) {
+    for (const x of (await (await dok.getPage(i)).getTextContent()).items) {
+      if (x.str) zeilen.push({ seite: i, str: x.str, x: x.transform[4], breite: x.width });
+    }
+  }
+  return zeilen;
+}
