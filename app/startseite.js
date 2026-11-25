@@ -26,15 +26,17 @@ export async function startseiteZeigen(stand, { offenePunkte = false } = {}) {
   auswahl ||= { jahr, monat, standort: "" };
   $("#start-inhalt").innerHTML = '<p class="start-laden">Zahlen werden geladen …</p>';
   try {
-    const [zeilen, entgelt, offen, unterschreiben] = await Promise.all([
+    const [verzeichnis, status, entgelt, offen, unterschreiben] = await Promise.all([
       api.funktion("mitarbeiter_verzeichnis"),
+      // Status (z. B. „nicht angetreten“) aus dem Austritt-Modul; fehlt er, zählt alles wie bisher
+      api.funktion("mitarbeiter_status").catch(() => null),
       stand.recht.sieht_entgelt
         ? api.lesen("entgelt", "select=dienstverhaeltnis_id,brutto,gueltig_ab,storniert_am") : Promise.resolve(null),
       offenePunkte ? api.funktion("offene_punkte").catch(() => null) : Promise.resolve(null),
       stand.recht.darf_arbeitgeber_unterschreiben
         ? api.funktion("arbeitgeber_offen").catch(() => null) : Promise.resolve(null),
     ]);
-    geladen = { zeilen, entgelt, offen, unterschreiben };
+    geladen = { zeilen: k.mitStatus(verzeichnis, status), entgelt, offen, unterschreiben };
   } catch (fehler) {
     $("#start-inhalt").innerHTML = `<p class="fehler" role="alert">Die Zahlen konnten nicht geladen werden: ${text(fehler.message)}</p>`;
     return;

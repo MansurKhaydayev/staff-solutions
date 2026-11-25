@@ -14,7 +14,7 @@ function textFuer(t, bekannt) {
 
 const zahl = (n, stellen = 0) => (n === null || n === undefined ? "–"
   : Number(n).toLocaleString("de-AT", { minimumFractionDigits: stellen, maximumFractionDigits: stellen, useGrouping: true })
-    .replace(/ | /g, "."));
+    .replace(/\u202f|\u00a0/g, "."));
 const prozent = (n) => (n === null || n === undefined ? "–" : `${zahl(n, 1)} %`);
 const datum = (iso) => (iso ? iso.split("-").reverse().join(".") : "–");
 

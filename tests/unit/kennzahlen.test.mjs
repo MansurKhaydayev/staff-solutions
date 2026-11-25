@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   monatsEnde, imDienst, bestandNach, monatsZahlen, jahresZahlen, zwoelfMonate, fruehfluktuation,
-  verteilung, hinweise, zaehlbar, vollzeitaequivalente, betriebszugehoerigkeit, personalkosten, monatPlus,
+  verteilung, hinweise, zaehlbar, mitStatus, vollzeitaequivalente, betriebszugehoerigkeit, personalkosten, monatPlus,
 } from "../../app/kennzahlen.js";
 
 // Kleine Hilfe: ein Dienstverhältnis, wie es mitarbeiter_verzeichnis liefert
@@ -159,4 +159,20 @@ test("nicht angetreten zählt nicht mit", () => {
     dv("2026-11-14", null, { status: "storno_ausstaendig" }), dv("2026-11-15", null, { status: "nicht_angetreten_gemeldet" })];
   // „nicht angetreten gemeldet“ ist noch nicht bestätigt und zählt deshalb noch mit
   assert.equal(monatsZahlen(zaehlbar(z), 2026, 11, "2026-11-25").eintritte, 3);
+});
+
+test("Status aus mitarbeiter_status wird über dienstverhaeltnis_id verknüpft", () => {
+  const a = dv("2026-11-03"), b = dv("2026-11-10"), c = dv("2026-11-12");
+  const status = [
+    { dienstverhaeltnis_id: a.dienstverhaeltnis_id, status: "nicht_angetreten", austritt: null },
+    { dienstverhaeltnis_id: b.dienstverhaeltnis_id, status: "storno_ausstaendig", austritt: null },
+    { dienstverhaeltnis_id: c.dienstverhaeltnis_id, status: "abgemeldet", austritt: "2026-11-20" },
+  ];
+  const z = mitStatus([a, b, c], status);
+  assert.equal(z[2].austritt, "2026-11-20");
+  const m = monatsZahlen(zaehlbar(z), 2026, 11, "2026-11-25");
+  assert.equal(m.eintritte, 1);
+  assert.equal(m.austritte, 1);
+  // Ohne Status (Funktion noch nicht da) bleibt alles, wie es ist
+  assert.deepEqual(mitStatus([a, b], null), [a, b]);
 });

@@ -36,6 +36,17 @@ export function probezeitEnde(eintritt, monate) {
 const NICHT_ANGETRETEN = new Set(["nicht_angetreten", "storno_ausstaendig"]);
 export const zaehlbar = (zeilen) => zeilen.filter((z) => !NICHT_ANGETRETEN.has(z.status));
 
+// Status kommt aus mitarbeiter_status() (dienstverhaeltnis_id, status, austritt) und wird über
+// dienstverhaeltnis_id zu den Zeilen des Verzeichnisses gelegt. Ohne Status (null) bleiben die Zeilen, wie sie sind.
+export function mitStatus(zeilen, status) {
+  if (!Array.isArray(status)) return zeilen;
+  const je = new Map(status.map((s) => [s.dienstverhaeltnis_id, s]));
+  return zeilen.map((z) => {
+    const s = je.get(z.dienstverhaeltnis_id);
+    return s ? { ...z, status: s.status, austritt: z.austritt || s.austritt || null } : z;
+  });
+}
+
 // Im Dienst an einem Tag: ab dem Eintritt bis einschließlich letztem Arbeitstag (Austritt)
 export const imDienst = (z, tag) => z.eintritt <= tag && (!z.austritt || z.austritt >= tag);
 

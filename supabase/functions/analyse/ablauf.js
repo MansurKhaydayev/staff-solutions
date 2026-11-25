@@ -4,6 +4,7 @@
 // abh = { nutzer(token), rpc(token, name, params), lesen(token, tabelle, abfrage), pdfLib, schrift, jetzt() }
 import { berichtErstellen } from "./bericht.js";
 import { analysePdf } from "./pdf.js";
+import { mitStatus } from "./kennzahlen.js";
 
 export class Meldung extends Error {}
 
@@ -34,13 +35,16 @@ export async function bearbeiten({ token, daten }, abh) {
     const protokollNr = await abh.rpc(token, "analyse_export_vermerken", { p_jahr: jahr, p_monat: monat, p_standort: standort });
     const profil = (await abh.lesen(token, "profil", `select=rolle&user_id=eq.${nutzer.id}`))[0];
     if (!profil) throw new Meldung("Dein Zugang ist keiner Firma zugeordnet.");
-    const [rechte, orgs, standorte, funktionen, zeilen] = await Promise.all([
+    const [rechte, orgs, standorte, funktionen, verzeichnis, status] = await Promise.all([
       abh.lesen(token, "rollen_recht", `select=bezeichnung,sieht_personendaten,sieht_entgelt&rolle=eq.${encodeURIComponent(profil.rolle)}`),
       abh.lesen(token, "organisation", "select=name,probezeit_monate,vollzeit_stunden"),
       abh.lesen(token, "standort", "select=id,name"),
       abh.lesen(token, "funktion", "select=id,name"),
       abh.rpc(token, "mitarbeiter_verzeichnis", {}),
+      // Status aus dem Austritt-Modul („nicht angetreten“ zählt nicht); fehlt er, zählt alles wie bisher
+      abh.rpc(token, "mitarbeiter_status", {}).catch(() => null),
     ]);
+    const zeilen = mitStatus(verzeichnis, status);
     const recht = rechte[0] || {};
     const entgelt = recht.sieht_entgelt
       ? await abh.lesen(token, "entgelt", "select=dienstverhaeltnis_id,brutto,gueltig_ab,storniert_am") : null;
