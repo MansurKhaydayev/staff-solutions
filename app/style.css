@@ -498,7 +498,7 @@ a.name:hover { text-decoration: underline; }
 .angaben dt { font-size: .8125rem; color: var(--tinte-leise); }
 .angaben dd { margin: .1rem 0 0; }
 .checkliste { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
-.checkliste li { display: grid; grid-template-columns: 1.25rem 1fr auto; gap: .5rem; align-items: baseline; }
+.checkliste li { display: grid; grid-template-columns: 1.25rem minmax(0, 1fr) auto; gap: .5rem; align-items: baseline; }
 .check-zeichen::before { content: "○"; color: var(--tinte-leise); }
 .check-erledigt .check-zeichen::before, .check-geklaert .check-zeichen::before,
 .check-abgelehnt .check-zeichen::before { content: "✓"; color: var(--tanne); font-weight: 700; }
@@ -753,3 +753,45 @@ a.name { font-weight: 700; text-decoration: underline; text-underline-offset: 3p
 #seite-mitarbeiter .tabelle td.zahl .merkmal { display: table; margin: 0 0 .15rem auto; }
 #seite-mitarbeiter .tabelle tbody tr { filter: none; }
 #seite-mitarbeiter .tabelle-rahmen { overflow-x: auto; }
+
+/* ---------- Personalakte ---------- */
+.zurueck { margin: 0 0 1rem; }
+.akte-kopf {
+  position: relative; overflow: hidden; color: #fff; margin-bottom: 1.25rem;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 1.25rem; align-items: center;
+  padding: 1.75rem 2rem; border-radius: var(--radius-gross);
+  background: linear-gradient(120deg, #001d39 0%, #0a4174 55%, #2b7da3 100%);
+  box-shadow: 0 20px 50px rgba(0, 29, 57, .35);
+}
+.akte-kopf::after {
+  content: ""; position: absolute; right: -60px; top: -90px; width: 300px; height: 300px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(189, 216, 233, .5), rgba(189, 216, 233, 0) 70%);
+}
+.akte-kopf > * { position: relative; z-index: 1; }
+.akte-kopf .avatar { grid-column: 1; grid-row: 1 / span 3; margin: 0; border: 2px solid rgba(255, 255, 255, .5); }
+.akte-kopf .seitentitel, .akte-kopf .akte-unterzeile, .akte-kopf .akte-status { grid-column: 2; color: #fff; margin-bottom: 0; }
+.akte-kopf .akte-unterzeile { color: #dcebf6; }
+.akte-kopf .akte-status { margin: .35rem 0 0; }
+.akte-kopf .akte-aktionen { grid-column: 3; grid-row: 1 / span 3; margin: 0; }
+.akte-kopf .knopf-leise { background: #fff; color: #001d39; border-color: #fff; }
+.akte-kopf .merkmal-fehlt { margin-left: .5rem; }
+.hinweise { list-style: none; padding: 1rem 1.25rem; border-left: 1px solid var(--kante); border-radius: 20px; background: var(--papier); position: relative; }
+.hinweise li { padding-left: 1.5rem; position: relative; }
+.hinweise li::before { content: "!"; position: absolute; left: 0; top: .15rem; width: 1.1rem; height: 1.1rem; border-radius: 50%; background: var(--fehler); color: var(--auf-fehler); font-size: .75rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+.akte-raster { gap: 1.25rem; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); }
+.akte-block h2 { margin-bottom: .75rem; }
+.angaben { gap: .85rem; }
+.angaben dt { font-weight: 600; }
+.fortschritt { display: block; width: 100%; height: .75rem; margin: 0 0 1rem; border: 0; border-radius: 999px; overflow: hidden; background: var(--grund); appearance: none; -webkit-appearance: none; }
+.fortschritt::-webkit-progress-bar { background: var(--grund); border-radius: 999px; }
+.fortschritt::-webkit-progress-value { background: linear-gradient(90deg, #7bbde8, #0a4174); border-radius: 999px; }
+.fortschritt::-moz-progress-bar { background: linear-gradient(90deg, #7bbde8, #0a4174); border-radius: 999px; }
+.checkliste { gap: .5rem; }
+.checkliste li { background: var(--grund); border: 1px solid var(--linie); border-radius: 16px; padding: .6rem .85rem; align-items: center; }
+.check-erledigt .check-zeichen::before, .check-geklaert .check-zeichen::before, .check-abgelehnt .check-zeichen::before { color: var(--tanne); }
+.check-status { font-weight: 600; }
+@media (max-width: 700px) {
+  .akte-kopf { grid-template-columns: auto minmax(0, 1fr); padding: 1.25rem; }
+  .akte-kopf .akte-aktionen { grid-column: 1 / -1; grid-row: auto; margin-top: .75rem; }
+  .akte-kopf .avatar-gross { width: 3.5rem; height: 3.5rem; font-size: 1.25rem; }
+}
