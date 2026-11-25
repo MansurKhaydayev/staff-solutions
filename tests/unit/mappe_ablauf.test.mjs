@@ -2,9 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { deflateSync } from "node:zlib";
-import { pdfLib, pdfText } from "./_global.mjs";
+import { pdfLib, pdfText, schriftLaden } from "./_global.mjs";
 import { bearbeiten, Meldung } from "../../supabase/functions/mappe/ablauf.js";
 import { demoDienstzettel } from "./mappe_pdf.test.mjs";
+
+const schrift = await schriftLaden();
 
 // Gültiges PNG mit zufälligen Pixeln (lässt sich nicht klein packen)
 function crc32(b) {
@@ -57,6 +59,7 @@ function fakes({ dienstFehler } = {}) {
     laden: async (pfad) => { log.geladen.push(pfad); return GROSS; },
     sha256: async (b) => createHash("sha256").update(b).digest("hex"),
     pdfLib,
+    schrift,
     uuid: () => "11112222-3333-4444-5555-666677778888",
   };
   return { abh, log };

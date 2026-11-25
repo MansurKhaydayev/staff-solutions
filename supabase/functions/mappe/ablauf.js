@@ -1,5 +1,5 @@
 // Ablauf der Edge Function „mappe“ – ohne Deno-Abhängigkeiten, damit er in Node getestet werden kann.
-// abh = { nutzer, rpcAlsNutzer, rpcAlsDienst, hochladen, laden, sha256, pdfLib, uuid }
+// abh = { nutzer, rpcAlsNutzer, rpcAlsDienst, hochladen, laden, sha256, pdfLib, schrift, uuid }
 import { pdfErstellen } from "./pdf.js";
 
 const PNG_MIN = 1000;          // kleiner ist kein erkennbarer Namenszug
@@ -61,7 +61,7 @@ async function mitarbeiter(token, nutzer, d, abh) {
   const ordner = d.art === "dienstzettel" ? "vereinbarung" : "onboarding";
   const heute = datumWien();
   const pdf = await pdfErstellen(abh.pdfLib, { ...schritt.inhalt, dokument_nr: id, inhalt_hash: schritt.fassung },
-    abgelehnt ? { abgelehnt: { ort: m.ort, datum: heute } } : { mitarbeiter: { png, ort: m.ort, datum: heute } });
+    abgelehnt ? { abgelehnt: { ort: m.ort, datum: heute } } : { mitarbeiter: { png, ort: m.ort, datum: heute } }, abh.schrift);
   const pfadPdf = `${basis}/${ordner}/${id}.pdf`;
   const pfadPng = png ? `${basis}/unterschrift/${id}.png` : null;
   const h = await ablegen(abh, pfadPdf, pdf, pfadPng, png);
@@ -90,7 +90,7 @@ async function arbeitgeber(token, nutzer, d, abh) {
   const pdf = await pdfErstellen(abh.pdfLib, { ...a.inhalt, dokument_nr: id, inhalt_hash: a.fassung }, {
     mitarbeiter: { png: pngMa, ort: a.mitarbeiter?.ort, datum: a.mitarbeiter?.datum ? datumWien(new Date(a.mitarbeiter.datum)) : "" },
     arbeitgeber: { png, ort: a.arbeitgeber_ort, datum: datumWien() },
-  });
+  }, abh.schrift);
   const pfadPdf = `${basis}/vereinbarung/${id}.pdf`;
   const pfadPng = `${basis}/unterschrift/${id}.png`;
   const h = await ablegen(abh, pfadPdf, pdf, pfadPng, png);
