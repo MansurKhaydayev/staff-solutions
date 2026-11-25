@@ -82,7 +82,8 @@ function steuerungFuellen(stand, heute) {
 // ------------------------------------------------------------------ Zeichnen
 
 function zeichnen(stand, heute) {
-  const zeilen = auswahl.standort ? geladen.zeilen.filter((z) => z.standort_id === auswahl.standort) : geladen.zeilen;
+  const alle = k.zaehlbar(geladen.zeilen);
+  const zeilen = auswahl.standort ? alle.filter((z) => z.standort_id === auswahl.standort) : alle;
   const { jahr, monat } = auswahl;
   const probezeit = stand.organisation?.probezeit_monate ?? 1;
   const m = k.monatsZahlen(zeilen, jahr, monat, heute);

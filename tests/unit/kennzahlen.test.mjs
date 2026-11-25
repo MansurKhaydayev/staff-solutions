@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   monatsEnde, imDienst, bestandNach, monatsZahlen, jahresZahlen, zwoelfMonate, fruehfluktuation,
-  verteilung, hinweise, vollzeitaequivalente, betriebszugehoerigkeit, personalkosten, monatPlus,
+  verteilung, hinweise, zaehlbar, vollzeitaequivalente, betriebszugehoerigkeit, personalkosten, monatPlus,
 } from "../../app/kennzahlen.js";
 
 // Kleine Hilfe: ein Dienstverhältnis, wie es mitarbeiter_verzeichnis liefert
@@ -152,4 +152,9 @@ test("Personalkosten: gültiges Brutto je aktivem Dienstverhältnis, ohne Storno
     { dienstverhaeltnis_id: weg.dienstverhaeltnis_id, brutto: 700, gueltig_ab: "2025-01-01" },
   ];
   assert.deepEqual(personalkosten(entgelt, [a, b, weg], "2026-11-25"), { summe: 2000, anzahl: 2 });
+});
+
+test("nicht angetreten zählt nicht mit", () => {
+  const z = [dv("2026-11-10"), dv("2026-11-12", null, { status: "nicht_angetreten" }), dv("2026-11-13", null, { status: "aktiv" })];
+  assert.equal(monatsZahlen(zaehlbar(z), 2026, 11, "2026-11-25").eintritte, 2);
 });

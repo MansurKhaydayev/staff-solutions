@@ -31,6 +31,9 @@ export function probezeitEnde(eintritt, monate) {
   return tagPlus(isoAus(z.jahr, z.monat, t), -1);
 }
 
+// Wer nie angetreten ist, zählt weder als Eintritt noch als Austritt (Kennzeichen kommt mit dem Austritt-Modul)
+export const zaehlbar = (zeilen) => zeilen.filter((z) => z.status !== "nicht_angetreten");
+
 // Im Dienst an einem Tag: ab dem Eintritt bis einschließlich letztem Arbeitstag (Austritt)
 export const imDienst = (z, tag) => z.eintritt <= tag && (!z.austritt || z.austritt >= tag);
 
