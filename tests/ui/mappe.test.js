@@ -145,6 +145,9 @@ async function teilFehler(browser) {
 }
 
 async function formularFuellen(p, eintritt) {
+  // Nach der Anmeldung kommt die Startseite; das Formular liegt unter „Neuer Mitarbeiter“
+  await p.evaluate(() => { location.hash = "erfassen"; });
+  await p.waitForSelector("#seite-erfassen:not([hidden])");
   await p.selectOption('#dienstzettel [name="funktion"]', "f2");
   await p.selectOption('#dienstzettel [name="standort"]', "s1");
   await p.fill('#dienstzettel [name="eintritt"]', eintritt);

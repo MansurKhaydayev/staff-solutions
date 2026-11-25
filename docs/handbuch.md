@@ -51,6 +51,8 @@ umgeht, bekommt er keine Daten, die er nicht sehen darf.
 | `app/akte_dokumente.js` | Reiter „Dokumente“: hochladen, ansehen, ersetzen, Klärung schließen |
 | `app/akte_stammdaten.js` | Reiter „Lohnverrechnung“ und „Änderung eintragen“ |
 | `app/akte_protokoll.js` | Reiter „Protokoll“ |
+| `app/startseite.js`, `app/startseite.css` | Startseite mit Kennzahlen, Diagrammen und PDF-Ausdruck |
+| `app/kennzahlen.js` | Rechnungen der Startseite (Fluktuation, Stände, Verteilungen), ohne Seitenzugriff testbar |
 | `app/offene_punkte.js` | Seite „Offene Punkte“ (wem fehlt was) |
 | `app/datei.js` | Dateien prüfen (Typ, Größe), Fingerabdruck, Ablageort |
 | `app/hilfen.js` | Kleine Hilfen für alle Seiten (Datum, Euro, Text) |
@@ -391,11 +393,43 @@ Bis dahin nur mit erfundenen Daten testen.
 
 ---
 
-## 9. Tests ausführen
+## 9. Die Startseite (Kennzahlen)
+
+Nach der Anmeldung kommt jetzt die **Startseite**. Das Formular für neue Mitarbeiter liegt unter „Neuer Mitarbeiter“.
+
+**Was sie zeigt**
+- **Gewählter Monat** (Voreinstellung: der laufende Monat, gezählt bis heute): im Dienst, Eintritte, Austritte,
+  Fluktuation im Monat, Fluktuation der letzten 12 Monate, Frühfluktuation der letzten 12 Monate.
+- **Jahresübersicht** (Jänner bis Dezember): Summen, Fluktuation im Jahr, Säulen für Eintritte und Austritte,
+  Linie für den Personalstand, Tabelle mit allen Monaten.
+- **Personal heute:** Anzahl, Vollzeitäquivalente, durchschnittliche Betriebszugehörigkeit, Brutto im Monat,
+  Aufteilung nach Arbeitsort, Beschäftigungsart und Funktion.
+- **Was bald ansteht (30 Tage):** noch nicht angemeldet, kommende Dienstantritte, Probezeit endet, Befristung endet,
+  dazu die Zahl der offenen Punkte und „Zu unterschreiben“.
+
+**So wird gerechnet**
+- Fluktuation = Austritte ÷ durchschnittlicher Personalstand × 100.
+  Monat: Durchschnitt aus Stand am Anfang und Ende. 12 Monate und Jahr: Durchschnitt der Monatsend-Stände.
+- Frühfluktuation = Anteil der Austritte, deren letzter Arbeitstag noch in der Probezeit lag
+  (Probezeit aus den Einstellungen, `probezeit_monate`).
+- Eintritt = erster Arbeitstag, Austritt = letzter Arbeitstag (Feld `austritt` im Dienstverhältnis).
+
+**Rechte:** Die Zahlen kommen aus `mitarbeiter_verzeichnis`. Jede Rolle sieht also nur die Mitarbeiter in ihrer Reichweite.
+Beschäftigungsart, Vollzeitäquivalente und Befristungen nur mit „Personendaten“, Brutto nur mit „Entgelt“.
+
+**PDF:** Knopf „Als PDF speichern“ öffnet den Druckdialog. Dort „Als PDF speichern“ wählen
+(am iPad: Teilen → Drucken → „Sichern“ bzw. „In Dateien sichern“). Die Daten verlassen dabei das Gerät nicht.
+
+**Wichtig:** Austritte kann die App erst mit dem Austritt-Modul erfassen. Bis dahin steht ein Hinweis auf der Seite,
+und Austritte und Fluktuation bleiben bei 0.
+
+---
+
+## 10. Tests ausführen
 
 | Art | Wie | Bestanden, wenn |
 |---|---|---|
-| Einheitstests und Browser-Tests | im Terminal: `tests/lauf.sh` | am Ende „Mappe-Tests bestanden“, keine Zeile mit „FEHL“ |
+| Einheitstests und Browser-Tests | im Terminal: `tests/lauf.sh` | am Ende „UI-Tests Startseite bestanden“, keine Zeile mit „FEHL“ |
 | Datenbank-Tests | Inhalt einer Datei aus `supabase/tests/` im Supabase **SQL Editor** ausführen | Ergebnis „alle Tests bestanden“ |
 
 Die Datenbank-Tests legen Testpersonen nur innerhalb einer Transaktion an und machen am Ende
@@ -422,7 +456,7 @@ Genau dafür ist die Prüfziffer da: Sie fängt Tippfehler ab.
 
 ---
 
-## 10. Begriffe
+## 11. Begriffe
 
 | Begriff | Bedeutung |
 |---|---|

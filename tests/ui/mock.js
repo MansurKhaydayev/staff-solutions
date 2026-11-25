@@ -172,7 +172,7 @@ function pruefer() {
 
 module.exports = { chromium, demoDaten, starteServer, neueSeite, anmelden, pruefer, plus, ADRESSE };
 
-// Rauchtest: Anmelden als Personalbüro, Dienstzettel-Seite sichtbar, keine JS-Fehler
+// Rauchtest: Anmelden als Personalbüro, Startseite sichtbar, Dienstzettel erreichbar, keine JS-Fehler
 if (require.main === module) {
   (async () => {
     const [app = "app"] = process.argv.slice(2);
@@ -182,9 +182,12 @@ if (require.main === module) {
     try {
       const daten = demoDaten();
       daten.dienstverhaeltnis = []; daten.mitarbeiter = [];
-      const p = await neueSeite(browser, daten, { rpc: { mitarbeiter_verzeichnis: () => [] } });
+      const p = await neueSeite(browser, daten, { rpc: { mitarbeiter_verzeichnis: () => [], offene_punkte: () => [] } });
       await anmelden(p, "hr@demo.invalid");
-      pruefe(!(await p.$eval("#seite-erfassen", (e) => e.hidden)), "Dienstzettel-Seite ist nach der Anmeldung sichtbar");
+      pruefe(!(await p.$eval("#seite-start", (e) => e.hidden)), "Startseite ist nach der Anmeldung sichtbar");
+      await p.click('.navigation a[data-ziel="erfassen"]');
+      await p.waitForSelector("#seite-erfassen:not([hidden])").catch(() => {});
+      pruefe(!(await p.$eval("#seite-erfassen", (e) => e.hidden)), "Dienstzettel-Seite über „Neuer Mitarbeiter“ erreichbar");
       pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
     } finally {
       await browser.close();

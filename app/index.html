@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="startseite.css">
   <script type="module" src="app.js"></script>
 </head>
 <body>
@@ -35,6 +36,7 @@
     <header class="kopf">
       <span class="marke marke-klein">Staff-Solutions</span>
       <nav class="navigation" aria-label="Hauptnavigation">
+        <a href="#start" data-ziel="start">Startseite</a>
         <a href="#erfassen" data-ziel="erfassen">Neuer Mitarbeiter</a>
         <a href="#mitarbeiter" data-ziel="mitarbeiter">Mitarbeiter</a>
         <a href="#offen" data-ziel="offen" hidden>Offene Punkte</a>
@@ -44,6 +46,24 @@
       <span class="wer" id="wer"></span>
       <button type="button" class="knopf knopf-leise" id="abmelden">Abmelden</button>
     </header>
+
+    <!-- Startseite: Kennzahlen -->
+    <main id="seite-start" class="seite startseite" hidden>
+      <div class="start-kopf">
+        <div>
+          <h1>Startseite</h1>
+          <p id="start-untertitel"></p>
+        </div>
+        <form id="start-steuerung" class="start-steuerung" onsubmit="return false">
+          <label>Jahr <select name="jahr"></select></label>
+          <label>Monat <select name="monat"></select></label>
+          <label>Arbeitsort <select name="arbeitsort"></select></label>
+          <button type="button" class="knopf-pdf" id="start-pdf">Als PDF speichern</button>
+        </form>
+      </div>
+      <div id="start-druckkopf" class="start-druckkopf"></div>
+      <div id="start-inhalt" aria-live="polite"></div>
+    </main>
 
     <!-- Dienstzettel erfassen -->
     <main id="seite-erfassen" class="seite" hidden>

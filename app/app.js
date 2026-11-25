@@ -6,6 +6,7 @@ import { akteZeigen, akteVergessen } from "./akte.js";
 import { offenePunkteZeigen } from "./offene_punkte.js";
 import { mappeZeigen } from "./mappe.js";
 import { arbeitgeberZeigen } from "./arbeitgeber.js";
+import { startseiteZeigen } from "./startseite.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -159,7 +160,8 @@ async function stammdatenLaden() {
     stand.erfassbareFunktionen = [];
   }
 
-  $("#wer").textContent = `${user.email}, ${rolleText(stand.profil.rolle)}`;
+  stand.rollenText = rolleText(stand.profil.rolle);
+  $("#wer").textContent = `${user.email}, ${stand.rollenText}`;
   const darfErfassen = stand.erfassbareFunktionen.length > 0;
   document.querySelector('[data-ziel="erfassen"]').hidden = !darfErfassen;
   document.querySelector('[data-ziel="einstellungen"]').hidden = !stand.recht.darf_verwalten;
@@ -197,13 +199,13 @@ function standorteFuellen() {
 
 // ------------------------------------------------------------------ Seiten
 
-const SEITEN = ["erfassen", "mitarbeiter", "offen", "unterschreiben", "akte", "mappe", "einstellungen"];
+const SEITEN = ["start", "erfassen", "mitarbeiter", "offen", "unterschreiben", "akte", "mappe", "einstellungen"];
 const darfOffenePunkte = () => istBuero() || LEITUNG.includes(stand.profil?.rolle);
 
 function seiteZeigen() {
-  const [teil, ...rest] = (location.hash.replace("#", "") || "erfassen").split("/");
+  const [teil, ...rest] = (location.hash.replace("#", "") || "start").split("/");
   let ziel = teil;
-  if (!SEITEN.includes(ziel)) ziel = "erfassen";
+  if (!SEITEN.includes(ziel)) ziel = "start";
   if (ziel === "erfassen" && !stand.erfassbareFunktionen.length) ziel = "mitarbeiter";
   if (ziel === "einstellungen" && !stand.recht.darf_verwalten) ziel = "mitarbeiter";
   if ((ziel === "akte" || ziel === "mappe") && !rest[0]) ziel = "mitarbeiter";
@@ -221,6 +223,7 @@ function seiteZeigen() {
   if (ziel === "unterschreiben") arbeitgeberZeigen(stand);
   if (ziel === "offen") offenePunkteZeigen(stand);
   if (ziel === "mitarbeiter") listeLaden();
+  if (ziel === "start") startseiteZeigen(stand, { offenePunkte: darfOffenePunkte() });
   if (ziel === "einstellungen") einstellungenZeigen(stand, async () => { await stammdatenLaden(); });
 }
 

@@ -1,0 +1,191 @@
+/* Startseite mit Kennzahlen.
+   Eigene Datei, damit das neue App-Design (Seitenleiste, Karten) sie leicht übernehmen kann.
+   Alle Farben stehen als Variablen oben; das Design kann sie überschreiben. */
+.startseite {
+  /* Werte aus der freigegebenen Design-Vorschau (Glas-Karten, Blau-Verlauf, Palette 001D39 / 0A4174 / 4E8EA2 / 7BBDE8 / BDD8E9) */
+  --sz-grund: linear-gradient(160deg, #BDD8E9 0%, #8cc6ea 40%, #6EA2B3 100%);
+  --sz-karte: rgba(255, 255, 255, .66);
+  --sz-rand: rgba(255, 255, 255, .85);
+  --sz-trenn: rgba(10, 65, 116, .16);
+  --sz-schatten: 0 12px 40px rgba(0, 29, 57, .16), inset 0 1px 0 rgba(255, 255, 255, .6);
+  --sz-tinte: #001D39;
+  --sz-leise: #2c4a68;
+  --sz-akzent: #0A4174;
+  --sz-akzent-hell: rgba(10, 65, 116, .12);
+  --sz-knopf: linear-gradient(135deg, #0A4174, #1f6f94);
+  --sz-feld: rgba(255, 255, 255, .9);
+  --sz-feldrand: rgba(10, 65, 116, .28);
+  --sz-ein: #1f5fa8;        /* Eintritte */
+  --sz-aus: #d0661e;        /* Austritte */
+  --sz-linie: #0A4174;      /* Personalstand */
+  --sz-markierung: rgba(123, 189, 232, .30);
+  --sz-hinweis-grund: rgba(255, 214, 102, .6);
+  --sz-hinweis-tinte: #6b3f00;
+  --sz-radius: 26px;
+  color: var(--sz-tinte);
+  font-family: "Plus Jakarta Sans", "Public Sans", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  .startseite {
+    --sz-grund: linear-gradient(160deg, #001D39 0%, #0A2f57 55%, #0A4174 100%);
+    --sz-karte: rgba(255, 255, 255, .09);
+    --sz-rand: rgba(255, 255, 255, .2);
+    --sz-trenn: rgba(189, 216, 233, .2);
+    --sz-schatten: 0 12px 40px rgba(0, 0, 0, .35);
+    --sz-tinte: #f2f8fd;
+    --sz-leise: #BDD8E9;
+    --sz-akzent: #9fd0f3;
+    --sz-akzent-hell: rgba(159, 208, 243, .18);
+    --sz-knopf: linear-gradient(135deg, #2b86b8, #4E8EA2);
+    --sz-feld: rgba(0, 29, 57, .55);
+    --sz-feldrand: rgba(189, 216, 233, .4);
+    --sz-ein: #5f8fef;
+    --sz-aus: #d9823a;
+    --sz-linie: #7BBDE8;
+    --sz-markierung: rgba(123, 189, 232, .14);
+    --sz-hinweis-grund: rgba(255, 200, 70, .22);
+    --sz-hinweis-tinte: #ffe08a;
+  }
+}
+
+.seite.startseite { background: var(--sz-grund); border-radius: var(--sz-radius); padding: 24px; max-width: 1240px; }
+
+.start-kopf { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; margin-bottom: 8px; }
+.start-kopf h1 { margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -.03em; }
+.start-kopf p { margin: 4px 0 0; color: var(--sz-leise); }
+.start-steuerung { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.start-steuerung label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 600; color: var(--sz-leise); }
+.start-steuerung select {
+  min-height: 48px; padding: 0 14px; border: 1px solid var(--sz-feldrand); border-radius: 16px;
+  background: var(--sz-feld); color: var(--sz-tinte); font: inherit; font-size: 16px; font-weight: 500;
+}
+.start-steuerung .knopf-pdf {
+  min-height: 48px; padding: 0 22px; border: 0; border-radius: 16px; cursor: pointer;
+  background: var(--sz-knopf); color: #fff; font: inherit; font-weight: 700;
+  box-shadow: 0 8px 20px rgba(10, 65, 116, .3);
+}
+.start-druckkopf { display: none; }
+
+.start-hinweis {
+  margin: 16px 0 0; padding: 12px 16px; border-radius: 14px;
+  background: var(--sz-hinweis-grund); color: var(--sz-hinweis-tinte);
+}
+.start-laden { color: var(--sz-leise); }
+
+.start-teil { margin-top: 28px; }
+.start-teil h2 { margin: 0 0 12px; font-size: 21px; letter-spacing: -.01em; }
+.start-teil h2 small { font-size: 14px; font-weight: 500; color: var(--sz-leise); margin-left: 6px; }
+
+.karte, .kachel {
+  background: var(--sz-karte); border: 1px solid var(--sz-rand); border-radius: var(--sz-radius);
+  box-shadow: var(--sz-schatten); backdrop-filter: blur(18px) saturate(1.5); -webkit-backdrop-filter: blur(18px) saturate(1.5);
+}
+.kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.kachel { padding: 20px 22px; }
+.kachel-titel { font-size: 14px; font-weight: 600; color: var(--sz-leise); }
+.kachel-wert { white-space: nowrap; font-size: 38px; font-weight: 800; letter-spacing: -.03em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.kachel-zusatz { font-size: 13px; color: var(--sz-leise); margin-top: 2px; }
+.kachel-betont { background: linear-gradient(135deg, #0A4174 0%, #1f6f94 100%); color: #fff; border-color: transparent; }
+.kachel-betont .kachel-titel, .kachel-betont .kachel-zusatz { color: #dcecf8; }
+.kachel-betont .kachel-wert { color: #fff; }
+
+.start-erklaerung { margin-top: 10px; color: var(--sz-leise); font-size: 14px; }
+.start-erklaerung summary { cursor: pointer; font-weight: 600; color: var(--sz-akzent); min-height: 32px; }
+.start-erklaerung p { margin: 6px 0; max-width: 75ch; }
+
+.diagramme { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-top: 14px; }
+.diagramm { margin: 0; padding: 16px 18px 8px; }
+.diagramm figcaption, .verteilung figcaption { font-weight: 600; margin-bottom: 4px; }
+.diagramm svg { width: 100%; height: auto; display: block; }
+.legende { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--sz-leise); }
+.punkt { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-left: 6px; }
+.punkt-ein { background: var(--sz-ein); }
+.punkt-aus { background: var(--sz-aus); }
+svg .saeule.ein { fill: var(--sz-ein); }
+svg .saeule.aus { fill: var(--sz-aus); }
+svg .nullstrich { stroke: var(--sz-trenn); stroke-width: 2; }
+svg .grundlinie { stroke: var(--sz-trenn); stroke-width: 1; }
+svg .markierung { fill: var(--sz-markierung); }
+svg .wert { fill: var(--sz-tinte); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+svg .achse { fill: var(--sz-leise); font-size: 13px; }
+svg .achse.leise { opacity: .5; }
+svg .linie-stand { fill: none; stroke: var(--sz-linie); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+svg .punkt-stand { fill: var(--sz-linie); stroke: var(--sz-feld); stroke-width: 2; }
+
+.tabelle-rahmen { margin-top: 14px; overflow-x: auto; }
+.start-tabelle { width: 100%; min-width: 520px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.start-tabelle caption { text-align: left; padding: 14px 16px 6px; font-weight: 600; }
+.start-tabelle th, .start-tabelle td { padding: 9px 16px; text-align: right; border-top: 1px solid var(--sz-trenn); }
+.start-tabelle th:first-child { text-align: left; }
+.start-tabelle thead th { font-size: 14px; color: var(--sz-leise); border-top: 0; }
+.start-tabelle tr.gewaehlt { background: var(--sz-markierung); }
+.start-tabelle tfoot th, .start-tabelle tfoot td { font-weight: 700; }
+.startseite .leise { color: var(--sz-leise); }
+.start-tabelle td.leise { text-align: left; }
+
+.verteilungen { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 14px; }
+.verteilung { margin: 0; padding: 16px 18px; }
+.verteilung ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.verteilung li { display: grid; grid-template-columns: minmax(90px, 1.2fr) 2fr auto; gap: 10px; align-items: center; font-size: 14px; }
+.v-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v-balken { height: 10px; background: var(--sz-akzent-hell); border-radius: 999px; overflow: hidden; }
+.v-balken span { display: block; height: 100%; background: var(--sz-akzent); border-radius: 999px; }
+.v-zahl { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.v-zahl small { font-weight: 400; color: var(--sz-leise); }
+
+.zu-tun-reihe { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+.zu-tun { display: flex; align-items: center; gap: 12px; padding: 12px 20px; min-height: 44px; text-decoration: none; color: inherit; font-weight: 600; }
+.zu-tun .kachel-wert { font-size: 28px; color: var(--sz-akzent); }
+.achtung-raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.achtung { padding: 16px 18px; }
+.achtung h3 { margin: 0 0 8px; font-size: 16px; display: flex; justify-content: space-between; gap: 8px; }
+.achtung .anzahl { min-width: 28px; text-align: center; border-radius: 999px; background: var(--sz-akzent-hell); color: var(--sz-akzent); padding: 0 8px; }
+.personen { list-style: none; margin: 0; padding: 0; }
+.personen li { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 6px 0; border-top: 1px solid var(--sz-trenn); font-size: 14px; }
+.personen li:first-child { border-top: 0; }
+.personen a { color: var(--sz-akzent); font-weight: 600; min-width: 0; }
+.personen li span { white-space: nowrap; color: var(--sz-leise); }
+.achtung p { margin: 4px 0 0; font-size: 14px; }
+
+@media (max-width: 600px) {
+  .seite.startseite { padding: 16px; border-radius: 0; }
+  .kacheln { grid-template-columns: repeat(2, 1fr); }
+  .kachel-wert { font-size: 28px; }
+  .start-steuerung { width: 100%; }
+  .start-steuerung label { flex: 1 1 120px; }
+}
+
+/* ---------------------------------------------------------------- Druck / PDF */
+@media print {
+  @page { size: A4; margin: 14mm 12mm; }
+  /* Nur wenn der Knopf „Als PDF speichern“ gedrückt wurde; andere Seiten drucken wie bisher */
+  body.druck-startseite { background: #fff !important; }
+  body.druck-startseite .kopf, body.druck-startseite .navigation, body.druck-startseite .seite:not(.startseite),
+  .start-steuerung, .start-erklaerung summary { display: none !important; }
+  .start-erklaerung { display: block; }
+  .start-erklaerung > p { display: block; }
+  .startseite {
+    --sz-grund: #fff; --sz-karte: #fff; --sz-schatten: none; --sz-tinte: #0d2238; --sz-leise: #44576d;
+    --sz-rand: #c9d6e3; --sz-akzent: #0a4174; --sz-akzent-hell: #dcecf8; --sz-ein: #1f5fa8; --sz-aus: #d0661e;
+    --sz-linie: #0A4174; --sz-markierung: #eef5fb; --sz-trenn: #c9d6e3; --sz-feld: #fff;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .seite.startseite { padding: 0; max-width: none; }
+  .start-kopf h1, #start-untertitel { display: none; }
+  .start-druckkopf { display: flex; flex-direction: column; gap: 2px; padding-bottom: 8px; border-bottom: 2px solid #0a4174; }
+  .start-druckkopf strong { font-size: 20px; }
+  .start-druckkopf span { font-size: 11px; color: #44576d; }
+  .karte, .kachel { backdrop-filter: none; box-shadow: none; break-inside: avoid; }
+  .start-teil { margin-top: 14px; }
+  .start-teil h2 { break-after: avoid; font-size: 16px; margin-bottom: 8px; }
+  .start-tabelle th, .start-tabelle td { padding: 4px 10px; font-size: 11px; }
+  .start-erklaerung { font-size: 11px; }
+  .kacheln { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .kachel { padding: 8px 10px; }
+  .kachel-wert { font-size: 22px; }
+  .kachel-betont { background: #0A4174; }
+  .diagramme, .verteilungen { grid-template-columns: 1fr 1fr; }
+  .achtung-raster { grid-template-columns: 1fr 1fr; }
+  .personen a { color: inherit; text-decoration: none; }
+  .zu-tun { padding: 6px 12px; }
+}
