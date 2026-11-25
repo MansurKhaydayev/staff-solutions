@@ -795,3 +795,20 @@ a.name { font-weight: 700; text-decoration: underline; text-underline-offset: 3p
   .akte-kopf .akte-aktionen { grid-column: 1 / -1; grid-row: auto; margin-top: .75rem; }
   .akte-kopf .avatar-gross { width: 3.5rem; height: 3.5rem; font-size: 1.25rem; }
 }
+
+/* ---------- Dienstzettel-Formular: nummerierte Abschnitte ---------- */
+.formular { counter-reset: abschnitt; gap: 1.5rem; }
+.formular fieldset legend {
+  float: left; width: 100%; margin: 0 0 .25rem; padding: 0;
+  display: flex; align-items: center; gap: .875rem; font-size: 1.25rem; font-weight: 800;
+}
+.formular fieldset legend::before {
+  counter-increment: abschnitt; content: counter(abschnitt);
+  width: 2.375rem; height: 2.375rem; border-radius: 50%; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--knopf); color: var(--knopf-text); font-size: 1.0625rem; font-weight: 700;
+}
+.formular fieldset legend + * { clear: both; }
+.reihe { align-items: end; margin-top: 1.25rem; }
+.reihe:first-of-type { margin-top: .75rem; }
+.ableitung dt { font-weight: 600; }
