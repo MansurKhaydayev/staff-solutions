@@ -725,3 +725,31 @@ a.name { font-weight: 700; text-decoration: underline; text-underline-offset: 3p
 .unterschrift-feld { border-radius: 20px; border-color: var(--feld-linie); }
 .mappe-fortschritt li { border-radius: 14px; }
 .mappe-fortschritt li.aktuell { border-color: var(--tanne); box-shadow: inset 0 0 0 1px var(--tanne), 0 6px 18px var(--schatten); }
+
+/* ---------- Mitarbeiterliste: Zeilen als Karten ---------- */
+.avatar {
+  display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;
+  width: 2.5rem; height: 2.5rem; margin-right: .75rem; border-radius: 50%; flex: none;
+  background: linear-gradient(135deg, #7bbde8, #0a4174); color: #fff; font-weight: 700; font-size: .9375rem;
+  box-shadow: 0 4px 12px rgba(10, 65, 116, .35);
+}
+.avatar::before { content: attr(data-i); }
+.avatar-gross { width: 5rem; height: 5rem; font-size: 1.75rem; margin-right: 1.25rem; }
+#seite-mitarbeiter .tabelle-rahmen {
+  background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; border-radius: 0;
+  margin: 0 -.25rem; padding: 0 .25rem;
+}
+#seite-mitarbeiter .tabelle { border-collapse: separate; border-spacing: 0 .625rem; }
+#seite-mitarbeiter .tabelle th { border-bottom: 0; padding: .25rem .7rem; white-space: nowrap; }
+#seite-mitarbeiter .tabelle td {
+  background: var(--papier); border: 0; border-top: 1px solid var(--kante); border-bottom: 1px solid var(--kante);
+  padding: .75rem .7rem; white-space: normal; font-size: .9375rem;
+}
+#seite-mitarbeiter .tabelle td:first-child { border-left: 1px solid var(--kante); border-radius: 24px 0 0 24px; padding-left: .8rem; }
+#seite-mitarbeiter .tabelle td:last-child { border-right: 1px solid var(--kante); border-radius: 0 24px 24px 0; }
+#seite-mitarbeiter .tabelle tbody tr:hover td { background: var(--feld); }
+#seite-mitarbeiter .tabelle td.zahl { white-space: nowrap; }
+#seite-mitarbeiter .tabelle td .merkmal { margin-left: .35rem; white-space: nowrap; }
+#seite-mitarbeiter .tabelle td.zahl .merkmal { display: table; margin: 0 0 .15rem auto; }
+#seite-mitarbeiter .tabelle tbody tr { filter: none; }
+#seite-mitarbeiter .tabelle-rahmen { overflow-x: auto; }

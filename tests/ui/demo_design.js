@@ -1,6 +1,6 @@
 // Erzeugt Bilder der wichtigsten Seiten (Demo-Daten) in mehreren Größen, hell und dunkel.
 // Aufruf: NODE_PATH=$(npm root -g) node tests/ui/demo_design.js app /pfad/zu/bildern [schritt]
-const { chromium, starteServer, neueSeite, anmelden } = require("./mock.js");
+const { chromium, starteServer, neueSeite, anmelden, plus } = require("./mock.js");
 const { daten, kopfFuer, rpcFuer } = require("./akte.test.js");
 const fs = require("fs");
 
@@ -15,6 +15,13 @@ const SEITEN = [["liste", "#mitarbeiter"], ["akte", "#akte/d1/uebersicht"], ["fo
   try {
     for (const farbe of ["light", "dark"]) {
       const d = daten();
+      const mehr = [["Gruber", "Daniel", "s2", "f1", "vollzeit", 40, -300, 40], ["Huber", "Sophie", "s1", "f2", "teilzeit", 25, -900, null],
+        ["Mayer", "Lukas", "s3", "f2", "geringfuegig", 10, -5, null], ["Wagner", "Elif", "s4", "f1", "vollzeit", 38.5, -120, 200]];
+      mehr.forEach(([nach, vor, st, fu, art, std, ein, bef], i) => {
+        d.mitarbeiter.push({ id: `m${i + 2}`, vorname: vor, nachname: nach });
+        d.dienstverhaeltnis.push({ id: `d${i + 2}`, mitarbeiter_id: `m${i + 2}`, heimstandort_id: st, funktion_id: fu, beschaeftigungsart: art,
+          wochenstunden: std, eintritt: plus(ein), befristet_bis: bef === null ? null : plus(bef), austritt: null, created_at: `${plus(ein - 1)}T10:00:00Z` });
+      });
       const p = await neueSeite(browser, d, { rpc: rpcFuer(d) });
       await p.emulateMedia({ colorScheme: farbe });
       await anmelden(p, "hr@demo.invalid");

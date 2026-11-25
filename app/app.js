@@ -549,7 +549,7 @@ function listeZeigen() {
     if (d.austritt && d.austritt < heute) merkmale.push('<span class="merkmal merkmal-aus">ausgetreten</span>');
     else if (d.angemeldet === false) merkmale.push('<span class="merkmal merkmal-fehlt">noch nicht angemeldet</span>');
     return `<tr>
-      <td><a class="name" href="#akte/${text(d.id)}/uebersicht">${text(p ? `${p.nachname} ${p.vorname}` : "–")}</a> ${merkmale.join(" ")}</td>
+      <td class="name-zelle"><span class="avatar" data-i="${text(p ? `${p.nachname[0] || ""}${p.vorname[0] || ""}`.toUpperCase() : "–")}" aria-hidden="true"></span><a class="name" href="#akte/${text(d.id)}/uebersicht">${text(p ? `${p.nachname} ${p.vorname}` : "–")}</a> ${merkmale.join(" ")}</td>
       <td>${text(s ? s.vertragsbezeichnung || s.name : "–")}</td>
       <td>${text(funktion.get(d.funktion_id)?.name || "–")}</td>
       ${r.sieht_kontakt ? `<td class="kontakt">${kontakt(d)}</td>` : ""}
