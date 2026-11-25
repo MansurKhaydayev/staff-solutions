@@ -47,7 +47,8 @@ Es gilt weiter: nur Demo-Daten, nichts löschen, jede Änderung als **neue** Mig
 **Reihenfolge (Entscheidung 25.11.):** Den Datenbank-Teil baue ich jetzt. Die sichtbare Markierung und den Hinweis baue ich erst, wenn das neue Design (Blau/Türkis) steht.
 
 **Technik:**
-- Migration 026: `arbeitgeber_offen()` bekommt die Spalte `geaendert` (ja/nein), `arbeitgeber_inhalt()` bekommt `geaendert` und `geaenderte_felder` (Liste von Anzeigenamen, ohne Doppelte, in fester Reihenfolge).
+- Migration 026: neue Funktion `arbeitgeber_offen_hinweise()` liefert je offenem Dienstzettel `geaendert` (ja/nein) und `geaenderte_felder` (die Liste `arbeitgeber_offen()` bleibt unverändert, so braucht es kein `drop`). `arbeitgeber_inhalt()` bekommt `geaendert` und `geaenderte_felder` (Anzeigenamen, ohne Doppelte, in fester Reihenfolge).
+- Ein Fehler beim Vergleichen verhindert das Unterschreiben nicht; dann lautet der Hinweis „Dienstzettel-Inhalt“.
 - Später, nach dem Design: `app/arbeitgeber.js` zeigt Markierung und Hinweis.
 - Nichts am gespeicherten Dokument ändert sich.
 

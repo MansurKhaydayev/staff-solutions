@@ -5,6 +5,8 @@ declare
   org uuid := 'de000000-0000-0000-0000-000000000001';
   org2 uuid := gen_random_uuid();
   fremd uuid := gen_random_uuid();
+  fremd_gf uuid := gen_random_uuid();
+  dv3 uuid; dz3 uuid;
   hr uuid := testhilfe.benutzer('hr');
   gf uuid := testhilfe.benutzer('geschaeftsfuehrung');
   sl uuid := testhilfe.benutzer('studioleitung', array['de000000-0000-0000-0000-0000000000e1']::uuid[]);
@@ -16,6 +18,12 @@ begin
   insert into public.organisation (id, name) values (org2, 'Fremde Test GmbH');
   insert into auth.users (id, email, aud, role) values (fremd, 'fremd-' || left(fremd::text, 8) || '@test.invalid', 'authenticated', 'authenticated');
   insert into public.profil (user_id, organisation_id, rolle) values (fremd, org2, 'hr');
+  -- und einer GF mit Recht auf Arbeitgeber-Unterschrift
+  insert into auth.users (id, email, aud, role) values (fremd_gf, 'fremdgf-' || left(fremd_gf::text, 8) || '@test.invalid', 'authenticated', 'authenticated');
+  insert into public.profil (user_id, organisation_id, rolle) values (fremd_gf, org2, 'geschaeftsfuehrung');
+  insert into public.rollen_recht (organisation_id, rolle, bezeichnung, darf_arbeitgeber_unterschreiben)
+  values (org2, 'geschaeftsfuehrung', 'Geschäftsführung', true)
+  on conflict (organisation_id, rolle) do update set darf_arbeitgeber_unterschreiben = true;
 
   -- I. angemeldet nur für die eigene Firma
   dv := testhilfe.mitarbeiter_anlegen(hr, 'de000000-0000-0000-0000-0000000000e1', 'de000000-0000-0000-0000-0000000000f1');
@@ -107,13 +115,41 @@ begin
     'Textbaustein geändert: „Vertragstexte“ (bekommen: ' || (a -> 'geaenderte_felder')::text || ')');
   perform testhilfe.zurueck();
 
+  -- Firma (GmbH) geändert → „Arbeitgeber“; ein danach unterschriebener Dienstzettel hat keinen Hinweis
+  update public.gesellschaft set strasse = strasse || ' 1a'
+  where id = (select gesellschaft_id from public.dienstverhaeltnis where id = dv);
+  dv3 := testhilfe.mitarbeiter_anlegen(hr, 'de000000-0000-0000-0000-0000000000e1', 'de000000-0000-0000-0000-0000000000f1');
+  insert into storage.objects (bucket_id, name, metadata)
+  select 'personalakte', org || '/' || dv3 || '/' || x, '{"size":5000,"mimetype":"application/pdf"}'::jsonb
+  from unnest(array['vereinbarung/m.pdf', 'unterschrift/m.png']) x;
+  perform testhilfe.als(hr);
+  f := public.mappe_inhalt(dv3) -> 'schritte' -> 0 ->> 'fassung';
+  perform testhilfe.zurueck();
+  perform testhilfe.als_dienst();
+  dz3 := public.mappe_ablegen(sl, dv3, 'dienstzettel', null, f, 'unterschrieben', org || '/' || dv3 || '/vereinbarung/m.pdf', h,
+    org || '/' || dv3 || '/unterschrift/m.png', h, null);
+  perform testhilfe.zurueck();
+  perform testhilfe.als(gf);
+  a := public.arbeitgeber_inhalt(dz2);
+  perform testhilfe.pruefe(a -> 'geaenderte_felder' = '["Arbeitgeber", "Vertragstexte"]'::jsonb,
+    'Firma und Textbaustein geändert (bekommen: ' || (a -> 'geaenderte_felder')::text || ')');
+  perform testhilfe.pruefe((select array_agg(h.dokument_id order by h.dokument_id) filter (where h.geaendert)
+      from public.arbeitgeber_offen_hinweise() h where h.dokument_id in (dz, dz2, dz3))
+    = (select array_agg(x order by x) from unnest(array[dz, dz2]) x), 'Liste: geänderte und unveränderte Dienstzettel richtig markiert');
+  perform testhilfe.pruefe((public.arbeitgeber_inhalt(dz3) ->> 'geaendert')::boolean is false, 'danach unterschrieben: kein Hinweis');
+  perform testhilfe.zurueck();
+
   -- Rechte: ohne Arbeitgeber-Recht keine Hinweise
   perform testhilfe.als(hr);
   perform testhilfe.erwarte_fehler('select * from public.arbeitgeber_offen_hinweise()', 'Keine Berechtigung');
   perform testhilfe.erwarte_fehler(format('select public.arbeitgeber_inhalt(%L)', dz), 'Keine Berechtigung');
   perform testhilfe.zurueck();
-  perform testhilfe.als(fremd);
-  perform testhilfe.pruefe(cardinality(app.dienstzettel_aenderungen(dz)) = 0, 'fremde Firma sieht keine Änderungen (Zeilenrechte)');
+  -- Fremde Firma, auch mit Arbeitgeber-Recht: nichts von dieser Firma
+  perform testhilfe.als(fremd_gf);
+  perform testhilfe.erwarte_fehler(format('select public.arbeitgeber_inhalt(%L)', dz), 'nicht gefunden');
+  perform testhilfe.pruefe(not exists (select 1 from public.arbeitgeber_offen_hinweise() h where h.dokument_id in (dz, dz2, dz3)),
+    'fremde GF: keine Hinweise zu Dienstzetteln anderer Firmen');
+  perform testhilfe.pruefe(cardinality(app.dienstzettel_aenderungen(dz)) = 0, 'fremde Firma: direkter Aufruf liefert nichts');
   perform testhilfe.zurueck();
 end $$;
 select 'alle Tests bestanden' as ergebnis;

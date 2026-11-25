@@ -11,8 +11,9 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Was hat sich seit der Mitarbeiter-Unterschrift dieses Dienstzettels geändert? Anzeigenamen, ohne Doppelte.
--- Ohne security definer: Aufgerufen aus arbeitgeber_inhalt / arbeitgeber_offen_hinweise läuft sie mit deren Rechten,
--- direkt aufgerufen gelten die Zeilenrechte der aufrufenden Person.
+-- Nur für arbeitgeber_inhalt / arbeitgeber_offen_hinweise gedacht (security definer, laufen mit deren Rechten).
+-- Selbst ohne security definer: Direkt aufgerufen gelten die Zeilenrechte, fremde Firmen bekommen eine leere Liste,
+-- und spätestens app.dienstzettel_inhalt ist angemeldeten Personen nicht freigegeben.
 create or replace function app.dienstzettel_aenderungen(p_dokument_id uuid) returns text[]
 language plpgsql stable set search_path = '' as $$
 declare
@@ -25,11 +26,14 @@ declare
   v_namen jsonb := '{"anrede":"Anrede","vorname":"Vorname","nachname":"Nachname","geburtsdatum":"Geburtsdatum",
     "strasse":"Straße","plz":"PLZ","ort":"Ort","telefon":"Telefonnummer","email":"E-Mail-Adresse",
     "sv_nummer":"Versicherungsnummer","iban":"IBAN","bic":"BIC","staatsangehoerigkeit":"Staatsangehörigkeit"}';
+  -- Diese Felder stehen in der Zeile „Arbeitnehmer/in“ des Dienstzettels
+  v_person text[] := array['Anrede', 'Vorname', 'Nachname', 'Geburtsdatum', 'Straße', 'PLZ', 'Ort'];
   v_reihe text[] := array['anrede', 'vorname', 'nachname', 'geburtsdatum', 'strasse', 'plz', 'ort', 'telefon', 'email',
     'staatsangehoerigkeit', 'sv_nummer', 'iban', 'bic'];
 begin
   select * into v from public.dokument where id = p_dokument_id;
   if v.id is null then return '{}'; end if;
+  if current_user = 'authenticated' and v.organisation_id is distinct from app.organisation_id() then return '{}'; end if;
   select min(u.zeitpunkt) into v_seit from public.unterschrift u where u.dokument_id = v.id and u.rolle = 'mitarbeiter';
   v_seit := coalesce(v_seit, v.hochgeladen_am, v.created_at);
 
@@ -46,9 +50,9 @@ begin
     if app.fassung(v_neu) is distinct from v.inhalt_hash then
       for v_zeile in select z from jsonb_array_elements(v_neu -> 'felder') z loop
         select z into v_alt from jsonb_array_elements(v.inhalt -> 'felder') z where z ->> 0 = v_zeile ->> 0;
-        -- Zeile „Arbeitnehmer/in“ ändert sich durch Stammdaten, die schon oben genannt sind
+        -- Zeile „Arbeitnehmer/in“ nur weglassen, wenn eine ihrer Angaben schon oben genannt ist
         if v_alt is distinct from v_zeile
-           and not (v_zeile ->> 0 = 'Arbeitnehmer/in' and cardinality(v_liste) > 0)
+           and not (v_zeile ->> 0 = 'Arbeitnehmer/in' and v_liste && v_person)
            and not (v_zeile ->> 0 = any(v_liste)) then
           v_liste := v_liste || (v_zeile ->> 0);
         end if;
@@ -103,7 +107,12 @@ begin
     raise exception 'Dieser Dienstzettel ist schon fertig unterschrieben.';
   end if;
   select * into u from public.unterschrift where dokument_id = v.id and rolle = 'mitarbeiter' order by zeitpunkt limit 1;
-  v_felder := app.dienstzettel_aenderungen(v.id);
+  -- Nur ein Hinweis: Ein Fehler beim Vergleichen darf das Unterschreiben nicht verhindern
+  begin
+    v_felder := app.dienstzettel_aenderungen(v.id);
+  exception when others then
+    v_felder := array['Dienstzettel-Inhalt'];
+  end;
   return jsonb_build_object(
     'dokument_id', v.id,
     'organisation_id', v.organisation_id,
