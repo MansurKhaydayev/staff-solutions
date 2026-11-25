@@ -339,11 +339,13 @@ nur noch „unterschrieben“.
 - Ein Dienstantritt in der Vergangenheit ist nicht möglich.
 - Wird der Dienstzettel **bis zur Stichzeit** (Voreinstellung 12:00, Wiener Zeit) erfasst, ist der früheste
   Dienstantritt der **nächste Tag**. Danach liegt **ein Tag dazwischen**. Beispiel: Freitag 18:00 →
-  frühestens Sonntag.
+  frühestens Sonntag. Gezählt wird sekundengenau: 12:00:00 ist noch rechtzeitig, 12:00:01 nicht mehr
+  (Formular und Datenbank rechnen gleich).
 - Früher geht es nur mit dem Häkchen **Dringende Anmeldung** und einem **Grund**. Wer das setzt, übernimmt
   die Verantwortung. Das Büro sieht den Grund unter Offene Punkte („Dringende Anmeldung: …“).
 - **„noch nicht angemeldet“** (rot) steht in Liste und Akte, bis das Büro die Anmeldebestätigung unter
-  der Kategorie **Anmeldung** hochlädt. Erst dann arbeiten lassen.
+  der Kategorie **Anmeldung** hochlädt. Erst dann arbeiten lassen. Gezählt wird nur eine Bestätigung der
+  eigenen Firma.
 - Stichzeit und Tage dazwischen änderst du unter **Einstellungen → Regeln für Dienstverträge**.
 
 ### Wenn etwas nicht stimmt
@@ -378,6 +380,7 @@ und die Seitenzahl. Nichts wird gelöscht: Jede neue Fassung ersetzt die alte, d
 | `mappe_inhalt(dv)` | Schritte der Mappe mit Inhalt und Fingerabdruck |
 | `mappe_ablegen(…)`, `arbeitgeber_ablegen(…)` | Eintragen nach dem Unterschreiben – nur die Edge Function darf das |
 | `arbeitgeber_offen()`, `arbeitgeber_inhalt(dok)` | Liste „Zu unterschreiben“ |
+| `arbeitgeber_offen_hinweise()`, `app.dienstzettel_aenderungen(dok)` | Was sich seit der Mitarbeiter-Unterschrift geändert hat (Feldnamen wie „Straße“, „IBAN“, „Vertragstexte“). Nur ein Hinweis, keine Sperre. Die Anzeige in der App kommt mit dem neuen Design. |
 | `dienstzettel_neu_anfordern`, `dienstzettel_vermerken`, `dienstzettel_papier` | Büro-Aktionen |
 | `textbaustein` | Abschnitte des Dienstzettels, je GmbH überschreibbar |
 | `unterschrift` | wer wann wo in welcher Rolle unterschrieben hat |
