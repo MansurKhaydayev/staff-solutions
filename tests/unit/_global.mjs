@@ -19,3 +19,9 @@ export async function pdfText(bytes) {
 // Kleines gültiges PNG (1×1 Pixel, schwarz)
 export const MINI_PNG = Uint8Array.from(Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"));
+// Schrift für die PDFs (gekürzte DejaVu Sans) und fontkit zum Einbetten
+export const fontkit = require(`${wurzel}/@pdf-lib/fontkit`).default ?? require(`${wurzel}/@pdf-lib/fontkit`);
+export async function schriftLaden() {
+  const { DEJAVU_NORMAL, DEJAVU_FETT } = await import("../../supabase/functions/mappe/schrift.js");
+  return { fontkit, normal: DEJAVU_NORMAL, fett: DEJAVU_FETT };
+}
