@@ -49,7 +49,7 @@ Bestätigung und jede Korrektur bleibt mit Person, Zeitpunkt und Grund sichtbar.
 9. **Filter für die Verwaltung:** In der Mitarbeiterliste ein Filter „Ein- und Austritte“ mit Zeitraum.
    Die Verwaltung sieht damit selbst, wer neu ist und wer gegangen ist, ohne Gehalt oder Bankdaten.
    Statt eines Wochenberichts per Mail.
-10. **Status im Verzeichnis:** `mitarbeiter_verzeichnis()` liefert eine Spalte `status` (siehe § 4). Die
+10. **Status für Liste und Startseite:** `mitarbeiter_status()` liefert den Status je Dienstverhältnis (siehe § 5). Die
     Startseite filtert damit „nicht angetreten“ aus ihren Zählungen.
 11. Handbuch und Tests wie bisher.
 
@@ -188,7 +188,7 @@ Es entstehen **keine neuen fest einprogrammierten Rollenlisten** (passt zum Proj
   (Demo-Adresse, vorerst nur für einen Knopf „Rückfrage ans Büro“ in der Akte).
 - Funktionen (Namen vorläufig): `austritt_melden`, `austritt_bestaetigen`, `austritt_korrigieren`,
   `uebermittlung_offen`, `uebermittlung_vermerken`, `app.dv_status(dv)`.
-- `mitarbeiter_verzeichnis()`, `akte_kopf()` und `offene_punkte()` bekommen den Status bzw. die neuen Punkte.
+- `mitarbeiter_status()` (neu), `akte_kopf()` und `offene_punkte()` liefern den Status bzw. die neuen Punkte.
 - Alles in neuen Migrationen ab 026, alte Migrationen bleiben unverändert.
 
 ## 9. Oberfläche

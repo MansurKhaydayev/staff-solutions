@@ -109,7 +109,7 @@
   - `public.austritt_bestaetigen(p_meldung_id uuid, p_letzter_arbeitstag date default null, p_austrittsart text default null) returns uuid`. Nur Büro. Weicht Datum/Art ab, wird eine neue Fassung angelegt (alte `ersetzt_durch`) und `abweichung` = `'Letzter Arbeitstag 30.11.2026 statt 28.11.2026'` bzw. `'Art: … statt …'`. Setzt bei `art='austritt'` `dienstverhaeltnis.austritt = letzter_arbeitstag`; bei `nicht_angetreten` bleibt `austritt` leer. Schon bestätigt oder ersetzt → `Diese Meldung wurde inzwischen geändert. …`.
   - `public.austritt_korrigieren(p_meldung_id uuid, p_grund text, p_letzter_arbeitstag date, p_austrittsart text, p_zuruecknehmen boolean default false) returns uuid`. Nur Büro, Grund Pflicht. Neue bestätigte Fassung (oder zurückgenommene), alte `ersetzt_durch`. Setzt `austritt` neu bzw. auf `null`.
   - `public.austritt_verlauf(p_dienstverhaeltnis_id uuid) returns table(id uuid, art text, letzter_arbeitstag date, austrittsart text, notiz text, gemeldet_von_email text, gemeldet_am timestamptz, bestaetigt_von_email text, bestaetigt_am timestamptz, abweichung text, zurueckgenommen boolean, korrektur_grund text, ersetzt boolean)`. `austrittsart`, `notiz`, `korrektur_grund`, `abweichung` nur mit `app.sieht('personendaten', standort)`, sonst `null`.
-  - `mitarbeiter_verzeichnis()` neu mit zusätzlicher letzter Spalte `status text` (= `app.dv_status`). Liefert weiterhin **alle** Dienstverhältnisse; die App filtert.
+  - `public.mitarbeiter_status() returns table(dienstverhaeltnis_id uuid, status text, austritt date)` mit derselben Reichweite wie `mitarbeiter_verzeichnis()`. (Geändert beim Bauen: eine neue Spalte im Verzeichnis hätte `drop function` gebraucht, das Supabase abbricht. Die Startseite nutzt `mitarbeiter_status()`.)
   - `akte_kopf()` zusätzlich `'status'`, `'abmeldung_bis'` (bei `austritt_bestaetigt`: austritt + abmeldefrist_tage), `'meldung_id'`.
   - `offene_punkte()` und `mappe_inhalt()`: Bedingung `(d.austritt is null or d.austritt >= current_date)` ersetzen durch `app.dv_aktiv(d.id)` und Status `nicht_angetreten`/`storno_ausstaendig` ausschließen.
 
@@ -126,11 +126,11 @@
   - nicht angetreten vor Dienstantritt → Fehler; ab Dienstantritt → ok; nach Bestätigung `austritt` bleibt `null`
   - Korrektur mit Zurücknehmen → `aktiv`, `austritt` `null`, alte Fassungen im Verlauf `ersetzt = true`
   - Verwaltung sieht im Verlauf `notiz = null`, Regionalleitung sieht sie
-  - `mitarbeiter_verzeichnis()` liefert `status`
+  - `mitarbeiter_status()` liefert `status`
   - `offene_punkte()` enthält keine Punkte für `nicht_angetreten` und für `austritt = heute_wien() - 1`, wohl aber für `austritt = heute_wien()`
   - Prüfschwerpunkt 2: `heute_wien()` über `set local timezone`/Testhilfe auf 23:30 Wiener Zeit stellen, wie in Test 09
 - [ ] **Step 2:** ausführen → rot.
-- [ ] **Step 3:** `<M2>` schreiben, einspielen. Vorhandene Funktionen mit `create or replace` neu anlegen; `mitarbeiter_verzeichnis` braucht wegen neuer Spalte `drop function` + `create` (wie in Migration 021, im Ergebnis vermerken).
+- [ ] **Step 3:** `<M2>` schreiben, einspielen. Vorhandene Funktionen mit `create or replace` neu anlegen, ohne `drop`.
 - [ ] **Step 4:** 14 und 01–13 → grün.
 - [ ] **Step 5:** Commit `Austritt: melden, bestätigen, korrigieren`.
 
