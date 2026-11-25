@@ -11,8 +11,9 @@ alter table public.rollen_recht add column darf_analyse_export boolean not null 
 alter table public.rollen_recht add column vergibt_analyse_export boolean not null default false;
 
 -- Bestehende Firmen: herunterladen und vergeben wie bisher die Arbeitgeber-Unterschrift (Admin, GF)
-update public.rollen_recht set darf_analyse_export = darf_arbeitgeber_unterschreiben;
-update public.rollen_recht set vergibt_analyse_export = darf_arbeitgeber_unterschreiben;
+-- (mit where, sonst hält Supabase die Anweisung für gefährlich und fragt nach)
+update public.rollen_recht set darf_analyse_export = true, vergibt_analyse_export = true
+  where darf_arbeitgeber_unterschreiben;
 
 -- Neue Firmen bekommen dieselbe Voreinstellung
 create or replace function app.standard_rechte(org uuid) returns void
