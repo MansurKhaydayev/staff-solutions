@@ -532,7 +532,7 @@ async function teilKlaerung(browser) {
 
 const TEILE = [teilUebersicht, teilVerlauf, teilDokumente, teilStammdaten, teilOffenUndEinstellungen, teilKlaerung];
 
-(async () => {
+if (require.main === module) (async () => {
   const server = await starteServer(APP);
   const browser = await chromium.launch();
   try {

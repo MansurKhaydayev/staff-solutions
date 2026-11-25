@@ -1,59 +1,109 @@
+/* Glas-Design in Blau. Alle Farben stehen hier als Variablen; die alten Namen (--grund, --papier, --tanne …)
+   bleiben bestehen, damit alle Seiten sie weiter benutzen. Palette: #001D39 #0A4174 #49769F #4E8EA2 #6EA2B3 #7BBDE8 #BDD8E9 */
 :root {
-  --grund: #e9eeeb;        /* kühles Grau-Grün, wie Formularpapier */
-  --papier: #ffffff;
-  --tinte: #1c2b28;
-  --tinte-leise: #56645f;
-  --linie: #c9d3ce;
-  --tanne: #1f6b57;         /* Aktionen */
-  --tanne-dunkel: #164f40;
-  --marker: #fbe676;        /* nur für automatisch ermittelte Werte */
+  --himmel: linear-gradient(160deg, #bdd8e9 0%, #8cc6ea 42%, #6ea2b3 100%);
+  --himmel-fuss: #6ea2b3;
+  --licht-1: radial-gradient(circle, rgba(255, 255, 255, .85), rgba(123, 189, 232, 0) 70%);
+  --licht-2: radial-gradient(circle, rgba(73, 118, 159, .5), rgba(73, 118, 159, 0) 70%);
+  --grund: rgba(10, 65, 116, .08);      /* leichte Tönung (Chips, gesperrte Felder) */
+  --papier: rgba(255, 255, 255, .72);   /* Glas-Karte */
+  --feld: rgba(255, 255, 255, .94);     /* Eingabefelder fast deckend */
+  --feld-linie: #6a86a6;
+  --tinte: #001d39;
+  --tinte-leise: #2c4a68;
+  --linie: rgba(10, 65, 116, .22);
+  --kante: rgba(255, 255, 255, .85);
+  --schatten: rgba(0, 29, 57, .16);
+  --tanne: #0a4174;                     /* Aktionen und Links */
+  --tanne-dunkel: #06305a;
+  --knopf: linear-gradient(135deg, #0a4174, #1f6f94);
+  --knopf-text: #ffffff;
+  --seitenleiste: linear-gradient(180deg, rgba(0, 29, 57, .94), rgba(10, 65, 116, .92));
+  --marker: #ffe58a;                    /* nur für automatisch ermittelte Werte */
   --fehler: #b3261e;
-  --radius: 6px;
-  --schrift: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --auf-fehler: #ffffff;
+  --radius: 16px;
+  --radius-gross: 28px;
+  --schrift: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --grund: #141c1a;
-    --papier: #1d2724;
-    --tinte: #e4ece8;
-    --tinte-leise: #9fb0a9;
-    --linie: #34433e;
-    --tanne: #4fb898;
-    --tanne-dunkel: #6fd0b0;
+    --himmel: linear-gradient(160deg, #001d39 0%, #0a2f57 55%, #0a4174 100%);
+    --himmel-fuss: #0a4174;
+    --licht-1: radial-gradient(circle, rgba(123, 189, 232, .45), rgba(123, 189, 232, 0) 70%);
+    --licht-2: radial-gradient(circle, rgba(78, 142, 162, .45), rgba(78, 142, 162, 0) 70%);
+    --grund: rgba(255, 255, 255, .08);
+    --papier: rgba(255, 255, 255, .1);
+    --feld: rgba(0, 29, 57, .62);
+    --feld-linie: #7fa3c4;
+    --tinte: #f2f8fd;
+    --tinte-leise: #bdd8e9;
+    --linie: rgba(189, 216, 233, .28);
+    --kante: rgba(255, 255, 255, .2);
+    --schatten: rgba(0, 0, 0, .4);
+    --tanne: #8ec3f5;
+    --tanne-dunkel: #b9dcfb;
+    --knopf: linear-gradient(135deg, #0f5a8c, #1f7aa6);
+    --seitenleiste: linear-gradient(180deg, rgba(0, 17, 36, .9), rgba(10, 47, 87, .9));
     --marker: #6b5d12;
     --fehler: #ff8a80;
+    --auf-fehler: #3a0b08;
   }
 }
 :root[data-theme="dark"] {
-  --grund: #141c1a;
-  --papier: #1d2724;
-  --tinte: #e4ece8;
-  --tinte-leise: #9fb0a9;
-  --linie: #34433e;
-  --tanne: #4fb898;
-  --tanne-dunkel: #6fd0b0;
+  --himmel: linear-gradient(160deg, #001d39 0%, #0a2f57 55%, #0a4174 100%);
+  --himmel-fuss: #0a4174;
+  --licht-1: radial-gradient(circle, rgba(123, 189, 232, .45), rgba(123, 189, 232, 0) 70%);
+  --licht-2: radial-gradient(circle, rgba(78, 142, 162, .45), rgba(78, 142, 162, 0) 70%);
+  --grund: rgba(255, 255, 255, .08);
+  --papier: rgba(255, 255, 255, .1);
+  --feld: rgba(0, 29, 57, .62);
+  --feld-linie: #7fa3c4;
+  --tinte: #f2f8fd;
+  --tinte-leise: #bdd8e9;
+  --linie: rgba(189, 216, 233, .28);
+  --kante: rgba(255, 255, 255, .2);
+  --schatten: rgba(0, 0, 0, .4);
+  --tanne: #8ec3f5;
+  --tanne-dunkel: #b9dcfb;
+  --knopf: linear-gradient(135deg, #0f5a8c, #1f7aa6);
+  --seitenleiste: linear-gradient(180deg, rgba(0, 17, 36, .9), rgba(10, 47, 87, .9));
   --marker: #6b5d12;
   --fehler: #ff8a80;
+  --auf-fehler: #3a0b08;
 }
 
 * { box-sizing: border-box; }
 
+html { background: var(--himmel-fuss) var(--himmel) fixed; }
 body {
   margin: 0;
-  background: var(--grund);
+  min-height: 100vh;
   color: var(--tinte);
   font-family: var(--schrift);
   font-size: 1rem;
   line-height: 1.5;
   font-variant-numeric: tabular-nums;
+  position: relative;
 }
+/* Zwei weiche Lichtflecken im Hintergrund, nur Dekoration */
+body::before, body::after {
+  content: "";
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+}
+body::before { top: -160px; right: -120px; width: 620px; height: 620px; background: var(--licht-1); }
+body::after { bottom: -240px; left: 25%; width: 720px; height: 720px; background: var(--licht-2); }
 
 [hidden] { display: none !important; }
 
 :focus-visible {
-  outline: 3px solid var(--tanne);
-  outline-offset: 2px;
+  outline: 3px solid #fff;
+  box-shadow: 0 0 0 6px var(--tanne);
+  outline-offset: 1px;
 }
 
 mark {
@@ -503,3 +553,120 @@ tr.inaktiv th input, tr.inaktiv td { opacity: .6; }
 .baustein.geerbt p { margin: 0; }
 .baustein textarea, .text-zeile textarea { font: inherit; padding: .5rem; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--papier); color: var(--tinte); width: 100%; }
 .breit-zeile { flex-basis: 100%; margin: .5rem 0 0; }
+
+/* ================================================================ Glas-Design: Karten, Knöpfe, Felder */
+/* Karten: durchscheinend mit Unschärfe, Text bleibt dunkel auf hellem Grund */
+.anmelde-karte, fieldset, .ableitung, .tabelle-rahmen, .akte-block, .dialog, .hinweise, .ag-eintrag,
+.baustein, .gespeichert, .mappe-fortschritt li, .einstellung .tabelle-rahmen {
+  background: var(--papier);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: blur(18px) saturate(1.5);
+  border: 1px solid var(--kante);
+  box-shadow: 0 12px 40px var(--schatten), inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+.anmelde-karte, fieldset, .ableitung, .tabelle-rahmen, .akte-block, .dialog, .ag-eintrag, .gespeichert {
+  border-radius: var(--radius-gross);
+}
+.hinweise, .baustein { border-radius: 20px; }
+.tabelle-rahmen { overflow-x: auto; }
+fieldset { padding: 1.5rem 1.6rem 1.75rem; }
+legend { font-size: 1.1875rem; font-weight: 700; padding: 0 .5rem; margin-left: -.5rem; }
+.akte-block { padding: 1.25rem 1.5rem; }
+.akte-block h2 { font-size: 1.1875rem; font-weight: 700; }
+.gespeichert { border-left-width: 1px; }
+.ableitung h2 { font-size: 1.1875rem; font-weight: 700; }
+
+/* Karten ohne Glas, wenn das Gerät Transparenz reduziert oder keine Unschärfe kann */
+@media (prefers-reduced-transparency: reduce) {
+  :root { --papier: #ffffff; }
+  :root[data-theme="dark"] { --papier: #14233b; }
+  .anmelde-karte, fieldset, .ableitung, .tabelle-rahmen, .akte-block, .dialog, .hinweise, .ag-eintrag,
+  .baustein, .gespeichert, .mappe-fortschritt li { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-reduced-transparency: reduce) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --papier: #14233b; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root { --papier: rgba(255, 255, 255, .92); }
+}
+
+/* Überschriften */
+.seitentitel { font-size: 2.125rem; font-weight: 800; letter-spacing: -.03em; }
+.marke { font-weight: 800; }
+
+/* Felder: fast deckend, Rahmen mit genug Kontrast, 48 px hoch */
+input, select, textarea {
+  background: var(--feld);
+  border: 1px solid var(--feld-linie);
+  border-radius: 16px;
+  min-height: 3rem;
+  padding: .6rem .9rem;
+}
+.feld > span { font-weight: 600; color: var(--tinte-leise); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offset: 0; border-color: var(--tanne); }
+input[type="checkbox"], input[type="radio"] { min-height: 0; accent-color: var(--tanne); }
+.ankreuzen input { width: 1.375rem; height: 1.375rem; }
+.hinweis { border-left-color: var(--tanne); }
+.mappe-dringend, .dringend-grund { border-left-color: var(--tanne); }
+
+/* Knöpfe: Pillen mit Verlauf und weichem Schatten */
+.knopf {
+  border-radius: 999px;
+  min-height: 3rem;
+  padding: .65rem 1.5rem;
+  font-weight: 700;
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+.knopf-haupt {
+  background: var(--knopf);
+  color: var(--knopf-text);
+  box-shadow: 0 8px 22px rgba(10, 65, 116, .38), inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+.knopf-haupt:hover { background: var(--knopf); filter: brightness(1.12); transform: translateY(-1px); }
+.knopf-haupt:disabled { filter: none; transform: none; }
+.knopf-leise {
+  background: var(--papier);
+  color: var(--tinte);
+  border-color: var(--kante);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.knopf-leise:hover { border-color: var(--tanne); transform: translateY(-1px); }
+.knopf, .navigation a { min-height: 3rem; }
+:root[data-theme="dark"] .knopf-haupt { color: var(--knopf-text); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .knopf-haupt { color: var(--knopf-text); } }
+
+/* Statusfelder (Merkmale) */
+.merkmal { padding: .15rem .7rem; font-size: .8125rem; background: var(--grund); color: var(--tanne-dunkel); border: 1px solid var(--linie); }
+.merkmal-frist { background: var(--marker); color: var(--tinte); border-color: transparent; }
+.merkmal-fehlt { background: var(--fehler); color: var(--auf-fehler); border-color: var(--fehler); }
+
+/* Tabellen: luftiger, Zeilen mit feiner Linie */
+.tabelle th, .tabelle td { padding: .9rem 1.1rem; border-bottom-color: var(--linie); }
+.tabelle th { font-weight: 700; }
+.tabelle tbody tr:hover { background: var(--grund); }
+
+/* Links */
+a.name { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.zurueck a, .leer-zustand a { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Reiter der Akte als Pillen */
+.reiter {
+  border-bottom: 0;
+  background: var(--papier);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--kante);
+  border-radius: 999px;
+  padding: 6px;
+  width: fit-content;
+  max-width: 100%;
+}
+.reiter a { border-bottom: 0; border-radius: 999px; padding: 0 1.25rem; min-height: 3rem; font-weight: 600; }
+.reiter a[aria-current="page"] { background: var(--knopf); color: var(--knopf-text); box-shadow: 0 6px 18px rgba(10, 65, 116, .4); }
+
+/* Unterschriftsmappe: Blatt und Unterschriftsfeld bleiben fest weiß wie Papier */
+.mappe-blatt { border-radius: 20px; box-shadow: 0 12px 40px var(--schatten); }
+.unterschrift-feld { border-radius: 20px; border-color: var(--feld-linie); }
+.mappe-fortschritt li { border-radius: 14px; }
+.mappe-fortschritt li.aktuell { border-color: var(--tanne); box-shadow: inset 0 0 0 1px var(--tanne), 0 6px 18px var(--schatten); }
