@@ -21,3 +21,18 @@ export const tageZwischen = (a, b) => Math.round((new Date(`${b}T00:00:00Z`) - n
 // Definitionsliste aus [Bezeichnung, Wert-HTML]-Paaren
 export const liste = (paare) =>
   `<dl class="angaben">${paare.filter(Boolean).map(([b, w]) => `<div><dt>${text(b)}</dt><dd>${w}</dd></div>`).join("")}</dl>`;
+
+// Jede Person bekommt dauerhaft ihre eigene Avatar-Farbe (aus dem Namen berechnet), das macht Listen lebendiger
+export function avatarFarbe(name) {
+  let n = 0;
+  for (const z of String(name || "")) n = (n * 31 + z.charCodeAt(0)) % 997;
+  return `av-${(n % 6) + 1}`;
+}
+
+// Tageszeit-Gruß
+export function tagesgruss(stunde = new Date().getHours()) {
+  if (stunde < 5) return "Gute Nacht";
+  if (stunde < 11) return "Guten Morgen";
+  if (stunde < 18) return "Schönen Tag";
+  return "Guten Abend";
+}

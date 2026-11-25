@@ -3,7 +3,7 @@
 // (akte_kopf liefert nur, was die Rolle sehen darf); die Reiter richten sich danach.
 import * as api from "./api.js";
 import { heuteIso } from "./pruefungen.js";
-import { $, text, ART, stunden, geld, datum, tageZwischen, liste } from "./hilfen.js";
+import { $, text, ART, stunden, geld, datum, tageZwischen, liste, avatarFarbe } from "./hilfen.js";
 
 // Reiter: Schlüssel, Name, wer ihn sieht, Modul (wird erst beim Öffnen geladen)
 const REITER = [
@@ -81,7 +81,7 @@ const darfMappe = (k, stand) => k.rechte.buero || (k.rechte.dokumente && ["studi
 function kopfZeichnen(k, stand) {
   const aktiv = !k.austritt || k.austritt >= heuteIso();
   $("#akte-kopf").innerHTML = `
-    <span class="avatar avatar-gross" data-i="${text(`${(k.nachname || "")[0] || ""}${(k.vorname || "")[0] || ""}`.toUpperCase())}" aria-hidden="true"></span>
+    <span class="avatar avatar-gross ${avatarFarbe(`${k.nachname} ${k.vorname}`)}" data-i="${text(`${(k.nachname || "")[0] || ""}${(k.vorname || "")[0] || ""}`.toUpperCase())}" aria-hidden="true"></span>
     <h1 class="seitentitel">${text(`${k.nachname} ${k.vorname}`)}</h1>
     <p class="akte-unterzeile">${text([k.funktion, k.arbeitsort, k.gesellschaft].filter(Boolean).join(", "))}</p>
     <p class="akte-status">${text(status(k, heuteIso()))}

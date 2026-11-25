@@ -35,8 +35,18 @@ function messen({ grund }) {
       const cs = getComputedStyle(e);
       const bild = cs.backgroundImage;
       if (bild && bild !== "none") {
-        const stufen = [...bild.matchAll(/rgba?\([^)]+\)/g)].map((m) => lesen(m[0]));
-        if (stufen.length) basen = stufen.flatMap((s) => basen.map((b) => ueber(s, b)));
+        // mehrere Ebenen: durch Kommas auf oberster Ebene getrennt, die letzte liegt unten
+        const ebenen = []; let tiefe = 0, start = 0;
+        for (let i = 0; i < bild.length; i++) {
+          if (bild[i] === "(") tiefe++;
+          else if (bild[i] === ")") tiefe--;
+          else if (bild[i] === "," && tiefe === 0) { ebenen.push(bild.slice(start, i)); start = i + 1; }
+        }
+        ebenen.push(bild.slice(start));
+        for (const ebene of ebenen.reverse()) {
+          const stufen = [...ebene.matchAll(/rgba?\([^)]+\)/g)].map((m) => lesen(m[0]));
+          if (stufen.length) basen = stufen.flatMap((st) => basen.map((b) => ueber(st, b)));
+        }
       }
       const f = lesen(cs.backgroundColor);
       if (f && f[3] > 0) basen = basen.map((b) => ueber(f, b));

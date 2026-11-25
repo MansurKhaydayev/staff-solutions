@@ -3,7 +3,7 @@
 :root {
   --himmel: linear-gradient(160deg, #bdd8e9 0%, #9bcdec 42%, #8fc0d4 100%);
   --himmel-fuss: #8fc0d4;
-  --licht-1: radial-gradient(circle, rgba(255, 255, 255, .85), rgba(123, 189, 232, 0) 70%);
+  --licht-1: radial-gradient(circle, rgba(255, 196, 160, .75), rgba(255, 196, 160, 0) 68%);
   --licht-2: radial-gradient(circle, rgba(73, 118, 159, .3), rgba(73, 118, 159, 0) 70%);
   --grund: rgba(10, 65, 116, .08);      /* leichte Tönung (Chips, gesperrte Felder) */
   --papier: rgba(255, 255, 255, .72);   /* Glas-Karte */
@@ -22,6 +22,9 @@
   --marker: #ffe58a;                    /* nur für automatisch ermittelte Werte */
   --fehler: #8c1913;
   --auf-fehler: #ffffff;
+  --warm: #e8663a;                      /* Wärme: Morgenrot als Akzent */
+  --warm-hell: #ffe1d1;
+  --warm-tinte: #9a3a14;
   --radius: 16px;
   --radius-gross: 28px;
   --schrift: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
@@ -46,6 +49,9 @@
     --tanne-dunkel: #b9dcfb;
     --knopf: linear-gradient(135deg, #0f5a8c, #1f7aa6);
     --seitenleiste: linear-gradient(180deg, rgba(0, 17, 36, .9), rgba(10, 47, 87, .9));
+    --warm: #ff9b6a;
+    --warm-hell: rgba(255, 155, 106, .2);
+    --warm-tinte: #ffc3a3;
     --marker: #5c500f;
     --fehler: #ffc4bc;
     --auf-fehler: #3a0b08;
@@ -69,6 +75,9 @@
   --tanne-dunkel: #b9dcfb;
   --knopf: linear-gradient(135deg, #0f5a8c, #1f7aa6);
   --seitenleiste: linear-gradient(180deg, rgba(0, 17, 36, .9), rgba(10, 47, 87, .9));
+  --warm: #ff9b6a;
+  --warm-hell: rgba(255, 155, 106, .2);
+  --warm-tinte: #ffc3a3;
   --marker: #5c500f;
   --fehler: #ffc4bc;
   --auf-fehler: #3a0b08;
@@ -816,4 +825,90 @@ a.name { font-weight: 700; text-decoration: underline; text-underline-offset: 3p
 /* Mehrzeilige Felder wie die übrigen Felder */
 textarea, .baustein textarea, .text-zeile textarea, .mappe-dringend textarea {
   font: inherit; color: var(--tinte); background: var(--feld); border: 1px solid var(--feld-linie); border-radius: 16px;
+}
+
+/* ================================================================ Persönlicher: Wärme, Farbe, natürliche Sprache */
+/* Avatare: jede Person hat ihre eigene Farbe */
+.avatar.av-1 { background: linear-gradient(135deg, #4f8fc4, #0a4174); }
+.avatar.av-2 { background: linear-gradient(135deg, #2f9e92, #0b5d5a); }
+.avatar.av-3 { background: linear-gradient(135deg, #d9764a, #9c3a20); }
+.avatar.av-4 { background: linear-gradient(135deg, #8d6cc4, #5b3a8c); }
+.avatar.av-5 { background: linear-gradient(135deg, #5aa464, #2a6035); }
+.avatar.av-6 { background: linear-gradient(135deg, #c8913a, #7a4e08); }
+
+/* Marke und Auswahl bekommen einen Hauch Morgenrot */
+.marke-zeichen { background: linear-gradient(135deg, #7bbde8 0%, #ffb08a 100%); }
+.navigation a[aria-current="page"]::after {
+  content: ""; margin-left: auto; width: .6rem; height: .6rem; border-radius: 50%; background: var(--warm);
+  box-shadow: 0 0 0 4px rgba(232, 102, 58, .22);
+}
+.akte-kopf::after { background: radial-gradient(circle, rgba(255, 176, 138, .55), rgba(255, 176, 138, 0) 70%); }
+.fortschritt::-webkit-progress-value { background: linear-gradient(90deg, #7bbde8, #0a4174 60%, #e8663a); }
+.fortschritt::-moz-progress-bar { background: linear-gradient(90deg, #7bbde8, #0a4174 60%, #e8663a); }
+
+/* Karten der Akte: kleine farbige Punkte vor den Überschriften */
+.akte-block h2::before {
+  content: ""; display: inline-block; width: .7rem; height: .7rem; border-radius: 50%; margin-right: .6rem;
+  background: var(--punkt, #1f6f94); vertical-align: .05em;
+}
+.akte-block:nth-child(3n+2) { --punkt: #2f9e92; }
+.akte-block:nth-child(3n+3) { --punkt: var(--warm); }
+
+/* Statusfelder in Alltagssprache */
+.merkmal-neu { background: var(--warm-hell); color: var(--warm-tinte); border-color: transparent; }
+.merkmal-frist { background: var(--warm-hell); color: var(--warm-tinte); border-color: transparent; }
+.leise { color: var(--tinte-leise); }
+.zeile-unter { display: block; font-size: .875rem; color: var(--tinte-leise); font-weight: 400; }
+
+/* Mitarbeiterliste: Name mit Zeile darunter statt vieler Spalten */
+#seite-mitarbeiter .tabelle td:first-child { white-space: normal; }
+.name-zelle .avatar { margin: 0 .85rem 0 0; }
+.name-block { display: inline-block; vertical-align: middle; max-width: calc(100% - 3.5rem); }
+.name-block a.name { font-size: 1.0625rem; }
+#seite-mitarbeiter .tabelle td { vertical-align: middle; }
+#seite-mitarbeiter .tabelle td:not(:first-child) { white-space: nowrap; }
+#seite-mitarbeiter .tabelle td .merkmal { margin-left: .5rem; }
+#seite-mitarbeiter .tabelle td .merkmal-frist { margin: 0 0 .15rem; }
+#seite-mitarbeiter .tabelle td .merkmal-frist + .zeile-unter { margin-top: .1rem; }
+
+/* ---------- Anmeldeseite: herzlich statt Formular-Kasten ---------- */
+.anmeldung {
+  padding: 0; min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); place-items: stretch;
+}
+.anmelde-willkommen {
+  position: relative; overflow: hidden; color: #fff; padding: clamp(2rem, 6vw, 5rem); display: flex; flex-direction: column; justify-content: center; gap: 1.25rem;
+  background: linear-gradient(160deg, #001d39 0%, #0a3a69 60%, #14507c 100%);
+}
+/* Morgenrot unten links: nur Dekoration, liegt hinter dem Text und weit unter den Zeilen */
+.anmelde-willkommen::before {
+  content: ""; position: absolute; left: -18%; bottom: -34%; width: 90%; height: 62%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 140, 90, .9), rgba(255, 140, 90, 0));
+}
+.anmelde-willkommen::after {
+  content: ""; position: absolute; left: -14%; bottom: -46%; width: 76%; aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+  border: 2px solid rgba(255, 255, 255, .22); outline: 2px solid rgba(255, 255, 255, .12); outline-offset: 46px;
+}
+.anmelde-willkommen > * { position: relative; z-index: 1; }
+.anmelde-marke { display: flex; align-items: center; gap: .75rem; margin: 0 0 clamp(1rem, 6vh, 3.5rem); font-weight: 800; font-size: 1.25rem; letter-spacing: -.02em; }
+.anmelde-gruss { margin: 0; font-size: clamp(2.5rem, 5.4vw, 4.5rem); line-height: 1.02; font-weight: 800; letter-spacing: -.04em; max-width: 12ch; }
+.anmelde-satz { margin: 0; max-width: 34rem; font-size: 1.1875rem; line-height: 1.55; color: #fff; }
+.anmelde-punkte { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .6rem; font-weight: 600; }
+.anmelde-punkte span {
+  display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; margin-right: .75rem; border-radius: 50%;
+  background: rgba(255, 255, 255, .2); font-size: .875rem;
+}
+.anmelde-karte {
+  align-self: center; justify-self: center; width: min(100% - 3rem, 26rem); max-width: none; padding: 2.25rem 2rem; gap: 1.1rem;
+}
+.anmeldung { background: linear-gradient(160deg, #f1f7fc 0%, #dcebf5 100%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .anmeldung { background: var(--himmel); } }
+:root[data-theme="dark"] .anmeldung { background: var(--himmel); }
+.anmelde-titel { margin: 0; font-size: 1.875rem; font-weight: 800; letter-spacing: -.03em; }
+.anmelde-karte .knopf-haupt { min-height: 3.25rem; font-size: 1.0625rem; }
+@media (max-width: 900px) {
+  .anmeldung { grid-template-columns: minmax(0, 1fr); }
+  .anmelde-willkommen { padding: 2rem 1.5rem 3.5rem; }
+  .anmelde-gruss { font-size: 2.5rem; max-width: none; }
+  .anmelde-punkte, .anmelde-satz { display: none; }
+  .anmelde-karte { margin: -2rem auto 2rem; }
 }

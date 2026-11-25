@@ -52,12 +52,14 @@ const SEITEN = [["liste", "#mitarbeiter"], ["akte", "#akte/d1/uebersicht"], ["fo
         const p = await neueSeite(browser, d, { rpc: startRpc(d) });
         await p.emulateMedia({ colorScheme: farbe });
         await anmelden(p, "admin@demo.invalid");
-        await p.evaluate(() => { location.hash = "#start"; });
-        await p.waitForTimeout(900);
-        for (const [g, [w, h]] of Object.entries(GROESSEN)) {
-          await p.setViewportSize({ width: w, height: h });
-          await p.waitForTimeout(150);
-          await p.screenshot({ path: `${OUT}/start-${g}-${farbe === "light" ? "hell" : "dunkel"}.png`, fullPage: true });
+        for (const [name, adresse] of [["start", "#start"], ["team", "#mitarbeiter"]]) {
+          await p.evaluate((a) => { location.hash = a; }, adresse);
+          await p.waitForTimeout(900);
+          for (const [g, [w, h]] of Object.entries(GROESSEN)) {
+            await p.setViewportSize({ width: w, height: h });
+            await p.waitForTimeout(150);
+            await p.screenshot({ path: `${OUT}/${name}-${g}-${farbe === "light" ? "hell" : "dunkel"}.png`, fullPage: true });
+          }
         }
       }
     }
