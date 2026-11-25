@@ -34,17 +34,24 @@
   <!-- Programm -->
   <div id="ansicht-programm" hidden>
     <header class="kopf">
-      <span class="marke marke-klein">Staff-Solutions</span>
+      <div class="kopf-oben">
+        <span class="marke marke-klein"><span class="marke-zeichen" aria-hidden="true">S</span>Staff-Solutions</span>
+        <button type="button" class="menue-knopf" id="menue-knopf" aria-expanded="false" aria-controls="hauptnavigation">Menü</button>
+      </div>
+      <div class="kopf-menue" id="hauptnavigation">
       <nav class="navigation" aria-label="Hauptnavigation">
-        <a href="#start" data-ziel="start">Startseite</a>
-        <a href="#erfassen" data-ziel="erfassen">Neuer Mitarbeiter</a>
-        <a href="#mitarbeiter" data-ziel="mitarbeiter">Mitarbeiter</a>
-        <a href="#offen" data-ziel="offen" hidden>Offene Punkte</a>
-        <a href="#unterschreiben" data-ziel="unterschreiben" hidden>Zu unterschreiben</a>
-        <a href="#einstellungen" data-ziel="einstellungen" hidden>Einstellungen</a>
+        <a href="#start" data-ziel="start"><svg class="symbol" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11.5 12 4l8.5 7.5"/><path d="M6 10v9.5h12V10"/></svg><span>Startseite</span></a>
+        <a href="#erfassen" data-ziel="erfassen"><svg class="symbol" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Neuer Mitarbeiter</span></a>
+        <a href="#mitarbeiter" data-ziel="mitarbeiter"><svg class="symbol" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .6 3.2 2.3 3.5 5.2"/></svg><span>Mitarbeiter</span></a>
+        <a href="#offen" data-ziel="offen" hidden><svg class="symbol" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16v.5"/></svg><span>Offene Punkte</span></a>
+        <a href="#unterschreiben" data-ziel="unterschreiben" hidden><svg class="symbol" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/></svg><span>Zu unterschreiben</span></a>
+        <a href="#einstellungen" data-ziel="einstellungen" hidden><svg class="symbol" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><span>Einstellungen</span></a>
       </nav>
-      <span class="wer" id="wer"></span>
-      <button type="button" class="knopf knopf-leise" id="abmelden">Abmelden</button>
+      <div class="kopf-unten">
+        <span class="wer" id="wer"></span>
+        <button type="button" class="knopf knopf-leise" id="abmelden">Abmelden</button>
+      </div>
+      </div>
     </header>
 
     <!-- Startseite: Kennzahlen -->

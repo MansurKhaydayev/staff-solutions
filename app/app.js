@@ -7,6 +7,7 @@ import { offenePunkteZeigen } from "./offene_punkte.js";
 import { mappeZeigen } from "./mappe.js";
 import { arbeitgeberZeigen } from "./arbeitgeber.js";
 import { startseiteZeigen } from "./startseite.js";
+import { menueEinrichten } from "./menue.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -37,6 +38,7 @@ let absendenVersucht = false;
 document.addEventListener("DOMContentLoaded", () => {
   $("#anmelde-formular").addEventListener("submit", anmelden);
   $("#abmelden").addEventListener("click", abmelden);
+  menueEinrichten();
 
   const form = $("#dienstzettel");
   form.addEventListener("input", aktualisieren);
