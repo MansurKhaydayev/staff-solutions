@@ -20,6 +20,13 @@ export function tagPlus(iso, tage) {
   return d.toISOString().slice(0, 10);
 }
 
+// Heutiges Datum in Wien (wie die Edge Function), unabhängig von der Zeitzone des Geräts
+export function heuteWien(d = new Date()) {
+  const t = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Vienna", year: "numeric",
+    month: "2-digit", day: "2-digit" }).formatToParts(d).map((x) => [x.type, x.value]));
+  return `${t.year}-${t.month}-${t.day}`;
+}
+
 const tageZwischen = (von, bis) => (Date.parse(`${bis}T00:00:00Z`) - Date.parse(`${von}T00:00:00Z`)) / 86400000;
 
 // Letzter Tag der Probezeit: ein Monat ab 10.03. endet am 09.04.; ab 31.01. am 28.02.

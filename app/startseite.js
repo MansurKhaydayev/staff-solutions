@@ -3,7 +3,6 @@
 // was sie sehen darf; Zahlen mit Geld werden nur mit dem Recht „Entgelt“ geladen.
 import * as api from "./api.js";
 import { $, text, datum, ART } from "./hilfen.js";
-import { heuteIso } from "./pruefungen.js";
 import * as k from "./kennzahlen.js";
 
 export const MONATE = ["Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August",
@@ -21,7 +20,7 @@ let auswahl = null;     // { jahr, monat, standort }
 
 export async function startseiteZeigen(stand, { offenePunkte = false } = {}) {
   const seite = $("#seite-start");
-  const heute = heuteIso();
+  const heute = k.heuteWien();
   const [jahr, monat] = heute.split("-").map(Number);
   auswahl ||= { jahr, monat, standort: "" };
   $("#start-inhalt").innerHTML = '<p class="start-laden">Zahlen werden geladen …</p>';
@@ -49,11 +48,12 @@ export async function startseiteZeigen(stand, { offenePunkte = false } = {}) {
       if (e.target.name === "arbeitsort") auswahl.standort = e.target.value;
       else auswahl[e.target.name] = Number(e.target.value);
       if (e.target.name === "jahr") {
-        const letzter = auswahl.jahr === jahr ? monat : 12;
+        const [jetztJahr, jetztMonat] = k.heuteWien().split("-").map(Number);
+        const letzter = auswahl.jahr === jetztJahr ? jetztMonat : 12;
         auswahl.monat = Math.min(auswahl.monat, letzter);
       }
-      steuerungFuellen(stand, heuteIso());
-      zeichnen(stand, heuteIso());
+      steuerungFuellen(stand, k.heuteWien());
+      zeichnen(stand, k.heuteWien());
     });
     $("#start-pdf").addEventListener("click", herunterladen);
     $("#start-inhalt").addEventListener("change", (e) => {
@@ -347,7 +347,7 @@ async function herunterladen() {
 // Wer das Recht vergeben darf, sieht hier alle Rollen und kann es setzen oder entziehen
 function teilRechte(stand) {
   if (!stand.recht.vergibt_analyse_export) return "";
-  const zeilen = (stand.rechte || []).filter((r) => r.rolle !== "mitarbeiter").map((r) =>
+  const zeilen = (stand.rechte || []).filter((r) => r.reichweite !== "eigene").map((r) =>
     `<li><label><input type="checkbox" data-analyse-recht="${text(r.rolle)}"${r.darf_analyse_export ? " checked" : ""}>
       ${text(r.bezeichnung || r.rolle)}</label></li>`).join("");
   return `<section class="start-teil" aria-labelledby="t-rechte-analyse">

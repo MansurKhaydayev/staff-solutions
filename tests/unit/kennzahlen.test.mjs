@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   monatsEnde, imDienst, bestandNach, monatsZahlen, jahresZahlen, zwoelfMonate, fruehfluktuation,
-  verteilung, hinweise, zaehlbar, mitStatus, vollzeitaequivalente, betriebszugehoerigkeit, personalkosten, monatPlus,
+  verteilung, hinweise, zaehlbar, mitStatus, heuteWien, vollzeitaequivalente, betriebszugehoerigkeit, personalkosten, monatPlus,
 } from "../../app/kennzahlen.js";
 
 // Kleine Hilfe: ein Dienstverhältnis, wie es mitarbeiter_verzeichnis liefert
@@ -175,4 +175,9 @@ test("Status aus mitarbeiter_status wird über dienstverhaeltnis_id verknüpft",
   assert.equal(m.austritte, 1);
   // Ohne Status (Funktion noch nicht da) bleibt alles, wie es ist
   assert.deepEqual(mitStatus([a, b], null), [a, b]);
+});
+
+test("heute in Wien, egal wo das Gerät steht", () => {
+  assert.equal(heuteWien(new Date("2026-11-30T23:30:00Z")), "2026-12-01");
+  assert.equal(heuteWien(new Date("2026-06-30T21:59:00Z")), "2026-06-30");
 });

@@ -9,7 +9,7 @@ declare
   sl uuid := testhilfe.benutzer('studioleitung', array['de000000-0000-0000-0000-0000000000e1']::uuid[]);
   v_id bigint;
 begin
-  -- Voreinstellung: Admin und GF dürfen herunterladen, nur die GF vergibt
+  -- Voreinstellung: Admin und GF dürfen herunterladen und vergeben
   perform testhilfe.pruefe((select darf_analyse_export from public.rollen_recht where organisation_id = org and rolle = 'admin'), 'Admin darf herunterladen');
   perform testhilfe.pruefe((select darf_analyse_export from public.rollen_recht where organisation_id = org and rolle = 'geschaeftsfuehrung'), 'GF darf herunterladen');
   perform testhilfe.pruefe(not (select darf_analyse_export from public.rollen_recht where organisation_id = org and rolle = 'hr'), 'Personalbüro darf nicht');

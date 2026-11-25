@@ -35,6 +35,8 @@ $$;
 
 -- Die beiden Spalten sind gegen direktes Ändern gesperrt (auch für wer „Einstellungen verwalten“ darf).
 -- Nur public.analyse_recht_setzen öffnet die Sperre für einen einzelnen Aufruf.
+-- Das gilt auch für den Betreiber: wer darf_analyse_export per SQL ändern will, setzt vorher in derselben
+-- Transaktion set_config('app.analyse_recht_setzen', 'ja', true). vergibt_analyse_export ändert nur der Betreiber.
 create or replace function app.analyse_recht_schuetzen() returns trigger
 language plpgsql security definer set search_path = '' as $$
 begin
