@@ -1,4 +1,4 @@
-"""Erzeugt supabase/functions/mappe/schrift.js: DejaVu Sans (normal, fett), gekürzt auf die Zeichen,
+"""Erzeugt supabase/functions/mappe/schrift.js: DejaVu Sans Condensed (normal, fett; so breit wie das frühere Helvetica), gekürzt auf die Zeichen,
 die in Namen und Adressen vorkommen (Latein mit allen Erweiterungen, Griechisch, Kyrillisch, Satzzeichen).
 
 Die Schrift liegt als Base64-Text im Code, weil das Hochladen der Edge Function nur Textdateien annimmt.
@@ -36,9 +36,9 @@ def kuerzen(datei: Path) -> bytes:
 
 def main() -> None:
     ordner = Path(sys.argv[1])
-    normal = base64.b64encode(kuerzen(ordner / "DejaVuSans.ttf")).decode()
-    fett = base64.b64encode(kuerzen(ordner / "DejaVuSans-Bold.ttf")).decode()
-    ZIEL.write_text(f"""// Gekürzte Schrift DejaVu Sans (normal und fett) für die PDFs der Mappe. NICHT VON HAND ÄNDERN.
+    normal = base64.b64encode(kuerzen(ordner / "DejaVuSansCondensed.ttf")).decode()
+    fett = base64.b64encode(kuerzen(ordner / "DejaVuSansCondensed-Bold.ttf")).decode()
+    ZIEL.write_text(f"""// Gekürzte Schrift DejaVu Sans Condensed (normal und fett) für die PDFs der Mappe. NICHT VON HAND ÄNDERN.
 // Erzeugt mit generator/schrift_kuerzen.py aus {QUELLE}.
 // Zeichenbereiche: {BEREICHE}
 // Lizenz: siehe LICENSE-DejaVu.txt (Bitstream Vera / DejaVu, freie Weitergabe und Einbettung erlaubt).

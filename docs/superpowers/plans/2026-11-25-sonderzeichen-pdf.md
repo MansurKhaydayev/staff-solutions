@@ -121,3 +121,8 @@
 - [ ] **Schritt 4:** Nach Freigabe: `deploy_edge_function` „mappe“ mit `index.ts`, `ablauf.js`, `pdf.js`, `schrift.js`, `verify_jwt: true` → Version 3. `get_advisors`: nur die bekannten Hinweise.
 - [ ] **Schritt 5:** Zusammenführen nach `main`, pushen (`git -c push.negotiate=true push`). `projekt-kontext.md` (Abschnitt 5): Sonderzeichen und „Sehr lange Wörter“ abhaken.
 - [ ] **Schritt 6:** Erster echter Test am iPad mit Demo-Namen „Ivana Ćirić“ (macht Mansur).
+
+**Nachtrag beim Bauen (25.11.2026):** Statt DejaVu Sans wird **DejaVu Sans Condensed** verwendet (gleiche
+Schriftfamilie und Lizenz). Die normale DejaVu Sans ist rund 13 % breiter als Helvetica, dadurch rutschten im
+Muster-Dienstzettel die Unterschriften auf eine zweite Seite. Condensed ist nur rund 2 % breiter, das Muster
+bleibt einseitig wie bisher. `schrift.js` ist damit rund 300 KB groß.

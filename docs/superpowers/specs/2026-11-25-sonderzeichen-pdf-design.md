@@ -99,3 +99,8 @@ liegen unverändert in Git). Es gehen dabei keine Daten verloren.
 1. **Kyrillisch und Griechisch:** Ja (25.11.2026). Rund 150 KB statt 110 KB je Schnitt.
 2. **Muster-PDF:** Mansur sieht das neue Muster (DejaVu Sans statt Helvetica) zuerst selbst an,
    bevor es der Chefin gezeigt wird.
+
+**Nachtrag beim Bauen (25.11.2026):** Statt DejaVu Sans wird **DejaVu Sans Condensed** verwendet (gleiche
+Schriftfamilie und Lizenz). Die normale DejaVu Sans ist rund 13 % breiter als Helvetica, dadurch rutschten im
+Muster-Dienstzettel die Unterschriften auf eine zweite Seite. Condensed ist nur rund 2 % breiter, das Muster
+bleibt einseitig wie bisher. `schrift.js` ist damit rund 300 KB groß.
