@@ -435,9 +435,7 @@ und Austritte und Fluktuation bleiben bei 0.
 
 ---
 
-## 10. Tests ausführen
-
-## Das Aussehen (Glas-Design)
+## 10. Das Aussehen (Glas-Design)
 
 - **Farben ändern:** Ganz oben in `app/style.css` stehen die Farb-Variablen für hell und dunkel (zum Beispiel `--tanne` für Links, `--knopf` für Knöpfe, `--himmel` für den Hintergrund). Dort ändern, nicht an einzelnen Stellen.
 - **Seitenleiste:** Auf breiten Bildschirmen (ab 1000 Pixel) immer sichtbar, auf dem iPad hochkant und am Handy hinter dem Knopf „Menü“.
@@ -446,7 +444,7 @@ und Austritte und Fluktuation bleiben bei 0.
 
 ---
 
-## 9. Tests ausführen
+## 11. Tests ausführen
 
 | Art | Wie | Bestanden, wenn |
 |---|---|---|
@@ -477,7 +475,7 @@ Genau dafür ist die Prüfziffer da: Sie fängt Tippfehler ab.
 
 ---
 
-## 11. Begriffe
+## 12. Begriffe
 
 | Begriff | Bedeutung |
 |---|---|

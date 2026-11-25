@@ -3,6 +3,8 @@
 // Aufruf: NODE_PATH=$(npm root -g) node tests/ui/design.test.js app /tmp/ui
 const { chromium, starteServer, neueSeite, anmelden, pruefer, plus, ADRESSE } = require("./mock.js");
 const { daten, rpcFuer } = require("./akte.test.js");
+const { startDaten, startRpc } = require("./demo_startseite.js");
+const { demoDaten } = require("./mock.js");
 
 const [APP = "app"] = process.argv.slice(2);
 const { pruefe, ende } = pruefer();
@@ -96,6 +98,19 @@ function messen({ grund }) {
           }
         }
         pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
+      }
+      // Startseite mit Kennzahlen (eigene Testdaten)
+      const sd = startDaten(demoDaten);
+      const sp = await neueSeite(browser, sd, { rpc: startRpc(sd) });
+      await sp.emulateMedia({ colorScheme: farbe });
+      await anmelden(sp, "admin@demo.invalid");
+      await sp.evaluate(() => { location.hash = "#start"; });
+      await sp.waitForTimeout(900);
+      for (const [g, [w, h]] of Object.entries(GROESSEN)) {
+        await sp.setViewportSize({ width: w, height: h });
+        await sp.waitForTimeout(150);
+        const v = await sp.evaluate(messen, { grund: GRUND[farbe] });
+        pruefe(v.length === 0, `start ${g} ${farbe}${v.length ? `: ${v.length} Verstöße, z. B. ${[...new Set(v)].slice(0, 5).join(" | ")}` : ""}`);
       }
     }
   } finally {

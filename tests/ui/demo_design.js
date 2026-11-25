@@ -2,6 +2,8 @@
 // Aufruf: NODE_PATH=$(npm root -g) node tests/ui/demo_design.js app /pfad/zu/bildern [schritt]
 const { chromium, starteServer, neueSeite, anmelden, plus } = require("./mock.js");
 const { daten, kopfFuer, rpcFuer } = require("./akte.test.js");
+const { startDaten, startRpc } = require("./demo_startseite.js");
+const { demoDaten } = require("./mock.js");
 const fs = require("fs");
 
 const [APP = "app", OUT = "/tmp/ui-bilder", NUR = ""] = process.argv.slice(2);
@@ -41,6 +43,21 @@ const SEITEN = [["liste", "#mitarbeiter"], ["akte", "#akte/d1/uebersicht"], ["fo
           await p.setViewportSize({ width: w, height: h });
           await p.waitForTimeout(150);
           await p.screenshot({ path: `${OUT}/${name}-${g}-${farbe === "light" ? "hell" : "dunkel"}.png`, fullPage: true });
+        }
+      }
+    }
+    if (!NUR || NUR.split(",").includes("start")) {
+      for (const farbe of ["light", "dark"]) {
+        const d = startDaten(demoDaten);
+        const p = await neueSeite(browser, d, { rpc: startRpc(d) });
+        await p.emulateMedia({ colorScheme: farbe });
+        await anmelden(p, "admin@demo.invalid");
+        await p.evaluate(() => { location.hash = "#start"; });
+        await p.waitForTimeout(900);
+        for (const [g, [w, h]] of Object.entries(GROESSEN)) {
+          await p.setViewportSize({ width: w, height: h });
+          await p.waitForTimeout(150);
+          await p.screenshot({ path: `${OUT}/start-${g}-${farbe === "light" ? "hell" : "dunkel"}.png`, fullPage: true });
         }
       }
     }

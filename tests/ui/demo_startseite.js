@@ -73,4 +73,25 @@ function verzeichnisFuer(zeilen, recht, zugeordnet = ["s1"]) {
     }));
 }
 
-module.exports = { belegschaft, verzeichnisFuer };
+// Fertige Testdaten und Antworten für Bilder und Design-Test der Startseite
+function startDaten(demoDaten) {
+  const d = demoDaten();
+  const b = belegschaft();
+  d.belegschaft = b.zeilen;
+  d.entgelt = b.entgelt;
+  d.rollen_recht.find((r) => r.rolle === "hr").darf_arbeitgeber_unterschreiben = true;
+  d.rollen_recht.forEach((r) => { r.bezeichnung = r.rolle; });
+  for (const r of ["admin", "geschaeftsfuehrung"]) {
+    Object.assign(d.rollen_recht.find((x) => x.rolle === r), { darf_analyse_export: true, vergibt_analyse_export: true });
+  }
+  return d;
+}
+function startRpc(d) {
+  return {
+    mitarbeiter_verzeichnis: (_, seite) => verzeichnisFuer(d.belegschaft, d.rollen_recht.find((r) => r.rolle === seite.rolle)),
+    offene_punkte: () => [{ art: "a" }, { art: "b" }, { art: "c" }],
+    arbeitgeber_offen: () => [{ dokument_id: "x" }],
+  };
+}
+
+module.exports = { belegschaft, verzeichnisFuer, startDaten, startRpc };
