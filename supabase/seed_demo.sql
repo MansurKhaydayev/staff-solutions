@@ -14,11 +14,12 @@ delete from public.gesellschaft   where organisation_id = 'de000000-0000-0000-00
 delete from public.lohnverrechner where organisation_id = 'de000000-0000-0000-0000-000000000001';
 delete from public.marke          where organisation_id = 'de000000-0000-0000-0000-000000000001';
 delete from public.tarifzone      where organisation_id = 'de000000-0000-0000-0000-000000000001';
+delete from public.austrittsart   where organisation_id = 'de000000-0000-0000-0000-000000000001';
 delete from public.organisation   where id = 'de000000-0000-0000-0000-000000000001';
 
 insert into public.organisation (id, name, probezeit_monate, befristung_monate,
-                                 vollzeit_stunden, geringfuegig_grenze, max_stunden_tag)
-values ('de000000-0000-0000-0000-000000000001', 'Demo Fitness Gruppe', 1, 3, 40, 551.10, 10);
+                                 vollzeit_stunden, geringfuegig_grenze, max_stunden_tag, buero_email)
+values ('de000000-0000-0000-0000-000000000001', 'Demo Fitness Gruppe', 1, 3, 40, 551.10, 10, 'personal@demo.invalid');
 
 insert into public.tarifzone (id, organisation_id, name) values
   ('de000000-0000-0000-0000-0000000000a1', 'de000000-0000-0000-0000-000000000001', 'Standard'),
@@ -28,17 +29,19 @@ insert into public.marke (id, organisation_id, name) values
   ('de000000-0000-0000-0000-0000000000b1', 'de000000-0000-0000-0000-000000000001', 'DemoFit');
 
 insert into public.lohnverrechner (id, organisation_id, name, email) values
-  ('de000000-0000-0000-0000-0000000000c1', 'de000000-0000-0000-0000-000000000001', 'Demo Lohnbüro', 'lohn@demo.invalid');
+  ('de000000-0000-0000-0000-0000000000c1', 'de000000-0000-0000-0000-000000000001', 'Demo Lohnbüro', 'lohn@demo.invalid'),
+  ('de000000-0000-0000-0000-0000000000c2', 'de000000-0000-0000-0000-000000000001', 'Demo Lohnbüro Wien', 'lohn-wien@demo.invalid'),
+  ('de000000-0000-0000-0000-0000000000c3', 'de000000-0000-0000-0000-000000000001', 'Demo Lohnbüro Holding', 'lohn-holding@demo.invalid');
 
 insert into public.gesellschaft (id, organisation_id, name, strasse, plz, ort, marke_id, lohnverrechner_id, ist_holding) values
   ('de000000-0000-0000-0000-0000000000d1', 'de000000-0000-0000-0000-000000000001', 'DemoFit Holding GmbH',
-   'Musterstraße 1', '8010', 'Graz', 'de000000-0000-0000-0000-0000000000b1', 'de000000-0000-0000-0000-0000000000c1', true);
+   'Musterstraße 1', '8010', 'Graz', 'de000000-0000-0000-0000-0000000000b1', 'de000000-0000-0000-0000-0000000000c3', true);
 insert into public.gesellschaft (id, organisation_id, name, strasse, plz, ort, marke_id, lohnverrechner_id, holding_id) values
   ('de000000-0000-0000-0000-0000000000d2', 'de000000-0000-0000-0000-000000000001', 'DemoFit Steiermark GmbH',
    'Musterstraße 1', '8010', 'Graz', 'de000000-0000-0000-0000-0000000000b1', 'de000000-0000-0000-0000-0000000000c1',
    'de000000-0000-0000-0000-0000000000d1'),
   ('de000000-0000-0000-0000-0000000000d3', 'de000000-0000-0000-0000-000000000001', 'DemoFit Wien GmbH',
-   'Musterstraße 1', '8010', 'Graz', 'de000000-0000-0000-0000-0000000000b1', 'de000000-0000-0000-0000-0000000000c1',
+   'Musterstraße 1', '8010', 'Graz', 'de000000-0000-0000-0000-0000000000b1', 'de000000-0000-0000-0000-0000000000c2',
    'de000000-0000-0000-0000-0000000000d1');
 
 insert into public.standort (id, organisation_id, gesellschaft_id, tarifzone_id, name, art, vertragsbezeichnung) values
