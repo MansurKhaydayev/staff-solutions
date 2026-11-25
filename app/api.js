@@ -145,3 +145,25 @@ export async function mappe(aktion, daten) {
   }
   return d;
 }
+
+// Personalanalyse als PDF: die Edge Function prüft das Recht, vermerkt den Download und liefert die Datei.
+export async function analysePdf(daten) {
+  let antwort;
+  try {
+    antwort = await fetch(`${SUPABASE_URL}/functions/v1/analyse`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json", Authorization: `Bearer ${sitzung?.access_token}` },
+      body: JSON.stringify(daten),
+    });
+  } catch {
+    throw new ApiFehler("Keine Verbindung. Bitte Internet prüfen und noch einmal versuchen.", 0);
+  }
+  if (!antwort.ok) {
+    let d = null;
+    try { d = await antwort.json(); } catch { /* leer */ }
+    if (antwort.status === 401 && sitzung) merken(null);
+    throw new ApiFehler(d?.meldung || d?.message || "Das PDF konnte nicht erstellt werden.", antwort.status);
+  }
+  const name = /filename="([^"]+)"/.exec(antwort.headers.get("content-disposition") || "")?.[1] || "Personalanalyse.pdf";
+  return { datei: await antwort.blob(), name };
+}

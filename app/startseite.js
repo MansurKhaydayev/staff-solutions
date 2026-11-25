@@ -40,6 +40,7 @@ export async function startseiteZeigen(stand, { offenePunkte = false } = {}) {
     return;
   }
   steuerungFuellen(stand, heute);
+  knopfZeigen(stand);
   if (!seite.dataset.verbunden) {
     seite.dataset.verbunden = "1";
     $("#start-steuerung").addEventListener("change", (e) => {
@@ -52,7 +53,10 @@ export async function startseiteZeigen(stand, { offenePunkte = false } = {}) {
       steuerungFuellen(stand, heuteIso());
       zeichnen(stand, heuteIso());
     });
-    $("#start-pdf").addEventListener("click", () => alsPdf());
+    $("#start-pdf").addEventListener("click", herunterladen);
+    $("#start-inhalt").addEventListener("change", (e) => {
+      if (e.target.dataset.analyseRecht) rechtSetzen(stand, e.target);
+    });
   }
   zeichnen(stand, heute);
 }
@@ -97,10 +101,6 @@ function zeichnen(stand, heute) {
   const ortName = auswahl.standort ? stand.standorte.find((s) => s.id === auswahl.standort)?.name : "alle Arbeitsorte";
   $("#start-untertitel").textContent =
     `${stand.organisation?.name || ""} · ${ortName} · Stand ${datum(heute)}`.replace(/^ · /, "");
-  $("#start-druckkopf").innerHTML =
-    `<strong>Personalanalyse ${text(MONATE[monat - 1])} ${jahr}</strong>` +
-    `<span>${text(stand.organisation?.name || "")} · ${text(ortName)} · erstellt am ${datum(heute)}` +
-    ` · nur die Mitarbeiter, die die Rolle „${text(stand.rollenText || "")}“ sehen darf</span>`;
 
   const ohneAustritte = !geladen.zeilen.some((z) => z.austritt);
   $("#start-inhalt").innerHTML = [
@@ -110,6 +110,7 @@ function zeichnen(stand, heute) {
     teilJahr(j, fruehJahr, monat),
     teilHeute(stand, zeilen, heute),
     teilAchtung(stand, zeilen, heute, probezeit),
+    teilRechte(stand),
   ].join("");
 }
 
@@ -312,23 +313,74 @@ function teilAchtung(stand, zeilen, heute, probezeit) {
   </section>`;
 }
 
-// ------------------------------------------------------------------ PDF
+// ------------------------------------------------------------------ PDF herunterladen
 
-// Über den Druckdialog des Browsers („Als PDF speichern“). So verlassen die Zahlen das Gerät nicht.
-function alsPdf() {
-  const vorher = document.title;
-  const m = String(auswahl.monat).padStart(2, "0");
-  document.title = `Personalanalyse ${auswahl.jahr}-${m}`;
-  document.body.classList.add("druck-startseite");
-  // Die Erklärung der Rechnung gehört ins PDF
-  const zu = [...document.querySelectorAll(".start-erklaerung:not([open])")];
-  zu.forEach((d) => { d.open = true; });
-  const zurueck = () => {
-    zu.forEach((d) => { d.open = false; });
-    document.title = vorher;
-    document.body.classList.remove("druck-startseite");
-    window.removeEventListener("afterprint", zurueck);
-  };
-  window.addEventListener("afterprint", zurueck);
-  window.print();
+// Nur mit dem Recht „Analyse herunterladen“. Die Edge Function prüft das Recht noch einmal,
+// vermerkt den Download im Protokoll und erzeugt das PDF.
+async function herunterladen() {
+  const knopf = $("#start-pdf");
+  const meldung = $("#start-pdf-meldung");
+  knopf.disabled = true;
+  knopf.textContent = "PDF wird erstellt …";
+  meldung.hidden = true;
+  try {
+    const { datei, name } = await api.analysePdf({ jahr: auswahl.jahr, monat: auswahl.monat, standort: auswahl.standort || null });
+    const url = URL.createObjectURL(datei);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (fehler) {
+    meldung.textContent = fehler.message;
+    meldung.hidden = false;
+  } finally {
+    knopf.disabled = false;
+    knopf.textContent = "PDF herunterladen";
+  }
+}
+
+// Wer das Recht vergeben darf, sieht hier alle Rollen und kann es setzen oder entziehen
+function teilRechte(stand) {
+  if (!stand.recht.vergibt_analyse_export) return "";
+  const zeilen = (stand.rechte || []).filter((r) => r.rolle !== "mitarbeiter").map((r) =>
+    `<li><label><input type="checkbox" data-analyse-recht="${text(r.rolle)}"${r.darf_analyse_export ? " checked" : ""}>
+      ${text(r.bezeichnung || r.rolle)}</label></li>`).join("");
+  return `<section class="start-teil" aria-labelledby="t-rechte-analyse">
+    <h2 id="t-rechte-analyse">Wer darf die Analyse herunterladen?</h2>
+    <div class="karte rechte-analyse">
+      <p class="leise">Jede Änderung und jeder Download wird im Protokoll vermerkt.</p>
+      <ul>${zeilen}</ul>
+      <p class="fehler" id="rechte-analyse-meldung" role="alert" hidden></p>
+    </div>
+  </section>`;
+}
+
+async function rechtSetzen(stand, feld) {
+  const rolle = feld.dataset.analyseRecht;
+  const darf = feld.checked;
+  const meldung = $("#rechte-analyse-meldung");
+  feld.disabled = true;
+  meldung.hidden = true;
+  try {
+    await api.funktion("analyse_recht_setzen", { p_rolle: rolle, p_darf: darf });
+    const r = stand.rechte.find((x) => x.rolle === rolle);
+    if (r) r.darf_analyse_export = darf;
+    if (rolle === stand.profil.rolle) {
+      stand.recht.darf_analyse_export = darf;
+      knopfZeigen(stand);
+    }
+  } catch (fehler) {
+    feld.checked = !darf;
+    meldung.textContent = fehler.message;
+    meldung.hidden = false;
+  } finally {
+    feld.disabled = false;
+  }
+}
+
+function knopfZeigen(stand) {
+  $("#start-pdf").hidden = !stand.recht.darf_analyse_export;
 }

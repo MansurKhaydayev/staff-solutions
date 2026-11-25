@@ -155,6 +155,8 @@ test("Personalkosten: gültiges Brutto je aktivem Dienstverhältnis, ohne Storno
 });
 
 test("nicht angetreten zählt nicht mit", () => {
-  const z = [dv("2026-11-10"), dv("2026-11-12", null, { status: "nicht_angetreten" }), dv("2026-11-13", null, { status: "aktiv" })];
-  assert.equal(monatsZahlen(zaehlbar(z), 2026, 11, "2026-11-25").eintritte, 2);
+  const z = [dv("2026-11-10"), dv("2026-11-12", null, { status: "nicht_angetreten" }), dv("2026-11-13", null, { status: "aktiv" }),
+    dv("2026-11-14", null, { status: "storno_ausstaendig" }), dv("2026-11-15", null, { status: "nicht_angetreten_gemeldet" })];
+  // „nicht angetreten gemeldet“ ist noch nicht bestätigt und zählt deshalb noch mit
+  assert.equal(monatsZahlen(zaehlbar(z), 2026, 11, "2026-11-25").eintritte, 3);
 });

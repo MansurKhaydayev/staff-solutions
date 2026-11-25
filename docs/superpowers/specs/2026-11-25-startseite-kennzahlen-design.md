@@ -17,9 +17,15 @@ Mansur hat „einfach drauf los bauen“ gewählt (keine eigene Freigabe von Bes
 - **Rollen:** keine neuen fest eingebauten Rollenlisten. Was gezeigt wird, hängt an den Rechten
   (`sieht_personendaten`, `sieht_entgelt`, `darf_arbeitgeber_unterschreiben`) und an dem, was die Datenbank liefert.
 - **Gerechnet wird im Browser** (`app/kennzahlen.js`, reine Funktionen, Einheitstests).
-- **PDF über den Druckdialog** (eigenes Druck-Layout, A4). Vorteil: keine neue Bibliothek, kein Server, die Zahlen
-  verlassen das Gerät nicht. Nachteil: ein Klick mehr („Als PDF speichern“ im Dialog).
-  Ein echter Download-Knopf (PDF im Browser erzeugen) wäre später möglich.
+- **PDF zum Herunterladen** (Entscheidung Mansur 25.11.2026, Option „Server-PDF, Admin ändert auch“):
+  - Neues Recht `darf_analyse_export` („Analyse herunterladen“), Voreinstellung Admin und GF.
+    Gedacht für die Geschäftsleitung, täglich oder wöchentlich.
+  - `vergibt_analyse_export`: wer das Recht setzen oder entziehen darf (Admin und GF). Nur über
+    `public.analyse_recht_setzen`, direktes Ändern sperrt ein Trigger. Jede Änderung im Protokoll.
+  - Edge Function `analyse` erzeugt das PDF (pdf-lib, DejaVu-Schrift wie die Mappe) mit dem Zugang der Person.
+    Vorher vermerkt `public.analyse_export_vermerken` den Download im Protokoll; ohne Recht kommt eine Meldung und kein PDF.
+  - Verworfen: nur Knopf ausblenden (kein echter Schutz) und „nur GF vergibt“ (Mansur möchte, dass auch der Admin vergeben darf).
+  - Der frühere Druckdialog ist entfernt.
 - **Aussehen:** an die freigegebene Design-Vorschau angelehnt (Glas-Karten, Blau-Verlauf). Alle Farben stehen als
   Variablen `--sz-*` in `app/startseite.css`, damit der Design-Umbau sie übernehmen kann.
 - Die Dienstzettel-Erfassung bleibt eigene Seite („Neuer Mitarbeiter“).

@@ -52,6 +52,7 @@ umgeht, bekommt er keine Daten, die er nicht sehen darf.
 | `app/akte_stammdaten.js` | Reiter „Lohnverrechnung“ und „Änderung eintragen“ |
 | `app/akte_protokoll.js` | Reiter „Protokoll“ |
 | `app/startseite.js`, `app/startseite.css` | Startseite mit Kennzahlen, Diagrammen und PDF-Ausdruck |
+| `supabase/functions/analyse/` | Edge Function: Personalanalyse als PDF (Recht prüfen, Download vermerken) |
 | `app/kennzahlen.js` | Rechnungen der Startseite (Fluktuation, Stände, Verteilungen), ohne Seitenzugriff testbar |
 | `app/offene_punkte.js` | Seite „Offene Punkte“ (wem fehlt was) |
 | `app/datei.js` | Dateien prüfen (Typ, Größe), Fingerabdruck, Ablageort |
@@ -417,8 +418,16 @@ Nach der Anmeldung kommt jetzt die **Startseite**. Das Formular für neue Mitarb
 **Rechte:** Die Zahlen kommen aus `mitarbeiter_verzeichnis`. Jede Rolle sieht also nur die Mitarbeiter in ihrer Reichweite.
 Beschäftigungsart, Vollzeitäquivalente und Befristungen nur mit „Personendaten“, Brutto nur mit „Entgelt“.
 
-**PDF:** Knopf „Als PDF speichern“ öffnet den Druckdialog. Dort „Als PDF speichern“ wählen
-(am iPad: Teilen → Drucken → „Sichern“ bzw. „In Dateien sichern“). Die Daten verlassen dabei das Gerät nicht.
+**PDF herunterladen:** Knopf „PDF herunterladen“ (gewählter Monat und Arbeitsort). Nur Rollen mit dem Recht
+**„Analyse herunterladen“** sehen den Knopf. Voreinstellung: Admin und Geschäftsführung.
+- Das PDF erzeugt die Edge Function `analyse` mit dem Zugang der Person. Die Datenbank prüft das Recht
+  (`public.analyse_export_vermerken`) und schreibt **jeden Download ins Protokoll** (`audit_log`, Tabelle „analyse“).
+  Die Protokoll-Nr. steht im PDF.
+- **Recht vergeben oder entziehen:** Wer das Recht vergeben darf (Spalte `vergibt_analyse_export`, Voreinstellung
+  Admin und Geschäftsführung), sieht unten auf der Startseite „Wer darf die Analyse herunterladen?“ mit einem Haken je Rolle.
+  Jede Änderung steht im Protokoll (`audit_log`, Aktion „analyse_recht“). Direkt in der Tabelle lässt sich das Recht nicht ändern.
+- Wer vergeben darf, lässt sich in der App nicht ändern, nur per SQL durch den Betreiber.
+- Hinweis: Ein Bildschirmfoto oder „Drucken“ der Seite kann die App nicht verhindern. Das Recht steuert den offiziellen Download.
 
 **Wichtig:** Austritte kann die App erst mit dem Austritt-Modul erfassen. Bis dahin steht ein Hinweis auf der Seite,
 und Austritte und Fluktuation bleiben bei 0.

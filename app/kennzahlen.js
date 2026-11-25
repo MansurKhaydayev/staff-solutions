@@ -31,8 +31,10 @@ export function probezeitEnde(eintritt, monate) {
   return tagPlus(isoAus(z.jahr, z.monat, t), -1);
 }
 
-// Wer nie angetreten ist, zählt weder als Eintritt noch als Austritt (Kennzeichen kommt mit dem Austritt-Modul)
-export const zaehlbar = (zeilen) => zeilen.filter((z) => z.status !== "nicht_angetreten");
+// Wer nie angetreten ist, zählt weder als Eintritt noch als Austritt (Status kommt mit dem Austritt-Modul).
+// „storno_ausstaendig“ ist ebenfalls ein bestätigtes „nicht angetreten“ (nur die Storno-Bestätigung fehlt noch).
+const NICHT_ANGETRETEN = new Set(["nicht_angetreten", "storno_ausstaendig"]);
+export const zaehlbar = (zeilen) => zeilen.filter((z) => !NICHT_ANGETRETEN.has(z.status));
 
 // Im Dienst an einem Tag: ab dem Eintritt bis einschließlich letztem Arbeitstag (Austritt)
 export const imDienst = (z, tag) => z.eintritt <= tag && (!z.austritt || z.austritt >= tag);

@@ -58,10 +58,10 @@
           <label>Jahr <select name="jahr"></select></label>
           <label>Monat <select name="monat"></select></label>
           <label>Arbeitsort <select name="arbeitsort"></select></label>
-          <button type="button" class="knopf-pdf" id="start-pdf">Als PDF speichern</button>
+          <button type="button" class="knopf-pdf" id="start-pdf" hidden>PDF herunterladen</button>
         </form>
       </div>
-      <div id="start-druckkopf" class="start-druckkopf"></div>
+      <p class="fehler" id="start-pdf-meldung" role="alert" hidden></p>
       <div id="start-inhalt" aria-live="polite"></div>
     </main>
 

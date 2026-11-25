@@ -124,6 +124,7 @@ async function neueSeite(browser, daten, optionen = {}) {
       const h = optionen.funktionen && optionen.funktionen[name];
       if (!h) return json({ meldung: `Funktion ${name} nicht simuliert` }, 404);
       const a = await h(body || {}, page);
+      if (a.roh) return route.fulfill({ status: 200, body: a.roh, headers: a.kopf || {} });
       return json(a.body, a.status || 200);
     }
     if (url.pathname.startsWith("/rest/v1/rpc/")) {

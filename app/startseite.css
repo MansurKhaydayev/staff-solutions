@@ -64,7 +64,6 @@
   background: var(--sz-knopf); color: #fff; font: inherit; font-weight: 700;
   box-shadow: 0 8px 20px rgba(10, 65, 116, .3);
 }
-.start-druckkopf { display: none; }
 
 .start-hinweis {
   margin: 16px 0 0; padding: 12px 16px; border-radius: 14px;
@@ -155,37 +154,10 @@ svg .punkt-stand { fill: var(--sz-linie); stroke: var(--sz-feld); stroke-width: 
   .start-steuerung label { flex: 1 1 120px; }
 }
 
-/* ---------------------------------------------------------------- Druck / PDF */
-@media print {
-  @page { size: A4; margin: 14mm 12mm; }
-  /* Nur wenn der Knopf „Als PDF speichern“ gedrückt wurde; andere Seiten drucken wie bisher */
-  body.druck-startseite { background: #fff !important; }
-  body.druck-startseite .kopf, body.druck-startseite .navigation, body.druck-startseite .seite:not(.startseite),
-  .start-steuerung, .start-erklaerung summary { display: none !important; }
-  .start-erklaerung { display: block; }
-  .start-erklaerung > p { display: block; }
-  .startseite {
-    --sz-grund: #fff; --sz-karte: #fff; --sz-schatten: none; --sz-tinte: #0d2238; --sz-leise: #44576d;
-    --sz-rand: #c9d6e3; --sz-akzent: #0a4174; --sz-akzent-hell: #dcecf8; --sz-ein: #1f5fa8; --sz-aus: #d0661e;
-    --sz-linie: #0A4174; --sz-markierung: #eef5fb; --sz-trenn: #c9d6e3; --sz-feld: #fff;
-    -webkit-print-color-adjust: exact; print-color-adjust: exact;
-  }
-  .seite.startseite { padding: 0; max-width: none; }
-  .start-kopf h1, #start-untertitel { display: none; }
-  .start-druckkopf { display: flex; flex-direction: column; gap: 2px; padding-bottom: 8px; border-bottom: 2px solid #0a4174; }
-  .start-druckkopf strong { font-size: 20px; }
-  .start-druckkopf span { font-size: 11px; color: #44576d; }
-  .karte, .kachel { backdrop-filter: none; box-shadow: none; break-inside: avoid; }
-  .start-teil { margin-top: 14px; }
-  .start-teil h2 { break-after: avoid; font-size: 16px; margin-bottom: 8px; }
-  .start-tabelle th, .start-tabelle td { padding: 4px 10px; font-size: 11px; }
-  .start-erklaerung { font-size: 11px; }
-  .kacheln { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .kachel { padding: 8px 10px; }
-  .kachel-wert { font-size: 22px; }
-  .kachel-betont { background: #0A4174; }
-  .diagramme, .verteilungen { grid-template-columns: 1fr 1fr; }
-  .achtung-raster { grid-template-columns: 1fr 1fr; }
-  .personen a { color: inherit; text-decoration: none; }
-  .zu-tun { padding: 6px 12px; }
-}
+.rechte-analyse { padding: 16px 20px; }
+.rechte-analyse p { margin: 0 0 8px; }
+.rechte-analyse ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.rechte-analyse label { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 600; cursor: pointer; }
+.rechte-analyse input { width: 20px; height: 20px; accent-color: var(--sz-akzent); }
+.start-steuerung .knopf-pdf:disabled { opacity: .7; cursor: wait; }
+#start-pdf-meldung { margin: 8px 0 0; }

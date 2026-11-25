@@ -13,11 +13,16 @@ function daten() {
   d.belegschaft = b.zeilen;
   d.entgelt = b.entgelt;
   d.rollen_recht.find((r) => r.rolle === "hr").darf_arbeitgeber_unterschreiben = true;
+  d.rollen_recht.forEach((r) => { r.bezeichnung = r.rolle; });
+  for (const r of ["admin", "geschaeftsfuehrung"]) {
+    Object.assign(d.rollen_recht.find((x) => x.rolle === r), { darf_analyse_export: true, vergibt_analyse_export: true });
+  }
   return d;
 }
 
 function rpcFuer(d, extra = {}) {
   return {
+    analyse_recht_setzen: (b, seite) => { (seite.gesetzt ||= []).push(b); return null; },
     mitarbeiter_verzeichnis: (_, seite) => verzeichnisFuer(d.belegschaft, d.rollen_recht.find((r) => r.rolle === seite.rolle)),
     offene_punkte: () => [{ art: "a" }, { art: "b" }, { art: "c" }],
     arbeitgeber_offen: () => [{ dokument_id: "x" }],
@@ -85,24 +90,9 @@ const kachel = (p, titel) => p.$$eval(".kachel", (ks, t) => {
     const nurS3 = d.belegschaft.filter((z) => z.standort_id === "s3" && k.imDienst(z, heute)).length;
     pruefe(await kachel(p, "Im Dienst") === String(nurS3), `Filter Arbeitsort: ${nurS3} im Dienst in Wien Mitte`);
 
-    // PDF: Druckdialog wird geöffnet, im Druck nur die Analyse
-    await p.selectOption('#start-steuerung select[name="arbeitsort"]', "");
-    await p.waitForFunction(() => document.querySelector("#start-untertitel").textContent.includes("alle Arbeitsorte"));
-    await p.selectOption('#start-steuerung select[name="monat"]', String(monat));
-    await p.evaluate(() => { window.gedruckt = 0; window.print = () => { window.gedruckt++; }; });
-    await p.click("#start-pdf");
-    pruefe(await p.evaluate(() => window.gedruckt) === 1, "„Als PDF speichern“ öffnet den Druckdialog");
-    pruefe(await p.evaluate(() => document.body.classList.contains("druck-startseite")
-      && document.querySelector(".start-erklaerung").open), "für den Druck: nur Analyse, mit Erklärung der Rechnung");
-    await p.emulateMedia({ media: "print" });
-    pruefe(await p.$eval(".kopf", (e) => getComputedStyle(e).display === "none"), "im PDF keine Navigation");
-    pruefe(await p.$eval("#start-steuerung", (e) => getComputedStyle(e).display === "none"), "im PDF keine Auswahlfelder");
-    pruefe(await p.$eval("#start-druckkopf", (e) => getComputedStyle(e).display !== "none" && e.textContent.includes("Personalanalyse")),
-      "im PDF steht oben „Personalanalyse …“");
-    await p.pdf({ path: `${OUT}/startseite.pdf`, format: "A4", printBackground: true });
-    await p.emulateMedia({ media: "screen" });
-    await p.evaluate(() => window.dispatchEvent(new Event("afterprint")));
-    pruefe(await p.evaluate(() => !document.body.classList.contains("druck-startseite")), "nach dem Drucken wieder normale Ansicht");
+    // Ohne Recht „Analyse herunterladen“: kein Download-Knopf, keine Rechte-Verwaltung
+    pruefe(await p.$eval("#start-pdf", (e) => e.hidden), "Personalbüro ohne Recht: kein Download-Knopf");
+    pruefe(!(await p.$("[data-analyse-recht]")), "Personalbüro: keine Verwaltung des Download-Rechts");
 
     // Dienstzettel-Erfassung bleibt erreichbar
     await p.goto(`${ADRESSE}#erfassen`);
@@ -110,6 +100,49 @@ const kachel = (p, titel) => p.$$eval(".kachel", (ks, t) => {
     pruefe(await p.$eval("#seite-start", (e) => e.hidden), "„Neuer Mitarbeiter“ ist weiterhin eine eigene Seite");
     pruefe(p.jsFehler.length === 0, `keine JS-Fehler (${p.jsFehler.join("; ")})`);
     await p.close();
+
+    // ------------------------------------------------ Admin: Download und Recht vergeben
+    const pdf = Buffer.from("%PDF-1.4\n%%EOF\n");
+    const adm = await neueSeite(browser, d, {
+      rpc: rpcFuer(d),
+      funktionen: { analyse: (b, seite) => { (seite.pdfAnfragen ||= []).push(b);
+        return seite.pdfFehler ? { status: 403, body: { meldung: "Mit deinem Zugang kannst du die Analyse nicht herunterladen." } }
+          : { roh: pdf, kopf: { "Content-Type": "application/pdf", "Content-Disposition": 'attachment; filename="Personalanalyse-2026-11.pdf"', "Access-Control-Expose-Headers": "content-disposition" } }; } },
+    });
+    await anmelden(adm, "admin@demo.invalid");
+    await adm.waitForSelector("#t-monat");
+    pruefe(!(await adm.$eval("#start-pdf", (e) => e.hidden)), "Admin mit Recht: Knopf „PDF herunterladen“");
+    await adm.selectOption('#start-steuerung select[name="arbeitsort"]', "s3");
+    const [download] = await Promise.all([adm.waitForEvent("download"), adm.click("#start-pdf")]);
+    pruefe(download.suggestedFilename() === "Personalanalyse-2026-11.pdf", "PDF wird mit Dateinamen heruntergeladen");
+    pruefe(adm.pdfAnfragen[0]?.monat === monat && adm.pdfAnfragen[0]?.jahr === jahr && adm.pdfAnfragen[0]?.standort === "s3",
+      "gewählter Monat und Arbeitsort gehen an den Server");
+    adm.pdfFehler = true;
+    await adm.click("#start-pdf");
+    await adm.waitForSelector("#start-pdf-meldung:not([hidden])");
+    pruefe((await adm.textContent("#start-pdf-meldung")).includes("nicht herunterladen"), "Ablehnung vom Server wird angezeigt");
+    pruefe(await adm.$$eval("[data-analyse-recht]", (x) => x.length) === 7, "Admin sieht alle Rollen (ohne Mitarbeiter) zum Vergeben");
+    pruefe(await adm.$eval('[data-analyse-recht="geschaeftsfuehrung"]', (x) => x.checked), "GF ist angehakt");
+    await adm.check('[data-analyse-recht="hr"]');
+    await adm.waitForFunction(() => !document.querySelector('[data-analyse-recht="hr"]').disabled);
+    pruefe(adm.gesetzt?.[0]?.p_rolle === "hr" && adm.gesetzt[0].p_darf === true, "Admin gibt dem Personalbüro das Recht");
+    await adm.uncheck('[data-analyse-recht="admin"]');
+    await adm.waitForFunction(() => document.querySelector("#start-pdf").hidden);
+    pruefe(true, "eigenes Recht entzogen: Download-Knopf verschwindet sofort");
+    pruefe(adm.jsFehler.length === 0, `keine JS-Fehler (${adm.jsFehler.join("; ")})`);
+    await adm.screenshot({ path: `${OUT}/startseite-admin.png`, fullPage: true });
+    await adm.close();
+    d.rollen_recht.find((r) => r.rolle === "admin").darf_analyse_export = true;
+
+    // Abgelehntes Setzen: Haken springt zurück, Meldung
+    const gf = await neueSeite(browser, d, { rpc: rpcFuer(d, {
+      analyse_recht_setzen: () => ({ status: 400, body: { message: "Das Recht „Analyse herunterladen“ können nur Rollen ändern, die es vergeben dürfen." } }) }) });
+    await anmelden(gf, "admin@demo.invalid");
+    await gf.waitForSelector("[data-analyse-recht]");
+    await gf.click('[data-analyse-recht="buchhaltung"]');
+    await gf.waitForSelector("#rechte-analyse-meldung:not([hidden])");
+    pruefe(!(await gf.$eval('[data-analyse-recht="buchhaltung"]', (x) => x.checked)), "abgelehnt: Haken springt zurück");
+    await gf.close();
 
     // ------------------------------------------------ Studioleitung: eigene Studios, kein Geld, keine Personendaten
     const sl = await neueSeite(browser, d, { rpc: rpcFuer(d) });
@@ -125,6 +158,8 @@ const kachel = (p, titel) => p.$$eval(".kachel", (ks, t) => {
     pruefe(await sl.$eval('#start-steuerung select[name="arbeitsort"]', (s) => s.closest("label").hidden),
       "bei nur einem Arbeitsort keine Ortsauswahl");
     pruefe(!(await sl.$('a.zu-tun[href="#unterschreiben"]')), "ohne Arbeitgeber-Recht kein „Zu unterschreiben“");
+    pruefe(await sl.$eval("#start-pdf", (e) => e.hidden), "Studioleitung: kein Download-Knopf");
+    pruefe(!(await sl.$("[data-analyse-recht]")), "Studioleitung: keine Rechte-Verwaltung");
     pruefe(sl.jsFehler.length === 0, `keine JS-Fehler (${sl.jsFehler.join("; ")})`);
     await sl.screenshot({ path: `${OUT}/startseite-studioleitung.png`, fullPage: true });
     await sl.close();
