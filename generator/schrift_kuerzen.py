@@ -3,7 +3,7 @@ die in Namen und Adressen vorkommen (Latein mit allen Erweiterungen, Griechisch,
 
 Die Schrift liegt als Base64-Text im Code, weil das Hochladen der Edge Function nur Textdateien annimmt.
 
-Aufruf (braucht Python mit fonttools: pip install fonttools):
+Aufruf (braucht Python mit fonttools, erzeugt mit Version 4.x: pip install fonttools):
     mkdir -p /tmp/dejavu && cd /tmp/dejavu && npm pack dejavu-fonts-ttf@2.37.3 && tar xzf dejavu-fonts-ttf-2.37.3.tgz
     python3 generator/schrift_kuerzen.py /tmp/dejavu/package/ttf
 """
@@ -25,7 +25,7 @@ def kuerzen(datei: Path) -> bytes:
     optionen = subset.Options()
     optionen.layout_features = ["*"]
     optionen.drop_tables += ["FFTM"]
-    schrift = TTFont(str(datei))
+    schrift = TTFont(str(datei), recalcTimestamp=False)  # gleiche Eingabe → byte-gleiche Ausgabe
     s = subset.Subsetter(options=optionen)
     s.populate(unicodes=subset.parse_unicodes(BEREICHE))
     s.subset(schrift)

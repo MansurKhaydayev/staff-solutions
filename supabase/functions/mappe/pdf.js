@@ -54,12 +54,21 @@ export async function pdfErstellen(lib, inhalt, unterschriften = {}, schrift) {
         if (font.widthOfTextAtSize(probe, groesse) <= max) { zeile = probe; continue; }
         if (zeile) zeilen.push(zeile);
         // Ein Wort, das allein nicht in die Zeile passt, mit Bindestrich trennen
+        // Gemessen wird nur ein Stück, das höchstens in die Zeile passen kann (kein Zeichen ist schmaler als
+        // 0,2 × Schriftgröße), und die Trennstelle wird halbierend gesucht. So bleibt es auch bei
+        // tausenden Zeichen ohne Leerzeichen schnell.
+        const hoechstens = Math.ceil(max / (groesse * 0.2)) + 1;
         let rest = wort;
-        while (font.widthOfTextAtSize(rest, groesse) > max) {
-          let n = 1; // mindestens ein Zeichen je Zeile, sonst Endlosschleife
-          while (n < rest.length - 1 && font.widthOfTextAtSize(`${rest.slice(0, n + 1)}-`, groesse) <= max) n++;
-          zeilen.push(`${rest.slice(0, n)}-`);
-          rest = rest.slice(n);
+        while (rest.length > hoechstens || font.widthOfTextAtSize(rest, groesse) > max) {
+          let lo = 1; // mindestens ein Zeichen je Zeile, sonst Endlosschleife
+          let hi = Math.min(rest.length - 1, hoechstens);
+          while (lo < hi) {
+            const mitte = Math.ceil((lo + hi) / 2);
+            if (font.widthOfTextAtSize(`${rest.slice(0, mitte)}-`, groesse) <= max) lo = mitte;
+            else hi = mitte - 1;
+          }
+          zeilen.push(`${rest.slice(0, lo)}-`);
+          rest = rest.slice(lo);
         }
         zeile = rest;
       }
@@ -145,7 +154,7 @@ export async function pdfErstellen(lib, inhalt, unterschriften = {}, schrift) {
 // Zeichen, die die Schrift nicht kennt (z. B. Emoji, Chinesisch), werden zu „?“ – so entsteht das PDF immer.
 // NFC setzt zerlegte Akzente (z. B. „C“ + Akut) zu einem Zeichen („Ć“) zusammen.
 function textFuer(t, bekannt) {
-  return [...String(t ?? "").replace(/\t/g, " ").normalize("NFC")]
+  return [...String(t ?? "").replace(/\r\n?/g, "\n").replace(/\t/g, " ").normalize("NFC")]
     .map((z) => (z === "\n" || bekannt.has(z.codePointAt(0)) ? z : "?"))
     .join("");
 }

@@ -124,3 +124,16 @@ test("Normaler Text bricht wie bisher um", async () => {
     { ...demoDienstzettel(), abschnitte: [{ titel: "", text: "Ein längerer Absatz mit Text. ".repeat(8) }] }, {}, schrift));
   assert.ok(zeilen.every((z) => !z.str.endsWith("-")));
 });
+
+test("Sehr langes Wort ohne Leerzeichen ist schnell fertig", async () => {
+  const start = performance.now();
+  await pdfErstellen(pdfLib, { ...demoDienstzettel(), felder: [["Link", "a1B2".repeat(5000)]] }, {}, schrift);
+  assert.ok(performance.now() - start < 3000, // vorher rund 15 s; Spielraum, weil die Tests parallel laufen
+    `zu langsam: ${Math.round(performance.now() - start)} ms`);
+});
+
+test("Zeilenende CRLF wird nicht zu ?", async () => {
+  const t = await textVon({ ...demoDienstzettel(), abschnitte: [{ titel: "", text: "Zeile eins\r\nZeile zwei\rZeile drei" }] });
+  assert.ok(!t.includes("?"), t);
+  for (const s of ["Zeile eins", "Zeile zwei", "Zeile drei"]) assert.ok(t.includes(s));
+});
