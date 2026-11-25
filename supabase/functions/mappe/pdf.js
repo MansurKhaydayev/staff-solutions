@@ -51,8 +51,17 @@ export async function pdfErstellen(lib, inhalt, unterschriften = {}, schrift) {
       let zeile = "";
       for (const wort of absatz.split(/\s+/).filter(Boolean)) {
         const probe = zeile ? `${zeile} ${wort}` : wort;
-        if (font.widthOfTextAtSize(probe, groesse) <= max) zeile = probe;
-        else { if (zeile) zeilen.push(zeile); zeile = wort; }
+        if (font.widthOfTextAtSize(probe, groesse) <= max) { zeile = probe; continue; }
+        if (zeile) zeilen.push(zeile);
+        // Ein Wort, das allein nicht in die Zeile passt, mit Bindestrich trennen
+        let rest = wort;
+        while (font.widthOfTextAtSize(rest, groesse) > max) {
+          let n = 1; // mindestens ein Zeichen je Zeile, sonst Endlosschleife
+          while (n < rest.length - 1 && font.widthOfTextAtSize(`${rest.slice(0, n + 1)}-`, groesse) <= max) n++;
+          zeilen.push(`${rest.slice(0, n)}-`);
+          rest = rest.slice(n);
+        }
+        zeile = rest;
       }
       zeilen.push(zeile);
     }

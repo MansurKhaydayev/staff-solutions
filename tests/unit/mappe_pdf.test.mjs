@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { pdfLib, pdfText, MINI_PNG, schriftLaden } from "./_global.mjs";
+import { pdfLib, pdfText, pdfZeilen, MINI_PNG, schriftLaden } from "./_global.mjs";
 import { pdfErstellen } from "../../supabase/functions/mappe/pdf.js";
 
 const schrift = await schriftLaden();
@@ -94,4 +94,33 @@ test("Leerer Feldwert", async () => {
 
 test("Ohne Schrift: Fehler", async () => {
   await assert.rejects(pdfErstellen(pdfLib, demoDienstzettel(), {}), /Schrift fehlt/);
+});
+
+const RECHTS = 595.28 - 56;
+const LANG = "Arbeitnehmerüberlassungsvertragsbestandteilsergänzungsvereinbarungsdokumentationsablage".repeat(2);
+async function imRand(inhalt) {
+  const zeilen = await pdfZeilen(await pdfErstellen(pdfLib, inhalt, {}, schrift));
+  for (const z of zeilen) assert.ok(z.x + z.breite <= RECHTS + 0.5, `über dem Rand: ${z.str} (${z.x + z.breite})`);
+  return zeilen.map((z) => z.str.replace(/-$/, "")).join("");
+}
+
+test("Langes Wort im Abschnitt bleibt im Rand", async () => {
+  const t = await imRand({ ...demoDienstzettel(), abschnitte: [{ titel: "Notiz", text: `Vorher ${LANG} nachher` }] });
+  for (const s of [LANG, "Vorher", "nachher"]) assert.ok(t.includes(s), `fehlt: ${s}`);
+});
+
+test("Langes Wort im Feldwert bleibt im Rand", async () => {
+  const t = await imRand({ ...demoDienstzettel(), felder: [["E-Mail", LANG]] });
+  assert.ok(t.includes(LANG));
+});
+
+test("Langes Wort im Titel bleibt im Rand", async () => {
+  const t = await imRand({ ...demoDienstzettel(), titel: LANG });
+  assert.ok(t.includes(LANG));
+});
+
+test("Normaler Text bricht wie bisher um", async () => {
+  const zeilen = await pdfZeilen(await pdfErstellen(pdfLib,
+    { ...demoDienstzettel(), abschnitte: [{ titel: "", text: "Ein längerer Absatz mit Text. ".repeat(8) }] }, {}, schrift));
+  assert.ok(zeilen.every((z) => !z.str.endsWith("-")));
 });
