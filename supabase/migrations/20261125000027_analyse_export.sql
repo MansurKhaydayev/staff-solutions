@@ -109,8 +109,7 @@ begin
   return v_id;
 end $$;
 
-revoke execute on function app.darf_analyse_export(), app.vergibt_analyse_export(),
-  public.analyse_recht_setzen(text, boolean), public.analyse_export_vermerken(int, int, uuid) from public, anon;
+-- Ohne „revoke“: Supabase fragt bei solchen Anweisungen nach einer Bestätigung, die oft abbricht.
+-- Die Funktionen prüfen das Recht selbst (ohne Anmeldung gibt es keine Rolle, also kein Recht).
 grant execute on function app.darf_analyse_export(), app.vergibt_analyse_export(),
   public.analyse_recht_setzen(text, boolean), public.analyse_export_vermerken(int, int, uuid) to authenticated;
-revoke execute on function app.analyse_recht_schuetzen() from public, anon, authenticated;
