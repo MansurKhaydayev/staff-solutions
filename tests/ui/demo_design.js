@@ -6,7 +6,7 @@ const fs = require("fs");
 
 const [APP = "app", OUT = "/tmp/ui-bilder", NUR = ""] = process.argv.slice(2);
 const GROESSEN = { buero: [1280, 860], "ipad-quer": [1180, 820], "ipad-hoch": [820, 1100], handy: [390, 844] };
-const SEITEN = [["liste", "#mitarbeiter"], ["akte", "#akte/d1/uebersicht"], ["formular", "#erfassen"], ["einstellungen", "#einstellungen"]];
+const SEITEN = [["liste", "#mitarbeiter"], ["akte", "#akte/d1/uebersicht"], ["formular", "#erfassen"], ["einstellungen", "#einstellungen"], ["offen", "#offen"], ["dokumente", "#akte/d1/dokumente"], ["verlauf", "#akte/d1/verlauf"]];
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
@@ -24,7 +24,15 @@ const SEITEN = [["liste", "#mitarbeiter"], ["akte", "#akte/d1/uebersicht"], ["fo
       });
       const p = await neueSeite(browser, d, { rpc: rpcFuer(d) });
       await p.emulateMedia({ colorScheme: farbe });
-      await anmelden(p, "hr@demo.invalid");
+      if (!NUR || NUR.split(",").includes("anmeldung")) {
+        await p.goto(require("./mock.js").ADRESSE);
+        await p.waitForTimeout(400);
+        for (const [g, [w, h]] of Object.entries(GROESSEN)) {
+          await p.setViewportSize({ width: w, height: h });
+          await p.screenshot({ path: `${OUT}/anmeldung-${g}-${farbe === "light" ? "hell" : "dunkel"}.png` });
+        }
+      }
+      await anmelden(p, `${process.env.ROLLE || "hr"}@demo.invalid`);
       for (const [name, adresse] of SEITEN) {
         if (NUR && !NUR.split(",").includes(name)) continue;
         await p.evaluate((a) => { location.hash = a; }, adresse);

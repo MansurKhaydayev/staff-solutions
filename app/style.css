@@ -1,16 +1,16 @@
 /* Glas-Design in Blau. Alle Farben stehen hier als Variablen; die alten Namen (--grund, --papier, --tanne …)
    bleiben bestehen, damit alle Seiten sie weiter benutzen. Palette: #001D39 #0A4174 #49769F #4E8EA2 #6EA2B3 #7BBDE8 #BDD8E9 */
 :root {
-  --himmel: linear-gradient(160deg, #bdd8e9 0%, #8cc6ea 42%, #6ea2b3 100%);
-  --himmel-fuss: #6ea2b3;
+  --himmel: linear-gradient(160deg, #bdd8e9 0%, #9bcdec 42%, #8fc0d4 100%);
+  --himmel-fuss: #8fc0d4;
   --licht-1: radial-gradient(circle, rgba(255, 255, 255, .85), rgba(123, 189, 232, 0) 70%);
-  --licht-2: radial-gradient(circle, rgba(73, 118, 159, .5), rgba(73, 118, 159, 0) 70%);
+  --licht-2: radial-gradient(circle, rgba(73, 118, 159, .3), rgba(73, 118, 159, 0) 70%);
   --grund: rgba(10, 65, 116, .08);      /* leichte Tönung (Chips, gesperrte Felder) */
   --papier: rgba(255, 255, 255, .72);   /* Glas-Karte */
   --feld: rgba(255, 255, 255, .94);     /* Eingabefelder fast deckend */
   --feld-linie: #6a86a6;
   --tinte: #001d39;
-  --tinte-leise: #2c4a68;
+  --tinte-leise: #243f5c;
   --linie: rgba(10, 65, 116, .22);
   --kante: rgba(255, 255, 255, .85);
   --schatten: rgba(0, 29, 57, .16);
@@ -20,7 +20,7 @@
   --knopf-text: #ffffff;
   --seitenleiste: linear-gradient(180deg, rgba(0, 29, 57, .94), rgba(10, 65, 116, .92));
   --marker: #ffe58a;                    /* nur für automatisch ermittelte Werte */
-  --fehler: #b3261e;
+  --fehler: #8c1913;
   --auf-fehler: #ffffff;
   --radius: 16px;
   --radius-gross: 28px;
@@ -29,48 +29,48 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --himmel: linear-gradient(160deg, #001d39 0%, #0a2f57 55%, #0a4174 100%);
-    --himmel-fuss: #0a4174;
+    --himmel: linear-gradient(160deg, #001d39 0%, #0a2b50 55%, #07365f 100%);
+    --himmel-fuss: #07365f;
     --licht-1: radial-gradient(circle, rgba(123, 189, 232, .45), rgba(123, 189, 232, 0) 70%);
     --licht-2: radial-gradient(circle, rgba(78, 142, 162, .45), rgba(78, 142, 162, 0) 70%);
     --grund: rgba(255, 255, 255, .08);
-    --papier: rgba(255, 255, 255, .1);
+    --papier: rgba(255, 255, 255, .08);
     --feld: rgba(0, 29, 57, .62);
     --feld-linie: #7fa3c4;
     --tinte: #f2f8fd;
-    --tinte-leise: #bdd8e9;
+    --tinte-leise: #cfe3f2;
     --linie: rgba(189, 216, 233, .28);
     --kante: rgba(255, 255, 255, .2);
     --schatten: rgba(0, 0, 0, .4);
-    --tanne: #8ec3f5;
+    --tanne: #a9d3f8;
     --tanne-dunkel: #b9dcfb;
     --knopf: linear-gradient(135deg, #0f5a8c, #1f7aa6);
     --seitenleiste: linear-gradient(180deg, rgba(0, 17, 36, .9), rgba(10, 47, 87, .9));
-    --marker: #6b5d12;
-    --fehler: #ff8a80;
+    --marker: #5c500f;
+    --fehler: #ffc4bc;
     --auf-fehler: #3a0b08;
   }
 }
 :root[data-theme="dark"] {
-  --himmel: linear-gradient(160deg, #001d39 0%, #0a2f57 55%, #0a4174 100%);
-  --himmel-fuss: #0a4174;
+  --himmel: linear-gradient(160deg, #001d39 0%, #0a2b50 55%, #07365f 100%);
+  --himmel-fuss: #07365f;
   --licht-1: radial-gradient(circle, rgba(123, 189, 232, .45), rgba(123, 189, 232, 0) 70%);
   --licht-2: radial-gradient(circle, rgba(78, 142, 162, .45), rgba(78, 142, 162, 0) 70%);
   --grund: rgba(255, 255, 255, .08);
-  --papier: rgba(255, 255, 255, .1);
+  --papier: rgba(255, 255, 255, .08);
   --feld: rgba(0, 29, 57, .62);
   --feld-linie: #7fa3c4;
   --tinte: #f2f8fd;
-  --tinte-leise: #bdd8e9;
+  --tinte-leise: #cfe3f2;
   --linie: rgba(189, 216, 233, .28);
   --kante: rgba(255, 255, 255, .2);
   --schatten: rgba(0, 0, 0, .4);
-  --tanne: #8ec3f5;
+  --tanne: #a9d3f8;
   --tanne-dunkel: #b9dcfb;
   --knopf: linear-gradient(135deg, #0f5a8c, #1f7aa6);
   --seitenleiste: linear-gradient(180deg, rgba(0, 17, 36, .9), rgba(10, 47, 87, .9));
-  --marker: #6b5d12;
-  --fehler: #ff8a80;
+  --marker: #5c500f;
+  --fehler: #ffc4bc;
   --auf-fehler: #3a0b08;
 }
 
@@ -108,7 +108,7 @@ body::after { bottom: -240px; left: 25%; width: 720px; height: 720px; background
 
 mark {
   background: linear-gradient(transparent 35%, var(--marker) 35%, var(--marker) 92%, transparent 92%);
-  color: inherit;
+  color: var(--tinte);
   padding: 0 .1em;
 }
 
@@ -453,7 +453,7 @@ select:disabled { color: var(--tinte-leise); background: var(--grund); cursor: n
   width: 1.25rem; height: 1.25rem; min-height: 0; accent-color: var(--tanne); cursor: pointer;
 }
 .tabelle td input[type="checkbox"]:disabled { cursor: not-allowed; }
-.tabelle td select { min-height: 2.25rem; padding: .3rem .5rem; width: auto; }
+.tabelle td select { min-height: 2.75rem; padding: .3rem .5rem; width: auto; }
 .tabelle th[scope="row"] { font-weight: 600; color: var(--tinte); font-size: .9375rem; }
 .legende {
   display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin: .75rem 0 0;
@@ -760,7 +760,7 @@ a.name { font-weight: 700; text-decoration: underline; text-underline-offset: 3p
   position: relative; overflow: hidden; color: #fff; margin-bottom: 1.25rem;
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 1.25rem; align-items: center;
   padding: 1.75rem 2rem; border-radius: var(--radius-gross);
-  background: linear-gradient(120deg, #001d39 0%, #0a4174 55%, #2b7da3 100%);
+  background: linear-gradient(120deg, #001d39 0%, #0a4174 55%, #1f6a92 100%);
   box-shadow: 0 20px 50px rgba(0, 29, 57, .35);
 }
 .akte-kopf::after {
@@ -770,7 +770,7 @@ a.name { font-weight: 700; text-decoration: underline; text-underline-offset: 3p
 .akte-kopf > * { position: relative; z-index: 1; }
 .akte-kopf .avatar { grid-column: 1; grid-row: 1 / span 3; margin: 0; border: 2px solid rgba(255, 255, 255, .5); }
 .akte-kopf .seitentitel, .akte-kopf .akte-unterzeile, .akte-kopf .akte-status { grid-column: 2; color: #fff; margin-bottom: 0; }
-.akte-kopf .akte-unterzeile { color: #dcebf6; }
+.akte-kopf .akte-unterzeile { color: #f0f7fc; }
 .akte-kopf .akte-status { margin: .35rem 0 0; }
 .akte-kopf .akte-aktionen { grid-column: 3; grid-row: 1 / span 3; margin: 0; }
 .akte-kopf .knopf-leise { background: #fff; color: #001d39; border-color: #fff; }
@@ -812,3 +812,8 @@ a.name { font-weight: 700; text-decoration: underline; text-underline-offset: 3p
 .reihe { align-items: end; margin-top: 1.25rem; }
 .reihe:first-of-type { margin-top: .75rem; }
 .ableitung dt { font-weight: 600; }
+
+/* Mehrzeilige Felder wie die übrigen Felder */
+textarea, .baustein textarea, .text-zeile textarea, .mappe-dringend textarea {
+  font: inherit; color: var(--tinte); background: var(--feld); border: 1px solid var(--feld-linie); border-radius: 16px;
+}
