@@ -54,7 +54,7 @@
 | `supabase/migrations/<M2>_austritt_ablauf.sql` | `austritt_melden`, `austritt_bestaetigen`, `austritt_korrigieren`, `austritt_verlauf`; Status in `mitarbeiter_verzeichnis`, `akte_kopf`; aktive Filter in `offene_punkte`, Mappe |
 | `supabase/migrations/<M3>_uebermittlung.sql` | Tabelle `sammelversand`, `uebermittlung_offen`, `uebermittlung_vermerken`, neue offene Punkte |
 | `supabase/migrations/<M4>_meldung_pdf.sql` | `meldung_inhalt`, `meldung_ablegen` (nur `service_role`) |
-| `supabase/tests/14_austritt.sql`, `15_uebermittlung.sql`, `16_meldung_pdf.sql` | DB-Tests |
+| `supabase/tests/15_austritt.sql`, `16_uebermittlung.sql`, `17_meldung_pdf.sql` (14 belegt „Kleinigkeiten“) | DB-Tests |
 | `supabase/functions/mappe/pdf.js`, `ablauf.js`, `index.ts` | neue Aktion `meldung` |
 | `app/sammelmail.js` | reines Modul: Mail-Link, Dateiname, Kürzen |
 | `app/akte_austritt.js` | Melden, Bestätigen, Korrigieren, Verlauf in der Akte |
@@ -146,7 +146,7 @@
   - `public.uebermittlung_offen() returns table(lohnverrechner_id uuid, lohnverrechner_name text, lohnverrechner_email text, dienstverhaeltnis_id uuid, vorname text, nachname text, gesellschaft text, art text, dokument_id uuid, datum date)`. Nur Büro (sonst leer). `art` in `anmeldung` (abgeschlossener Dienstzettel, nicht übermittelt), `abmeldung` (Dokument Typ `austrittsmeldung`), `storno` (`stornomeldung`), `korrektur` (`korrekturmeldung`) – jeweils `ersetzt_durch is null and uebermittelt_am is null`. Dazu Zeilen mit `dokument_id = null` für bestätigte Meldungen, deren PDF noch fehlt (App zeigt „PDF erzeugen“). Lohnverrechner über `gesellschaft.lohnverrechner_id`; GmbH ohne Lohnverrechner → `lohnverrechner_id = null`, Name `Kein Lohnverrechner hinterlegt`.
   - `public.uebermittlung_vermerken(p_dokument_ids uuid[]) returns table(sammelversand_id uuid, vermerkt int)`. Nur Büro. Vermerkt nur Dokumente, die noch offen sind (`uebermittelt_am is null and ersetzt_durch is null`), legt einen `sammelversand` je Lohnverrechner an.
   - `offene_punkte()` zusätzlich (nur Büro): `austritt_bestaetigen` „Austritt bestätigen“ / „Nicht angetreten bestätigen“ (Datum = letzter Arbeitstag bzw. eintritt); `abmeldung` „Abmeldung übermitteln bis TT.MM.JJJJ“ (Datum = Frist); `storno` „Storno ausständig“; `abschrift` „Abschrift der Abmeldung aushändigen“ (Abmeldebestätigung ohne `ausgehaendigt_am`). Diese Punkte gelten auch nach dem letzten Arbeitstag (nicht an `dv_aktiv` gebunden).
-  - `dienstzettel_vermerken` erlaubt `ausgehaendigt` auch für Dokumente der Kategorie `abmeldung` (neuer Name `dokument_vermerken(p_dokument_id uuid, p_was text, p_wie text)`; alte Funktion ruft die neue auf).
+  - `public.abmeldung_aushaendigen(p_dokument_id uuid, p_art text)` (`ausdruck`/`email`) für die hochgeladene Abmeldebestätigung. (Geändert beim Bauen: eigene Funktion statt `dienstzettel_vermerken` umzubauen.)
 
 - [ ] **Step 1: Tests schreiben:**
   - nach Bestätigung erscheint die Person in `uebermittlung_offen` mit `dokument_id = null`; nach Ablage eines `austrittsmeldung`-Dokuments mit dieser ID
@@ -155,7 +155,7 @@
   - Vermerken von 3 Dokumenten, eines davon inzwischen ersetzt → `vermerkt = 2` (Prüfschwerpunkt 3)
   - Prüfschwerpunkt 5: Austrittsmeldung übermittelt, dann zurückgenommen → Status `aktiv`, auf der Liste erscheint eine `korrektur` ohne PDF
   - offene Punkte: Frist rechnet mit `abmeldefrist_tage` (auf 10 stellen → Datum verschiebt sich)
-  - `abschrift` verschwindet nach `dokument_vermerken(…, 'ausgehaendigt', 'ausdruck')`
+  - `abschrift` verschwindet nach `abmeldung_aushaendigen(…, 'ausdruck')`
 - [ ] **Step 2:** ausführen → rot.
 - [ ] **Step 3:** `<M3>` schreiben, einspielen.
 - [ ] **Step 4:** 15, 14, 01–13 → grün.
@@ -230,7 +230,7 @@
 - Modify: `app/offene_punkte.js`, `app/api.js`, `app/index.html`, `app/style.css`, `tests/ui/mock.js`, `tests/ui/austritt.test.js`
 
 **Interfaces:**
-- Consumes: Task 3 (`uebermittlung_offen`, `uebermittlung_vermerken`, `dokument_vermerken`), Task 5 (`sammelmail.js`), Speicher-Link wie in `akte_dokumente.js`.
+- Consumes: Task 3 (`uebermittlung_offen`, `uebermittlung_vermerken`, `abmeldung_aushaendigen`), Task 5 (`sammelmail.js`), Speicher-Link wie in `akte_dokumente.js`.
 - Verhalten: Bereich je Lohnverrechner mit Häkchen (Voreinstellung alle). Knopf „PDFs speichern und Mail öffnen“: Dateien nacheinander laden (signierter Link → `Blob` → `<a download>`), dann Liste „Gespeichert im Ordner Downloads (am iPad: Dateien-App → Downloads):“ mit jedem Dateinamen, dann `location.href = mailLink(…)`. Danach Dialog „Gesendet?“ mit „Ja, gesendet“ / „Nein, noch nicht“. „Ja“ → `uebermittlung_vermerken`, Liste neu laden, Meldung `<n> Fälle als übermittelt vermerkt.` Zeilen ohne PDF zeigen „PDF erzeugen“. Lohnverrechner ohne E-Mail: Mail-Knopf gesperrt mit `Für diesen Lohnverrechner ist keine E-Mail-Adresse hinterlegt (Einstellungen).` Neue offene Punkte (Task 3) erscheinen mit Link in die Akte; Abmeldefrist abgelaufen → rot.
 - [ ] **Step 1:** Browser-Test: zwei Lohnverrechner-Bereiche; „Nein“ ändert nichts; „Ja“ ruft `uebermittlung_vermerken` mit den angehakten IDs auf; Dateinamen werden angezeigt; erzeugter `mailto:` enthält Betreff aus Task 5.
 - [ ] **Step 2:** → rot. **Step 3:** umsetzen. **Step 4:** → grün. **Step 5:** Commit.
