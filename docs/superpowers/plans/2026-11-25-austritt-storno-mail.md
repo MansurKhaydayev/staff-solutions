@@ -164,7 +164,7 @@
 ### Task 4: PDFs Austrittsmeldung, Storno-Meldung, Korrektur (Edge Function)
 
 **Files:**
-- Create: `supabase/migrations/<M4>_meldung_pdf.sql`, `supabase/tests/16_meldung_pdf.sql`
+- Create: `supabase/migrations/<M4>_meldung_pdf.sql`, `supabase/tests/17_meldung_pdf.sql`, `tests/unit/meldung_ablauf.test.mjs`
 - Modify: `supabase/functions/mappe/pdf.js`, `ablauf.js`, `index.ts`, `tests/unit/mappe_pdf.test.mjs`, `tests/unit/mappe_ablauf.test.mjs`
 
 **Abstimmung:** Der Thread „Sonderzeichen im PDF“ hat `pdf.js` geändert (Unicode-Schrift). Vor Beginn dessen Stand von `main` holen und darauf aufbauen.
@@ -173,8 +173,8 @@
 - Consumes: Task 1–3.
 - Produces:
   - `public.meldung_inhalt(p_meldung_id uuid) returns jsonb` (Büro und `service_role`): `{ art: 'austrittsmeldung'|'stornomeldung'|'korrekturmeldung', titel, gesellschaft {name, anschrift}, mitarbeiter {nachname, vorname, geburtsdatum, sv_nummer}, eintritt, letzter_arbeitstag, austrittsart_text, grund, bestaetigt_am, bestaetigt_von, vorher (nur Korrektur: { letzter_arbeitstag, austrittsart_text } oder 'Austritt zurückgenommen') }`. Korrektur, wenn die Meldung eine ersetzte Vorgängerin hat, deren PDF schon übermittelt war; sonst Austritts- bzw. Storno-Meldung.
-  - `public.meldung_ablegen(p_user uuid, p_meldung_id uuid, p_pfad text, p_hash text, p_inhalt_hash text) returns uuid` – nur `service_role`, setzt `request.jwt.claims` lokal wie `mappe_ablegen`, legt `dokument` (Kategorie `abmeldung` bzw. `storno`, Typ wie `art`, `austritt_meldung_id`) an. Gleicher Pfad erneut → dieselbe ID.
-  - `pdf.js`: `export async function meldungPdf(lib, inhalt) → Uint8Array` im Stil des Dienstzettels, Fußzeile wie dort.
+  - `public.meldung_ablegen(p_user uuid, p_meldung_id uuid, p_fassung text, p_pfad text, p_hash text) returns uuid` – nur `service_role`, setzt `request.jwt.claims` lokal wie `mappe_ablegen`, legt `dokument` (Kategorie `abmeldung` bzw. `storno`, Typ wie `art`, `austritt_meldung_id`) an. Gleicher Pfad erneut → dieselbe ID.
+  - `pdf.js` bleibt unverändert: `meldung_inhalt` liefert den Inhalt direkt im Format von `pdfErstellen` (Geändert beim Bauen, weniger Code).
   - `ablauf.js`: Aktion `d.aktion === "meldung"` mit `{ meldung_id }`; Ablauf wie `arbeitgeber`: Inhalt holen → PDF → Hash → Speicher `<org>/<dv>/<kategorie>/<uuid>.pdf` → `meldung_ablegen`.
 - [ ] **Step 1: Tests:** `16_meldung_pdf.sql` (Rechte, Korrektur-Erkennung, Doppelaufruf, Leitung → Fehler); `mappe_pdf.test.mjs`: Text des PDFs (pdfjs) enthält `Austrittsmeldung`, Name, letzten Arbeitstag `30.11.2026`, Art-Text, bei Korrektur `vorher`-Angaben; `mappe_ablauf.test.mjs`: Aktion `meldung` ruft `meldung_inhalt` und `meldung_ablegen` mit dem richtigen Pfad auf.
 - [ ] **Step 2:** ausführen → rot.
