@@ -1,6 +1,6 @@
 # Sonderzeichen und lange Wörter im PDF: Konzept
 
-Stand: 25.11.2026 · Auftraggeber: Mansur Khaydayev · Projekt: Staff-Solutions
+Stand: 25.11.2026 · Auftraggeber: Mansur Khaydayev · Projekt: Staff-Solutions · **freigegeben am 25.11.2026**
 
 ## 1. Worum es geht und warum
 
@@ -30,7 +30,7 @@ Zeilenumbruch nur an Leerzeichen trennt.
 
 ## 3. Nicht-Ziele
 
-- Keine Schriften für Arabisch, Hebräisch, Chinesisch usw. (siehe Frage 1 zu Kyrillisch und Griechisch).
+- Keine Schriften für Arabisch, Hebräisch, Chinesisch usw. Kyrillisch und Griechisch sind dabei (Abschnitt 7).
 - Kein Umbau des PDF-Layouts, keine neue Silbentrennung nach Wörterbuch.
 - Keine Änderung an der Datenbank, an der Fassung (`app.fassung`) oder an der App.
 - Bereits abgelegte PDFs werden **nicht** neu erzeugt. Sie bleiben, wie sie sind (Beweissicherung).
@@ -43,7 +43,7 @@ In der Praxis schreibt die Firma Namen ohne diese Zeichen (z. B. „Ivana Ciric�
 **als Absicherung**, falls doch einmal ein solcher Name eingegeben wird (Entscheidung vom 25.11.2026).
 
 - Freie Schrift **DejaVu Sans** (normal und fett), Lizenz erlaubt Weitergabe und Einbetten.
-- Vorher auf die benötigten Zeichenbereiche gekürzt: von rund 750 KB auf rund 110 KB je Schnitt.
+- Vorher auf die benötigten Zeichenbereiche gekürzt: von rund 750 KB auf rund 150 KB je Schnitt (mit Kyrillisch und Griechisch).
 - Die gekürzte Schrift liegt als Textdatei (Base64) im Ordner der Edge Function, weil das Hochladen der
   Edge Function nur Textdateien annimmt. Ins PDF kommen nur die tatsächlich benutzten Buchstaben,
   das PDF bleibt also klein (heute rund 8 bis 18 KB).
@@ -53,9 +53,9 @@ In der Praxis schreibt die Firma Namen ohne diese Zeichen (z. B. „Ivana Ciric�
 
 **Neue Dateien in `supabase/functions/mappe/`:**
 - `schrift.js`: die zwei gekürzten Schriften als Base64-Text, dazu ein Kommentar, wie sie entstanden sind.
-- `schriften/LICENSE-DejaVu.txt`: die Lizenz der Schrift.
+- `LICENSE-DejaVu.txt`: die Lizenz der Schrift.
 
-**Neues Hilfsskript `generator/schrift_kuerzen.sh`** (oder ähnlich): erzeugt `schrift.js` reproduzierbar aus
+**Neues Hilfsskript `generator/schrift_kuerzen.py`**: erzeugt `schrift.js` reproduzierbar aus
 der Original-DejaVu-Schrift. So ist nachvollziehbar, welche Zeichenbereiche enthalten sind.
 
 **Änderungen in `pdf.js`:**
@@ -94,11 +94,8 @@ Der kopierte Text stimmt. Der Umbruch langer Wörter funktioniert.
 **Rückweg, falls am iPad etwas nicht stimmt:** Version 2 der Edge Function wieder einspielen (die Dateien
 liegen unverändert in Git). Es gehen dabei keine Daten verloren.
 
-## 7. Offene Fragen an dich
+## 7. Entschiedene Fragen
 
-1. **Kyrillisch und Griechisch dazunehmen?** Das kostet nur rund 40 KB mehr je Schnitt
-   (150 KB statt 110 KB). Dann gehen auch Namen wie „Олена Шевченко“ in Originalschrift.
-   *Empfehlung: Ja*, weil es billig ist und manche Mitarbeiter ihren Namen so angeben könnten.
-   Meist steht der Name im Pass aber ohnehin in lateinischer Schrift.
-2. **Schrift fürs Muster:** DejaVu Sans sieht Helvetica sehr ähnlich, ist aber etwas breiter. Das neue
-   Muster-PDF bekommst du zum Anschauen, bevor es der Chefin gezeigt wird. Passt das so?
+1. **Kyrillisch und Griechisch:** Ja (25.11.2026). Rund 150 KB statt 110 KB je Schnitt.
+2. **Muster-PDF:** Mansur sieht das neue Muster (DejaVu Sans statt Helvetica) zuerst selbst an,
+   bevor es der Chefin gezeigt wird.
