@@ -17,6 +17,7 @@ const plus = (tage) => { const d = new Date(heute); d.setDate(d.getDate() + tage
 const ROLLEN = {
   "admin@demo.invalid": "admin", "hr@demo.invalid": "hr", "verw@demo.invalid": "verwaltung",
   "buch@demo.invalid": "buchhaltung", "rl@demo.invalid": "regionalleitung", "sl@demo.invalid": "studioleitung",
+  "gf@demo.invalid": "geschaeftsfuehrung",
 };
 
 function demoDaten() {
