@@ -3,7 +3,7 @@
 // (akte_kopf liefert nur, was die Rolle sehen darf); die Reiter richten sich danach.
 import * as api from "./api.js";
 import { heuteIso } from "./pruefungen.js";
-import { $, text, ART, stunden, geld, datum, tageZwischen, liste } from "./hilfen.js";
+import { $, text, ART, stunden, geld, datum, tageZwischen, liste, avatarFarbe } from "./hilfen.js";
 
 // Reiter: Schlüssel, Name, wer ihn sieht, Modul (wird erst beim Öffnen geladen)
 const REITER = [
@@ -81,6 +81,7 @@ const darfMappe = (k, stand) => k.rechte.buero || (k.rechte.dokumente && ["studi
 function kopfZeichnen(k, stand) {
   const aktiv = !k.austritt || k.austritt >= heuteIso();
   $("#akte-kopf").innerHTML = `
+    <span class="avatar avatar-gross ${avatarFarbe(`${k.nachname} ${k.vorname}`)}" data-i="${text(`${(k.nachname || "")[0] || ""}${(k.vorname || "")[0] || ""}`.toUpperCase())}" aria-hidden="true"></span>
     <h1 class="seitentitel">${text(`${k.nachname} ${k.vorname}`)}</h1>
     <p class="akte-unterzeile">${text([k.funktion, k.arbeitsort, k.gesellschaft].filter(Boolean).join(", "))}</p>
     <p class="akte-status">${text(status(k, heuteIso()))}
@@ -147,6 +148,7 @@ async function uebersichtZeichnen(ziel, k, stand, neuLaden) {
   if (r.dokumente && k.onboarding) {
     teile.push(`<section class="akte-block"><h2>Onboarding</h2>
       <p class="akte-zahl">${k.onboarding.erledigt} von ${k.onboarding.gesamt} erledigt</p>
+      <progress class="fortschritt" max="${Number(k.onboarding.gesamt) || 1}" value="${Number(k.onboarding.erledigt) || 0}" aria-label="Onboarding-Fortschritt"></progress>
       <ul class="checkliste" id="onboarding-liste"></ul></section>`);
   }
   teile.push(`<section class="akte-block"><h2>Urlaub</h2>${liste([["Resturlaub", "kommt mit der Stundenauswertung"]])}</section>`);

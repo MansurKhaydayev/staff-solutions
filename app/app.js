@@ -7,6 +7,8 @@ import { offenePunkteZeigen } from "./offene_punkte.js";
 import { mappeZeigen } from "./mappe.js";
 import { arbeitgeberZeigen } from "./arbeitgeber.js";
 import { startseiteZeigen } from "./startseite.js";
+import { menueEinrichten } from "./menue.js";
+import { avatarFarbe, tagesgruss } from "./hilfen.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -37,6 +39,9 @@ let absendenVersucht = false;
 document.addEventListener("DOMContentLoaded", () => {
   $("#anmelde-formular").addEventListener("submit", anmelden);
   $("#abmelden").addEventListener("click", abmelden);
+  menueEinrichten();
+  const gruss = $("#tagesgruss");
+  if (gruss) gruss.textContent = tagesgruss();
 
   const form = $("#dienstzettel");
   form.addEventListener("input", aktualisieren);
@@ -515,7 +520,7 @@ function listeZeigen() {
   zeilen = zeilen.sort(sortierer);
 
   const gesamt = stand.liste.length;
-  $("#anzahl").textContent = gesamt ? `${zeilen.length} von ${gesamt} Einträgen` : "";
+  $("#anzahl").textContent = !gesamt ? "" : zeilen.length === gesamt ? `${gesamt} Mitarbeiter` : `${zeilen.length} von ${gesamt} Mitarbeitern`;
   $("#liste-leer").hidden = zeilen.length > 0;
   $("#liste-leer").innerHTML = gesamt
     ? "Keine Treffer. Ändere die Suche oder die Filter."
@@ -526,37 +531,39 @@ function listeZeigen() {
   const r = stand.recht;
   $("#liste-kopf").innerHTML = [
     "<th scope=\"col\">Name</th>",
-    "<th scope=\"col\">Arbeitsort</th>",
-    "<th scope=\"col\">Funktion</th>",
     r.sieht_kontakt ? "<th scope=\"col\">Kontakt</th>" : "",
-    r.sieht_personendaten ? "<th scope=\"col\">Stunden</th>" : "",
-    "<th scope=\"col\" class=\"zahl\">Dienstantritt</th>",
-    r.sieht_personendaten ? "<th scope=\"col\" class=\"zahl\">Befristet bis</th>" : "",
+    r.sieht_personendaten ? "<th scope=\"col\">Arbeitszeit</th>" : "",
+    "<th scope=\"col\">Im Team</th>",
+    r.sieht_personendaten ? "<th scope=\"col\">Vertrag</th>" : "",
   ].join("");
 
   $("#liste").innerHTML = zeilen.map((d) => {
     const p = d.person;
     const s = studio.get(d.heimstandort_id);
     const merkmale = [];
-    if (tageBis(heute, d.created_at.slice(0, 10)) <= 7) merkmale.push('<span class="merkmal">neu</span>');
+    if (tageBis(heute, d.created_at.slice(0, 10)) <= 7) merkmale.push('<span class="merkmal merkmal-neu">neu</span>');
     // Nach Ablauf der Befristung läuft der Vertrag automatisch unbefristet weiter
-    let befristung = !d.befristet_bis || d.befristet_bis < heute ? "unbefristet" : datumAT(d.befristet_bis);
+    let befristung = !d.befristet_bis || d.befristet_bis < heute
+      ? '<span class="leise">unbefristet</span>'
+      : `befristet bis ${datumAT(d.befristet_bis)}`;
     if (d.befristet_bis && aktiv(d)) {
       const rest = tageBis(d.befristet_bis, heute);
       if (rest >= 0 && rest <= 30) {
-        befristung = `<span class="merkmal merkmal-frist">${rest === 0 ? "heute" : `in ${rest} ${rest === 1 ? "Tag" : "Tagen"}`}</span> ${befristung}`;
+        const noch = rest === 0 ? "endet heute" : rest === 1 ? "noch 1 Tag" : `noch ${rest} Tage`;
+        befristung = `<span class="merkmal merkmal-frist">${noch}</span><span class="zeile-unter">befristet bis ${datumAT(d.befristet_bis)}</span>`;
       }
     }
     if (d.austritt && d.austritt < heute) merkmale.push('<span class="merkmal merkmal-aus">ausgetreten</span>');
     else if (d.angemeldet === false) merkmale.push('<span class="merkmal merkmal-fehlt">noch nicht angemeldet</span>');
+    const wo = [funktion.get(d.funktion_id)?.name, s ? s.name || s.vertragsbezeichnung : null].filter(Boolean).join(" · ");
+    const imTeam = d.eintritt > heute ? `ab ${datumAT(d.eintritt)}` : `seit ${datumAT(d.eintritt)}`;
+    const name = p ? `${p.nachname} ${p.vorname}` : "–";
     return `<tr>
-      <td><a class="name" href="#akte/${text(d.id)}/uebersicht">${text(p ? `${p.nachname} ${p.vorname}` : "–")}</a> ${merkmale.join(" ")}</td>
-      <td>${text(s ? s.vertragsbezeichnung || s.name : "–")}</td>
-      <td>${text(funktion.get(d.funktion_id)?.name || "–")}</td>
-      ${r.sieht_kontakt ? `<td class="kontakt">${kontakt(d)}</td>` : ""}
-      ${r.sieht_personendaten ? `<td>${text(`${Number(d.wochenstunden).toLocaleString("de-DE")} h, ${art[d.beschaeftigungsart] || ""}`)}</td>` : ""}
-      <td class="zahl">${datumAT(d.eintritt)}</td>
-      ${r.sieht_personendaten ? `<td class="zahl">${befristung}</td>` : ""}
+      <td class="name-zelle" data-label="Name"><span class="avatar ${avatarFarbe(name)}" data-i="${text(p ? `${(p.nachname || "")[0] || ""}${(p.vorname || "")[0] || ""}`.toUpperCase() : "–")}" aria-hidden="true"></span><span class="name-block"><a class="name" href="#akte/${text(d.id)}/uebersicht">${text(name)}</a><span class="zeile-unter">${text(wo || "–")}</span>${merkmale.length ? `<span class="chip-reihe">${merkmale.join("")}</span>` : ""}</span></td>
+      ${r.sieht_kontakt ? `<td class="kontakt" data-label="Kontakt">${kontakt(d)}</td>` : ""}
+      ${r.sieht_personendaten ? `<td data-label="Arbeitszeit">${text(`${Number(d.wochenstunden).toLocaleString("de-DE")} Std. pro Woche`)}<span class="zeile-unter">${text(art[d.beschaeftigungsart] || "")}</span></td>` : ""}
+      <td data-label="Im Team">${imTeam}</td>
+      ${r.sieht_personendaten ? `<td data-label="Vertrag">${befristung}</td>` : ""}
     </tr>`;
   }).join("");
 }

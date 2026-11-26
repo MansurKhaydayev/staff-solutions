@@ -1,54 +1,50 @@
 /* Startseite mit Kennzahlen.
-   Eigene Datei, damit das neue App-Design (Seitenleiste, Karten) sie leicht übernehmen kann.
-   Alle Farben stehen als Variablen oben; das Design kann sie überschreiben. */
+   Eigene Datei. Die Farben kommen aus den globalen Variablen in style.css (Glas-Design); nur die Diagrammfarben
+   und der gelbe Hinweis sind hier eigen, weil sie in hell und dunkel verschieden sein müssen. */
 .startseite {
-  /* Werte aus der freigegebenen Design-Vorschau (Glas-Karten, Blau-Verlauf, Palette 001D39 / 0A4174 / 4E8EA2 / 7BBDE8 / BDD8E9) */
-  --sz-grund: linear-gradient(160deg, #BDD8E9 0%, #8cc6ea 40%, #6EA2B3 100%);
-  --sz-karte: rgba(255, 255, 255, .66);
-  --sz-rand: rgba(255, 255, 255, .85);
-  --sz-trenn: rgba(10, 65, 116, .16);
-  --sz-schatten: 0 12px 40px rgba(0, 29, 57, .16), inset 0 1px 0 rgba(255, 255, 255, .6);
-  --sz-tinte: #001D39;
-  --sz-leise: #2c4a68;
-  --sz-akzent: #0A4174;
+  --sz-karte: var(--papier);
+  --sz-rand: var(--kante);
+  --sz-trenn: var(--linie);
+  --sz-schatten: 0 12px 40px var(--schatten), inset 0 1px 0 rgba(255, 255, 255, .5);
+  --sz-tinte: var(--tinte);
+  --sz-leise: var(--tinte-leise);
+  --sz-akzent: var(--tanne);
   --sz-akzent-hell: rgba(10, 65, 116, .12);
-  --sz-knopf: linear-gradient(135deg, #0A4174, #1f6f94);
-  --sz-feld: rgba(255, 255, 255, .9);
-  --sz-feldrand: rgba(10, 65, 116, .28);
+  --sz-knopf: var(--knopf);
+  --sz-feld: var(--feld);
+  --sz-feldrand: var(--feld-linie);
   --sz-ein: #1f5fa8;        /* Eintritte */
-  --sz-aus: #d0661e;        /* Austritte */
+  --sz-aus: #b4530f;        /* Austritte */
   --sz-linie: #0A4174;      /* Personalstand */
   --sz-markierung: rgba(123, 189, 232, .30);
   --sz-hinweis-grund: rgba(255, 214, 102, .6);
   --sz-hinweis-tinte: #6b3f00;
   --sz-radius: 26px;
   color: var(--sz-tinte);
-  font-family: "Plus Jakarta Sans", "Public Sans", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--schrift);
 }
 @media (prefers-color-scheme: dark) {
-  .startseite {
-    --sz-grund: linear-gradient(160deg, #001D39 0%, #0A2f57 55%, #0A4174 100%);
-    --sz-karte: rgba(255, 255, 255, .09);
-    --sz-rand: rgba(255, 255, 255, .2);
-    --sz-trenn: rgba(189, 216, 233, .2);
-    --sz-schatten: 0 12px 40px rgba(0, 0, 0, .35);
-    --sz-tinte: #f2f8fd;
-    --sz-leise: #BDD8E9;
-    --sz-akzent: #9fd0f3;
-    --sz-akzent-hell: rgba(159, 208, 243, .18);
-    --sz-knopf: linear-gradient(135deg, #2b86b8, #4E8EA2);
-    --sz-feld: rgba(0, 29, 57, .55);
-    --sz-feldrand: rgba(189, 216, 233, .4);
-    --sz-ein: #5f8fef;
-    --sz-aus: #d9823a;
+  :root:not([data-theme="light"]) .startseite {
+    --sz-akzent-hell: rgba(159, 208, 243, .08);
+    --sz-ein: #7aa7ff;
+    --sz-aus: #f0a05a;
     --sz-linie: #7BBDE8;
     --sz-markierung: rgba(123, 189, 232, .14);
     --sz-hinweis-grund: rgba(255, 200, 70, .22);
     --sz-hinweis-tinte: #ffe08a;
   }
 }
+:root[data-theme="dark"] .startseite {
+  --sz-akzent-hell: rgba(159, 208, 243, .08);
+  --sz-ein: #7aa7ff;
+  --sz-aus: #f0a05a;
+  --sz-linie: #7BBDE8;
+  --sz-markierung: rgba(123, 189, 232, .14);
+  --sz-hinweis-grund: rgba(255, 200, 70, .22);
+  --sz-hinweis-tinte: #ffe08a;
+}
 
-.seite.startseite { background: var(--sz-grund); border-radius: var(--sz-radius); padding: 24px; max-width: 1240px; }
+.seite.startseite { max-width: 1240px; }
 
 .start-kopf { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; margin-bottom: 8px; }
 .start-kopf h1 { margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -.03em; }

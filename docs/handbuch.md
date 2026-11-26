@@ -42,7 +42,8 @@ umgeht, bekommt er keine Daten, die er nicht sehen darf.
 | Ordner / Datei | Inhalt |
 |---|---|
 | `app/index.html` | Aufbau aller Seiten: Anmeldung, Formular, Liste, Einstellungen |
-| `app/style.css` | Aussehen: Farben, Schrift, Abstände |
+| `app/style.css` | Aussehen: Farben, Schrift, Abstände. Alle Farben stehen oben als Variablen (Glas-Design in Blau) |
+| `app/menue.js` | Menü-Knopf der Seitenleiste auf schmalen Bildschirmen |
 | `app/app.js` | Ablauf der App: Daten laden, Formular, Mitarbeiterliste |
 | `app/pruefungen.js` | Prüfregeln im Formular (Stunden, SV-Nummer, IBAN …) |
 | `app/einstellungen.js` | Die Einstellungen-Seite (Rechte, Funktionen, Onboarding-Liste, Regeln) |
@@ -436,7 +437,16 @@ und Austritte und Fluktuation bleiben bei 0.
 
 ---
 
-## 10. Tests ausführen
+## 10. Das Aussehen (Glas-Design)
+
+- **Farben ändern:** Ganz oben in `app/style.css` stehen die Farb-Variablen für hell und dunkel (zum Beispiel `--tanne` für Links, `--knopf` für Knöpfe, `--himmel` für den Hintergrund). Dort ändern, nicht an einzelnen Stellen.
+- **Seitenleiste:** Auf breiten Bildschirmen (ab 1000 Pixel) immer sichtbar, auf dem iPad hochkant und am Handy hinter dem Knopf „Menü“.
+- **Lesbarkeit:** Karten sind nur teilweise durchsichtig, Eingabefelder fast deckend. Wer am Gerät „Transparenz reduzieren“ eingestellt hat, sieht feste Karten. Das Unterschriftsfeld und das Blatt der Mappe bleiben immer weiß.
+- **Prüfung:** `tests/ui/design.test.js` berechnet auf den Hauptseiten den Kontrast jedes Textes (mindestens 4,5 zu 1, große Schrift 3 zu 1) und prüft, dass Knöpfe und Felder mindestens 44 Pixel hoch sind. Bilder zum Anschauen erzeugt `tests/ui/demo_design.js`.
+
+---
+
+## 11. Tests ausführen
 
 | Art | Wie | Bestanden, wenn |
 |---|---|---|
@@ -467,7 +477,7 @@ Genau dafür ist die Prüfziffer da: Sie fängt Tippfehler ab.
 
 ---
 
-## 11. Begriffe
+## 12. Begriffe
 
 | Begriff | Bedeutung |
 |---|---|
