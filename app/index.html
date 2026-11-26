@@ -337,11 +337,18 @@
       <div id="mappe-inhalt"></div>
     </main>
 
-    <!-- Einstellungen (nur für Rollen mit dem Recht "verwalten") -->
+    <!-- Einstellungen (Rolle mit „verwalten“; wer nur das Analyse-Recht vergibt, sieht nur diesen Teil) -->
     <main id="seite-einstellungen" class="seite" hidden>
       <h1 class="seitentitel">Einstellungen</h1>
       <p class="einleitung">Änderungen gelten sofort für alle Benutzer deiner Firma.</p>
       <p class="status" id="einstellungen-status" role="status" aria-live="polite"></p>
+
+      <section class="einstellung" id="einstellung-analyse" aria-labelledby="t-analyse" hidden>
+        <h2 id="t-analyse">Analyse herunterladen</h2>
+        <p class="einleitung klein">Wer die gesamte Personalanalyse der Startseite als PDF herunterladen darf.
+          Jede Änderung und jeder Download wird im Protokoll vermerkt.</p>
+        <ul class="analyse-rechte" id="analyse-rechte"></ul>
+      </section>
 
       <section class="einstellung" aria-labelledby="t-rechte">
         <h2 id="t-rechte">Wer sieht was</h2>

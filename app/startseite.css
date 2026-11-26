@@ -154,10 +154,5 @@ svg .punkt-stand { fill: var(--sz-linie); stroke: var(--sz-feld); stroke-width: 
   .start-steuerung label { flex: 1 1 120px; }
 }
 
-.rechte-analyse { padding: 16px 20px; }
-.rechte-analyse p { margin: 0 0 8px; }
-.rechte-analyse ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 24px; }
-.rechte-analyse label { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 600; cursor: pointer; }
-.rechte-analyse input { width: 20px; height: 20px; accent-color: var(--sz-akzent); }
 .start-steuerung .knopf-pdf:disabled { opacity: .7; cursor: wait; }
 #start-pdf-meldung { margin: 8px 0 0; }

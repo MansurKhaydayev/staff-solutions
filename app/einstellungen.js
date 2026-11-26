@@ -21,7 +21,13 @@ let eingerichtet = false;
 export function einstellungenZeigen(s, nachAenderung) {
   stand = s;
   neuLaden = nachAenderung;
+  const verwalten = Boolean(stand.recht.darf_verwalten);
+  // Wer nur das Analyse-Recht vergibt (z. B. Geschäftsführung ohne „verwalten“), sieht nur diesen Teil
+  document.querySelectorAll("#seite-einstellungen .einstellung").forEach((el) => {
+    el.hidden = el.id === "einstellung-analyse" ? !stand.recht.vergibt_analyse_export : !verwalten;
+  });
   if (!eingerichtet) {
+    $("#analyse-rechte").addEventListener("change", analyseRechtSetzen);
     $("#rechte").addEventListener("change", rechtAendern);
     $("#funktionen").addEventListener("change", funktionAendern);
     $("#regeln").addEventListener("submit", regelnSpeichern);
@@ -41,9 +47,42 @@ export function einstellungenZeigen(s, nachAenderung) {
     $("#textbaustein-neu").addEventListener("submit", bausteinAnlegen);
     eingerichtet = true;
   }
+  analyseRechteZeichnen();
+  if (!verwalten) return;
   zeichnen();
   onboardingLaden();
   bausteineLaden();
+}
+
+// ---------------------------------------------------------------- Recht „Analyse herunterladen“
+// Nur über public.analyse_recht_setzen (prüft, ob man vergeben darf, und protokolliert jede Änderung).
+// Mitarbeiter mit Reichweite „eigene“ sehen ohnehin nur sich selbst; für sie ist die Analyse sinnlos.
+function analyseRechteZeichnen() {
+  if (!stand.recht.vergibt_analyse_export) return;
+  $("#analyse-rechte").innerHTML = (stand.rechte || [])
+    .filter((r) => r.reichweite !== "eigene")
+    .sort((a, b) => REIHENFOLGE.indexOf(a.rolle) - REIHENFOLGE.indexOf(b.rolle))
+    .map((r) => `<li><label class="ankreuzen"><input type="checkbox" data-analyse-recht="${text(r.rolle)}"${r.darf_analyse_export ? " checked" : ""}>
+      ${text(r.bezeichnung || r.rolle)}</label></li>`).join("");
+}
+
+async function analyseRechtSetzen(e) {
+  const feld = e.target;
+  const rolle = stand.rechte.find((r) => r.rolle === feld.dataset.analyseRecht);
+  if (!rolle) return;
+  const darf = feld.checked;
+  feld.disabled = true;
+  try {
+    await api.funktion("analyse_recht_setzen", { p_rolle: rolle.rolle, p_darf: darf });
+    rolle.darf_analyse_export = darf;
+    if (rolle.rolle === stand.profil.rolle) stand.recht.darf_analyse_export = darf;
+    meldung(`Gespeichert: ${rolle.bezeichnung || rolle.rolle} ${darf ? "darf" : "darf nicht mehr"} die Analyse herunterladen.`);
+  } catch (fehler) {
+    feld.checked = !darf;
+    meldung(`Nicht gespeichert: ${fehler.message}`, true);
+  } finally {
+    feld.disabled = false;
+  }
 }
 
 // ---------------------------------------------------------------- Textbausteine für den Dienstzettel

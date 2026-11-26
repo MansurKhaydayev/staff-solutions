@@ -56,9 +56,6 @@ export async function startseiteZeigen(stand, { offenePunkte = false } = {}) {
       zeichnen(stand, k.heuteWien());
     });
     $("#start-pdf").addEventListener("click", herunterladen);
-    $("#start-inhalt").addEventListener("change", (e) => {
-      if (e.target.dataset.analyseRecht) rechtSetzen(stand, e.target);
-    });
   }
   zeichnen(stand, heute);
 }
@@ -112,7 +109,6 @@ function zeichnen(stand, heute) {
     teilJahr(j, fruehJahr, monat),
     teilHeute(stand, zeilen, heute),
     teilAchtung(stand, zeilen, heute, probezeit),
-    teilRechte(stand),
   ].join("");
 }
 
@@ -341,45 +337,6 @@ async function herunterladen() {
   } finally {
     knopf.disabled = false;
     knopf.textContent = "PDF herunterladen";
-  }
-}
-
-// Wer das Recht vergeben darf, sieht hier alle Rollen und kann es setzen oder entziehen
-function teilRechte(stand) {
-  if (!stand.recht.vergibt_analyse_export) return "";
-  const zeilen = (stand.rechte || []).filter((r) => r.reichweite !== "eigene").map((r) =>
-    `<li><label><input type="checkbox" data-analyse-recht="${text(r.rolle)}"${r.darf_analyse_export ? " checked" : ""}>
-      ${text(r.bezeichnung || r.rolle)}</label></li>`).join("");
-  return `<section class="start-teil" aria-labelledby="t-rechte-analyse">
-    <h2 id="t-rechte-analyse">Wer darf die Analyse herunterladen?</h2>
-    <div class="karte rechte-analyse">
-      <p class="leise">Jede Änderung und jeder Download wird im Protokoll vermerkt.</p>
-      <ul>${zeilen}</ul>
-      <p class="fehler" id="rechte-analyse-meldung" role="alert" hidden></p>
-    </div>
-  </section>`;
-}
-
-async function rechtSetzen(stand, feld) {
-  const rolle = feld.dataset.analyseRecht;
-  const darf = feld.checked;
-  const meldung = $("#rechte-analyse-meldung");
-  feld.disabled = true;
-  meldung.hidden = true;
-  try {
-    await api.funktion("analyse_recht_setzen", { p_rolle: rolle, p_darf: darf });
-    const r = stand.rechte.find((x) => x.rolle === rolle);
-    if (r) r.darf_analyse_export = darf;
-    if (rolle === stand.profil.rolle) {
-      stand.recht.darf_analyse_export = darf;
-      knopfZeigen(stand);
-    }
-  } catch (fehler) {
-    feld.checked = !darf;
-    meldung.textContent = fehler.message;
-    meldung.hidden = false;
-  } finally {
-    feld.disabled = false;
   }
 }
 

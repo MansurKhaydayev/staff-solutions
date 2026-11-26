@@ -164,7 +164,7 @@ async function stammdatenLaden() {
   $("#wer").textContent = `${user.email}, ${stand.rollenText}`;
   const darfErfassen = stand.erfassbareFunktionen.length > 0;
   document.querySelector('[data-ziel="erfassen"]').hidden = !darfErfassen;
-  document.querySelector('[data-ziel="einstellungen"]').hidden = !stand.recht.darf_verwalten;
+  document.querySelector('[data-ziel="einstellungen"]').hidden = !einstellungenErlaubt();
   document.querySelector('[data-ziel="offen"]').hidden = !darfOffenePunkte();
   document.querySelector('[data-ziel="unterschreiben"]').hidden = !stand.recht.darf_arbeitgeber_unterschreiben;
   $('#filter option[value="befristung"]').hidden = !stand.recht.sieht_personendaten;
@@ -202,12 +202,15 @@ function standorteFuellen() {
 const SEITEN = ["start", "erfassen", "mitarbeiter", "offen", "unterschreiben", "akte", "mappe", "einstellungen"];
 const darfOffenePunkte = () => istBuero() || LEITUNG.includes(stand.profil?.rolle);
 
+// Einstellungen: wer verwaltet, oder wer das Recht „Analyse herunterladen“ vergeben darf (sieht dann nur diesen Teil)
+const einstellungenErlaubt = () => Boolean(stand.recht.darf_verwalten || stand.recht.vergibt_analyse_export);
+
 function seiteZeigen() {
   const [teil, ...rest] = (location.hash.replace("#", "") || "start").split("/");
   let ziel = teil;
   if (!SEITEN.includes(ziel)) ziel = "start";
   if (ziel === "erfassen" && !stand.erfassbareFunktionen.length) ziel = "mitarbeiter";
-  if (ziel === "einstellungen" && !stand.recht.darf_verwalten) ziel = "mitarbeiter";
+  if (ziel === "einstellungen" && !einstellungenErlaubt()) ziel = "mitarbeiter";
   if ((ziel === "akte" || ziel === "mappe") && !rest[0]) ziel = "mitarbeiter";
   if (ziel === "offen" && !darfOffenePunkte()) ziel = "mitarbeiter";
   if (ziel === "unterschreiben" && !stand.recht.darf_arbeitgeber_unterschreiben) ziel = "mitarbeiter";

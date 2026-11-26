@@ -424,7 +424,9 @@ Beschäftigungsart, Vollzeitäquivalente und Befristungen nur mit „Personendat
   (`public.analyse_export_vermerken`) und schreibt **jeden Download ins Protokoll** (`audit_log`, Tabelle „analyse“).
   Die Protokoll-Nr. steht im PDF.
 - **Recht vergeben oder entziehen:** Wer das Recht vergeben darf (Spalte `vergibt_analyse_export`, Voreinstellung
-  Admin und Geschäftsführung), sieht unten auf der Startseite „Wer darf die Analyse herunterladen?“ mit einem Haken je Rolle.
+  Admin und Geschäftsführung), findet unter **Einstellungen → Analyse herunterladen** einen Haken je Rolle
+  (Wunsch Mansur 26.11.2026: gehört in die Einstellungen, nicht auf die Startseite). Wer nur vergeben, aber nicht
+  „Einstellungen verwalten“ darf (Geschäftsführung), sieht in den Einstellungen nur diesen Teil.
   Jede Änderung steht im Protokoll (`audit_log`, Aktion „analyse_recht“). Direkt in der Tabelle lässt sich das Recht nicht ändern.
 - Wer vergeben darf, lässt sich in der App nicht ändern, nur per SQL durch den Betreiber.
 - Hinweis: Ein Bildschirmfoto oder „Drucken“ der Seite kann die App nicht verhindern. Das Recht steuert den offiziellen Download.
