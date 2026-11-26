@@ -31,7 +31,7 @@ export function heuteIso() {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
-function tageVersetzt(iso, tage) {
+export function tageVersetzt(iso, tage) {
   const d = new Date(`${iso}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + tage);
   return d.toISOString().slice(0, 10);

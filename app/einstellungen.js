@@ -2,6 +2,7 @@
 // Jede Änderung wird sofort gespeichert. Ob sie erlaubt ist, entscheidet die
 // Datenbank; diese Seite zeigt nur das Ergebnis an.
 import * as api from "./api.js";
+import { austrittsartenVergessen } from "./akte_austritt.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -45,6 +46,10 @@ export function einstellungenZeigen(s, nachAenderung) {
     $("#textbausteine").addEventListener("click", bausteinAbweichend);
     $("#textbaustein-gmbh").addEventListener("change", bausteineZeichnen);
     $("#textbaustein-neu").addEventListener("submit", bausteinAnlegen);
+    $("#austritt-regeln").addEventListener("submit", austrittRegelnSpeichern);
+    $("#lohnverrechner-einstellungen").addEventListener("change", lohnverrechnerAendern);
+    $("#austrittsarten-einstellungen").addEventListener("change", austrittsartAendern);
+    $("#austrittsart-neu").addEventListener("submit", austrittsartAnlegen);
     eingerichtet = true;
   }
   analyseRechteZeichnen();
@@ -52,6 +57,101 @@ export function einstellungenZeigen(s, nachAenderung) {
   zeichnen();
   onboardingLaden();
   bausteineLaden();
+  austrittLaden();
+}
+
+// ---------------------------------------------------------------- Austritt: Abmeldefrist, Mail-Adressen, Austrittsarten
+export const mailGueltig = (t) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
+const MAIL_FEHLER = "Bitte eine gültige E-Mail-Adresse eingeben.";
+let lohnverrechner = [];
+let austrittsarten = [];
+
+async function austrittLaden() {
+  const f = $("#austritt-regeln").elements;
+  f.abmeldefrist_tage.value = stand.organisation.abmeldefrist_tage ?? 7;
+  f.buero_email.value = stand.organisation.buero_email || "";
+  try {
+    [lohnverrechner, austrittsarten] = await Promise.all([
+      api.lesen("lohnverrechner", "select=id,name,email&order=name"),
+      api.lesen("austrittsart", "select=*&order=reihenfolge,bezeichnung"),
+    ]);
+  } catch (e) {
+    meldung(`Austritt-Einstellungen nicht geladen: ${e.message}`, true);
+  }
+  $("#lohnverrechner-einstellungen").innerHTML = lohnverrechner.map((l) => `<tr><th scope="row">${text(l.name)}</th>
+    <td><input type="email" data-id="${text(l.id)}" value="${text(l.email || "")}" maxlength="200" aria-label="${text(l.name)}: E-Mail"></td></tr>`).join("")
+    || '<tr><td colspan="2">Noch keine Lohnverrechner hinterlegt.</td></tr>';
+  $("#austrittsarten-einstellungen").innerHTML = austrittsarten.map((a) => `<tr${a.aktiv ? "" : ' class="inaktiv"'}>
+    <th scope="row"><input type="text" data-id="${text(a.id)}" data-feld="bezeichnung" value="${text(a.bezeichnung)}" maxlength="120" aria-label="Bezeichnung"></th>
+    <td><input type="number" data-id="${text(a.id)}" data-feld="reihenfolge" value="${text(a.reihenfolge)}" min="0" step="1" aria-label="${text(a.bezeichnung)}: Reihenfolge"></td>
+    <td><input type="checkbox" data-id="${text(a.id)}" data-feld="aktiv"${a.aktiv ? " checked" : ""} aria-label="${text(a.bezeichnung)}: aktiv"></td></tr>`).join("");
+}
+
+async function austrittRegelnSpeichern(e) {
+  e.preventDefault();
+  const f = e.target.elements;
+  const tage = Number(f.abmeldefrist_tage.value);
+  const mail = f.buero_email.value.trim();
+  if (!Number.isInteger(tage) || tage < 1 || tage > 30 || f.abmeldefrist_tage.value === "") return meldung("Bitte 1 bis 30 Tage eingeben.", true);
+  if (mail && !mailGueltig(mail)) return meldung(MAIL_FEHLER, true);
+  try {
+    await api.aendern("organisation", `id=eq.${stand.organisation.id}`, { abmeldefrist_tage: tage, buero_email: mail || null });
+    await neuLaden();
+    meldung("Austritt-Einstellungen gespeichert.");
+  } catch (fehler) {
+    meldung(`Nicht gespeichert: ${fehler.message}`, true);
+  }
+  austrittLaden();
+}
+
+async function lohnverrechnerAendern(e) {
+  const l = lohnverrechner.find((x) => x.id === e.target.dataset.id);
+  if (!l) return;
+  const mail = e.target.value.trim();
+  if (mail && !mailGueltig(mail)) return meldung(MAIL_FEHLER, true);
+  try {
+    await api.aendern("lohnverrechner", `id=eq.${l.id}`, { email: mail || null });
+    meldung(`Gespeichert: ${l.name}.`);
+  } catch (fehler) {
+    meldung(`Nicht gespeichert: ${fehler.message}`, true);
+  }
+  austrittLaden();
+}
+
+async function austrittsartAendern(e) {
+  const el = e.target;
+  const a = austrittsarten.find((x) => x.id === el.dataset.id);
+  if (!a) return;
+  let wert = el.type === "checkbox" ? el.checked : el.value;
+  if (el.dataset.feld === "reihenfolge") wert = Number(wert);
+  if (el.dataset.feld === "bezeichnung" && !String(wert).trim()) { meldung("Die Bezeichnung darf nicht leer sein.", true); return austrittLaden(); }
+  try {
+    await api.aendern("austrittsart", `id=eq.${a.id}`, { [el.dataset.feld]: el.dataset.feld === "bezeichnung" ? String(wert).trim() : wert });
+    austrittsartenVergessen();
+    meldung(`Gespeichert: ${el.dataset.feld === "bezeichnung" ? String(wert).trim() : a.bezeichnung}.`);
+  } catch (fehler) {
+    meldung(`Nicht gespeichert: ${fehler.message}`, true);
+  }
+  austrittLaden();
+}
+
+async function austrittsartAnlegen(e) {
+  e.preventDefault();
+  const f = e.target.elements;
+  const bezeichnung = f.bezeichnung.value.trim();
+  if (!bezeichnung) return;
+  let schluessel = schluesselAus(bezeichnung);
+  while (austrittsarten.some((a) => a.schluessel === schluessel)) schluessel += "_neu";
+  const reihenfolge = Math.max(0, ...austrittsarten.map((a) => Number(a.reihenfolge) || 0)) + 1;
+  try {
+    await api.anlegen("austrittsart", { organisation_id: stand.organisation.id, schluessel, bezeichnung, reihenfolge, aktiv: true });
+    austrittsartenVergessen();
+    meldung(`Hinzugefügt: ${bezeichnung}.`);
+    e.target.reset();
+  } catch (fehler) {
+    meldung(`Nicht gespeichert: ${fehler.message}`, true);
+  }
+  austrittLaden();
 }
 
 // ---------------------------------------------------------------- Recht „Analyse herunterladen“

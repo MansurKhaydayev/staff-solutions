@@ -962,3 +962,19 @@ textarea, .baustein textarea, .text-zeile textarea, .mappe-dringend textarea {
   #seite-mitarbeiter .tabelle td .zeile-unter { display: inline; margin-left: .35rem; }
   #seite-mitarbeiter .tabelle td:first-child .zeile-unter { display: block; margin: 0; }
 }
+
+/* Austritt und Sammelmail an die Lohnverrechner */
+.punkt-ueberfaellig, .punkt-storno { color: var(--fehler); font-weight: 600; }
+.akte-austritt { margin: .75rem 0 1rem; display: grid; gap: .75rem; }
+.akte-austritt:empty, .akte-austritt #austritt-hinweis:empty, .akte-austritt #austritt-dialog:empty { display: none; }
+.austritt-verlauf ul { margin: .5rem 0 0; padding-left: 1.25rem; }
+.austritt-verlauf li { margin: .25rem 0; }
+.verlauf-ersetzt { color: var(--tinte-leise); }
+.uebermittlung { margin-bottom: 1.5rem; }
+.uebermittlung h3 small { font-weight: 400; color: var(--tinte-leise); }
+.lv-bereich { margin-top: 1rem; }
+.lv-bereich input[type=checkbox] { width: 1.375rem; height: 1.375rem; accent-color: var(--tanne); }
+.gespeichert-liste { margin: .5rem 0; padding-left: 1.25rem; }
+.gespeichert-liste code { word-break: break-all; }
+.lv-bereich .knopf-reihe { margin-top: .75rem; }
+.austritt-verlauf summary { cursor: pointer; font-weight: 600; }
