@@ -906,11 +906,31 @@ textarea, .baustein textarea, .text-zeile textarea, .mappe-dringend textarea {
 .anmelde-titel { margin: 0; font-size: 1.875rem; font-weight: 800; letter-spacing: -.03em; }
 .anmelde-karte .knopf-haupt { min-height: 3.25rem; font-size: 1.0625rem; }
 @media (max-width: 900px) {
-  .anmeldung { grid-template-columns: minmax(0, 1fr); }
-  .anmelde-willkommen { padding: 2rem 1.5rem 3.5rem; }
-  .anmelde-gruss { font-size: 2.5rem; max-width: none; }
-  .anmelde-punkte, .anmelde-satz { display: none; }
-  .anmelde-karte { margin: -2rem auto 2rem; }
+  /* Handy und iPad hochkant: eine ganze Fläche statt Kasten + Streifen. Begrüßung oben, Karte darunter, Morgenrot unten. */
+  html .anmeldung, :root:not([data-theme="light"]) .anmeldung, :root[data-theme="dark"] .anmeldung {
+    display: flex; flex-direction: column; justify-content: center; gap: 1.5rem; min-height: 100vh; min-height: 100dvh; padding: 2rem 0;
+    background:
+      radial-gradient(70% 38% at 18% 104%, rgba(255, 140, 90, .75), rgba(255, 140, 90, 0)),
+      linear-gradient(165deg, #001d39 0%, #0a3a69 62%, #14507c 100%);
+  }
+  .anmelde-willkommen { background: none; overflow: visible; padding: 0 max(1.5rem, calc(50% - 13rem)); gap: .75rem; flex: 0 0 auto; }
+  .anmelde-willkommen::before, .anmelde-willkommen::after { display: none; }
+  .anmelde-marke { margin-bottom: 1.5rem; }
+  .anmelde-gruss { font-size: clamp(2.5rem, 9vw, 3.5rem); max-width: none; }
+  .anmelde-punkte { display: none; }
+  .anmelde-satz { font-size: 1.0625rem; max-width: 26rem; color: rgba(255, 255, 255, .88); }
+  .anmelde-karte { align-self: center; width: min(100% - 2rem, 26rem); margin: 0 auto; padding: 1.75rem 1.5rem; }
+}
+@media (max-width: 900px) {
+  .anmelde-karte { background: rgba(255, 255, 255, .96); backdrop-filter: none; }
+}
+@media (max-width: 900px) and (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .anmelde-karte { background: var(--papier); backdrop-filter: blur(18px); } }
+@media (max-width: 900px) { :root[data-theme="dark"] .anmelde-karte { background: var(--papier); backdrop-filter: blur(18px); } }
+@media (max-width: 480px) {
+  .anmelde-satz { display: none; }
+  .anmelde-willkommen { padding: 0 1.5rem; }
+  .anmelde-titel { font-size: 1.5rem; }
+}
 }
 
 /* Chips unter dem Namen, nie über die nächste Spalte hinaus */
