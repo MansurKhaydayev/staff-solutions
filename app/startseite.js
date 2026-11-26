@@ -105,11 +105,44 @@ function zeichnen(stand, heute) {
   $("#start-inhalt").innerHTML = [
     ohneAustritte ? `<p class="start-hinweis" role="note"><strong>Hinweis:</strong> Austritte kann die App noch nicht
       erfassen. Austritte, Fluktuation und Frühfluktuation zeigen deshalb 0 bzw. „–“, bis das Austritt-Modul fertig ist.</p>` : "",
-    teilMonat(m, vm, zwoelf, frueh12),
-    teilJahr(j, fruehJahr, monat),
-    teilHeute(stand, zeilen, heute),
     teilAchtung(stand, zeilen, heute, probezeit),
+    teilUeberblick(m, vm, zwoelf, j, monat),
+    `<details class="start-details" id="start-details"${detailsOffen ? " open" : ""}>
+      <summary>Alle Details anzeigen <small>Monat, Jahr, Tabelle, Personal und Verteilungen</small></summary>
+      ${teilMonat(m, vm, zwoelf, frueh12)}
+      ${teilJahr(j, fruehJahr, monat)}
+      ${teilHeute(stand, zeilen, heute)}
+    </details>`,
   ].join("");
+  $("#start-details").addEventListener("toggle", (e) => { detailsOffen = e.target.open; });
+}
+
+// Ob „Alle Details“ offen ist, bleibt beim Wechsel von Monat oder Arbeitsort erhalten
+let detailsOffen = false;
+
+// Auf einen Blick: vier Zahlen und ein Diagramm. Alles andere steht unter „Alle Details anzeigen“.
+function teilUeberblick(m, vm, zwoelf, j, gewaehlt) {
+  const name = `${MONATE[m.monat - 1]} ${m.jahr}`;
+  return `<section class="start-teil" aria-labelledby="t-monat">
+    <h2 id="t-monat">${text(name)}${m.laufend ? ` <small>bis heute</small>` : ""}</h2>
+    <div class="kacheln kacheln-vier">
+      ${kachel(m.laufend ? "Im Dienst heute" : "Stand am Monatsende", zahl(m.standEnde),
+        `am Monatsanfang ${zahl(m.standAnfang)}`)}
+      ${kachel("Eintritte", zahl(m.eintritte),
+        [m.eintritteGeplant ? `dazu ${zahl(m.eintritteGeplant)} geplant` : "", vergleich(m.eintritte, vm.eintritte, m.laufend)]
+          .filter(Boolean).join(" · "))}
+      ${kachel("Austritte", zahl(m.austritte),
+        [m.austritteGeplant ? `dazu ${zahl(m.austritteGeplant)} geplant` : "", vergleich(m.austritte, vm.austritte, m.laufend)]
+          .filter(Boolean).join(" · "))}
+      ${kachel("Fluktuation 12 Monate", prozent(zwoelf.fluktuation),
+        `${zahl(zwoelf.austritte)} Austritte bei Ø ${zahl(zwoelf.durchschnitt, 1)} Personen`, "kachel-betont")}
+    </div>
+    <figure class="karte diagramm diagramm-breit">
+      <figcaption>Eintritte und Austritte ${j.jahr}</figcaption>
+      <div class="legende" aria-hidden="true"><span class="punkt punkt-ein"></span>Eintritte<span class="punkt punkt-aus"></span>Austritte</div>
+      ${balkenDiagramm(j.monate, gewaehlt)}
+    </figure>
+  </section>`;
 }
 
 const kachel = (titel, wert, zusatz = "", art = "") =>
@@ -125,20 +158,10 @@ function vergleich(jetzt, vorher, laufend) {
 
 function teilMonat(m, vm, zwoelf, frueh) {
   const name = `${MONATE[m.monat - 1]} ${m.jahr}`;
-  return `<section class="start-teil" aria-labelledby="t-monat">
-    <h2 id="t-monat">${text(name)}${m.laufend ? ` <small>bis heute</small>` : ""}</h2>
+  return `<section class="start-teil" aria-labelledby="t-monat-mehr">
+    <h2 id="t-monat-mehr">Mehr zu ${text(name)}</h2>
     <div class="kacheln">
-      ${kachel(m.laufend ? "Im Dienst heute" : "Stand am Monatsende", zahl(m.standEnde),
-        `am Monatsanfang ${zahl(m.standAnfang)}`)}
-      ${kachel("Eintritte", zahl(m.eintritte),
-        [m.eintritteGeplant ? `dazu ${zahl(m.eintritteGeplant)} geplant` : "", vergleich(m.eintritte, vm.eintritte, m.laufend)]
-          .filter(Boolean).join(" · "))}
-      ${kachel("Austritte", zahl(m.austritte),
-        [m.austritteGeplant ? `dazu ${zahl(m.austritteGeplant)} geplant` : "", vergleich(m.austritte, vm.austritte, m.laufend)]
-          .filter(Boolean).join(" · "))}
       ${kachel("Fluktuation im Monat", prozent(m.fluktuation), `Vormonat ${prozent(vm.fluktuation)}`)}
-      ${kachel("Fluktuation 12 Monate", prozent(zwoelf.fluktuation),
-        `${zahl(zwoelf.austritte)} Austritte bei Ø ${zahl(zwoelf.durchschnitt, 1)} Personen`, "kachel-betont")}
       ${kachel("Frühfluktuation 12 Monate", prozent(frueh.anteil),
         frueh.austritte ? `${zahl(frueh.inProbezeit)} von ${zahl(frueh.austritte)} Austritten in der Probezeit` : "noch keine Austritte")}
     </div>
@@ -164,21 +187,14 @@ function teilJahr(j, frueh, gewaehlt) {
       ${kachel("Eintritte im Jahr", zahl(j.eintritte))}
       ${kachel("Austritte im Jahr", zahl(j.austritte))}
       ${kachel("Ø Personalstand", zahl(j.durchschnitt, 1), "Durchschnitt der Monatsend-Stände")}
-      ${kachel("Fluktuation im Jahr", prozent(j.fluktuation), "", "kachel-betont")}
+      ${kachel("Fluktuation im Jahr", prozent(j.fluktuation))}
       ${kachel("Frühfluktuation im Jahr", prozent(frueh.anteil),
         frueh.austritte ? `${zahl(frueh.inProbezeit)} von ${zahl(frueh.austritte)} in der Probezeit` : "noch keine Austritte")}
     </div>
-    <div class="diagramme">
-      <figure class="karte diagramm">
-        <figcaption>Eintritte und Austritte je Monat</figcaption>
-        <div class="legende" aria-hidden="true"><span class="punkt punkt-ein"></span>Eintritte<span class="punkt punkt-aus"></span>Austritte</div>
-        ${balkenDiagramm(j.monate, gewaehlt)}
-      </figure>
-      <figure class="karte diagramm">
-        <figcaption>Personalstand am Monatsende</figcaption>
-        ${linienDiagramm(j.monate, gewaehlt)}
-      </figure>
-    </div>
+    <figure class="karte diagramm diagramm-breit">
+      <figcaption>Personalstand am Monatsende</figcaption>
+      ${linienDiagramm(j.monate, gewaehlt)}
+    </figure>
     <div class="karte tabelle-rahmen">
       <table class="start-tabelle">
         <caption>Monate im Detail</caption>
@@ -294,20 +310,23 @@ function personenListe(eintraege, zusatz) {
 
 function teilAchtung(stand, zeilen, heute, probezeit) {
   const h = k.hinweise(zeilen, heute, probezeit, 30);
-  const box = (titel, eintraege, zusatz) =>
-    `<div class="karte achtung"><h3>${text(titel)} <span class="anzahl">${zahl(eintraege.length)}</span></h3>${personenListe(eintraege, zusatz)}</div>`;
+  // Nur Kästen mit Einträgen; ist nichts los, steht ein ruhiger Satz statt vier leerer Kästen
+  const box = (titel, eintraege, zusatz) => (eintraege.length
+    ? `<div class="karte achtung"><h3>${text(titel)} <span class="anzahl">${zahl(eintraege.length)}</span></h3>${personenListe(eintraege, zusatz)}</div>` : "");
   const zuTun = [];
   if (geladen.offen) zuTun.push(`<a class="karte zu-tun" href="#offen"><span class="kachel-wert">${zahl(geladen.offen.length)}</span>Offene Punkte</a>`);
   if (geladen.unterschreiben) zuTun.push(`<a class="karte zu-tun" href="#unterschreiben"><span class="kachel-wert">${zahl(geladen.unterschreiben.length)}</span>Zu unterschreiben</a>`);
+  const kaesten = [
+    box("Noch nicht angemeldet", h.nichtAngemeldet, (z) => `ab ${datum(z.eintritt)}`),
+    box("Kommende Dienstantritte", h.kommend, (z) => datum(z.eintritt)),
+    box("Probezeit endet", h.probezeit, (z) => datum(z.bis)),
+    stand.recht.sieht_personendaten ? box("Befristung endet", h.befristung, (z) => datum(z.bis)) : "",
+  ].join("");
   return `<section class="start-teil" aria-labelledby="t-achtung">
-    <h2 id="t-achtung">Was bald ansteht <small>nächste 30 Tage</small></h2>
+    <h2 id="t-achtung">Was ansteht <small>nächste 30 Tage</small></h2>
     ${zuTun.length ? `<div class="zu-tun-reihe">${zuTun.join("")}</div>` : ""}
-    <div class="achtung-raster">
-      ${box("Noch nicht angemeldet", h.nichtAngemeldet, (z) => `ab ${datum(z.eintritt)}`)}
-      ${box("Kommende Dienstantritte", h.kommend, (z) => datum(z.eintritt))}
-      ${box("Probezeit endet", h.probezeit, (z) => datum(z.bis))}
-      ${stand.recht.sieht_personendaten ? box("Befristung endet", h.befristung, (z) => datum(z.bis)) : ""}
-    </div>
+    ${kaesten ? `<div class="achtung-raster">${kaesten}</div>`
+      : '<p class="karte start-ruhig">Nichts Dringendes in den nächsten 30 Tagen.</p>'}
   </section>`;
 }
 

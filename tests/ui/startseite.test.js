@@ -94,6 +94,21 @@ const kachel = (p, titel) => p.$$eval(".kachel", (ks, t) => {
     pruefe(await p.$eval("#start-pdf", (e) => e.hidden), "Personalbüro ohne Recht: kein Download-Knopf");
     pruefe(!(await p.$("[data-analyse-recht]")), "Personalbüro: keine Verwaltung des Download-Rechts");
 
+    // Ruhiger Einstieg: vier Zahlen oben, der Rest zugeklappt; offen bleibt offen beim Monatswechsel
+    pruefe(await p.$$eval("section[aria-labelledby='t-monat'] .kachel", (x) => x.length) === 4, "oben genau vier Zahlen");
+    pruefe(await p.$$eval("section[aria-labelledby='t-monat'] svg", (x) => x.length) === 1, "oben genau ein Diagramm");
+    pruefe(!(await p.$eval("#start-details", (e) => e.open)), "Details sind anfangs zugeklappt");
+    pruefe(!(await p.isVisible(".start-tabelle")), "Monatstabelle erst nach dem Aufklappen sichtbar");
+    const vorAchtung = await p.$eval("#t-achtung", (h) => h.compareDocumentPosition(document.querySelector("#t-monat")) & 4);
+    pruefe(Boolean(vorAchtung), "„Was ansteht“ steht vor den Zahlen");
+    await p.click("#start-details > summary");
+    pruefe(await p.isVisible(".start-tabelle"), "nach dem Aufklappen: Monatstabelle sichtbar");
+    const monate = await p.$$eval('#start-steuerung select[name="monat"] option', (o) => o.map((x) => x.value));
+    await p.selectOption('#start-steuerung select[name="monat"]', monate[0]);
+    pruefe(await p.$eval("#start-details", (e) => e.open), "Details bleiben beim Monatswechsel offen");
+    pruefe(await p.$$eval(".kachel-titel", (t) => t.filter((x) => x.textContent.trim() === "Fluktuation 12 Monate").length) === 1,
+      "keine Zahl doppelt (Fluktuation 12 Monate nur einmal)");
+
     // Dienstzettel-Erfassung bleibt erreichbar
     await p.goto(`${ADRESSE}#erfassen`);
     await p.waitForSelector("#seite-erfassen:not([hidden])");

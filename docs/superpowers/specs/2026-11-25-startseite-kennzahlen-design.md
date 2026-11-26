@@ -31,6 +31,11 @@ Mansur hat „einfach drauf los bauen“ gewählt (keine eigene Freigabe von Bes
   Variablen `--sz-*` in `app/startseite.css`, damit der Design-Umbau sie übernehmen kann.
 - Die Dienstzettel-Erfassung bleibt eigene Seite („Neuer Mitarbeiter“).
 
+- **Ruhiger Einstieg** (Vorschlag 26.11.2026, Mansur: Sorge, es sei auf den ersten Blick zu viel): oben „Was ansteht“
+  (nur Kästen mit Einträgen), dann vier Zahlen (im Dienst, Eintritte, Austritte, Fluktuation 12 Monate) und ein Diagramm.
+  Alles andere unter „Alle Details anzeigen“ (zugeklappt, bleibt beim Monatswechsel offen). Keine Zahl doppelt.
+  Das PDF bleibt vollständig.
+
 ## Abhängigkeiten
 - **Austritt-Modul:** Heute kann die App kein Austrittsdatum setzen. Bis dahin zeigt die Startseite einen Hinweis.
   Sobald das Modul `dienstverhaeltnis.austritt` füllt, zählen Austritte und Fluktuation automatisch.
