@@ -54,7 +54,7 @@
 | `supabase/migrations/<M2>_austritt_ablauf.sql` | `austritt_melden`, `austritt_bestaetigen`, `austritt_korrigieren`, `austritt_verlauf`; Status in `mitarbeiter_verzeichnis`, `akte_kopf`; aktive Filter in `offene_punkte`, Mappe |
 | `supabase/migrations/<M3>_uebermittlung.sql` | Tabelle `sammelversand`, `uebermittlung_offen`, `uebermittlung_vermerken`, neue offene Punkte |
 | `supabase/migrations/<M4>_meldung_pdf.sql` | `meldung_inhalt`, `meldung_ablegen` (nur `service_role`) |
-| `supabase/tests/15_austritt.sql`, `16_uebermittlung.sql`, `17_meldung_pdf.sql` (14 belegt „Kleinigkeiten“) | DB-Tests |
+| `supabase/tests/16_austritt.sql`, `17_uebermittlung.sql`, `18_meldung_pdf.sql` (14 belegt „Kleinigkeiten“) | DB-Tests |
 | `supabase/functions/mappe/pdf.js`, `ablauf.js`, `index.ts` | neue Aktion `meldung` |
 | `app/sammelmail.js` | reines Modul: Mail-Link, Dateiname, Kürzen |
 | `app/akte_austritt.js` | Melden, Bestätigen, Korrigieren, Verlauf in der Akte |
@@ -164,7 +164,7 @@
 ### Task 4: PDFs Austrittsmeldung, Storno-Meldung, Korrektur (Edge Function)
 
 **Files:**
-- Create: `supabase/migrations/<M4>_meldung_pdf.sql`, `supabase/tests/17_meldung_pdf.sql`, `tests/unit/meldung_ablauf.test.mjs`
+- Create: `supabase/migrations/<M4>_meldung_pdf.sql`, `supabase/tests/18_meldung_pdf.sql`, `tests/unit/meldung_ablauf.test.mjs`
 - Modify: `supabase/functions/mappe/pdf.js`, `ablauf.js`, `index.ts`, `tests/unit/mappe_pdf.test.mjs`, `tests/unit/mappe_ablauf.test.mjs`
 
 **Abstimmung:** Der Thread „Sonderzeichen im PDF“ hat `pdf.js` geändert (Unicode-Schrift). Vor Beginn dessen Stand von `main` holen und darauf aufbauen.
