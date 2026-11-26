@@ -443,6 +443,8 @@ und Austritte und Fluktuation bleiben bei 0.
 - **Seitenleiste:** Auf breiten Bildschirmen (ab 1000 Pixel) immer sichtbar, auf dem iPad hochkant und am Handy hinter dem Knopf „Menü“.
 - **Lesbarkeit:** Karten sind nur teilweise durchsichtig, Eingabefelder fast deckend. Wer am Gerät „Transparenz reduzieren“ eingestellt hat, sieht feste Karten. Das Unterschriftsfeld und das Blatt der Mappe bleiben immer weiß.
 - **Prüfung:** `tests/ui/design.test.js` berechnet auf den Hauptseiten den Kontrast jedes Textes (mindestens 4,5 zu 1, große Schrift 3 zu 1) und prüft, dass Knöpfe und Felder mindestens 44 Pixel hoch sind. Bilder zum Anschauen erzeugt `tests/ui/demo_design.js`.
+- **iPhone und iPad (Safari):** Safari zeichnet Datum-, Zeit-, Zahl- und Auswahlfelder anders als Chrome. Darum haben alle einzeiligen Felder am Ende von `app/style.css` dieselbe Höhe (48 Pixel), `appearance: none` und `min-width: 0`; Auswahlfelder bekommen einen eigenen Pfeil. Formularkarten haben keine Unschärfe, weil Safari Überschriften in unscharfen Karten verwischt. Der Design-Test prüft, dass Felder in ihrer Karte bleiben, gleich hoch sind und sich nicht überlappen. Ein echtes iPhone ersetzt das nicht: Neues am besten dort kurz ansehen.
+- **Gleiche Namen:** `startseite.css` und `style.css` teilen sich eine Seite. Klassennamen deshalb nicht doppelt vergeben (so war die Rechte-Erklärung in den Einstellungen mit dem Diagramm-Legendenstil vermischt und deshalb schief).
 
 ---
 
