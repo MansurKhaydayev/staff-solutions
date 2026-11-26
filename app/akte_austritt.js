@@ -51,7 +51,8 @@ export async function austrittZeigen(bereich, k, stand, neuLaden) {
     knoepfe.push('<button type="button" class="knopf knopf-haupt" id="austritt-bestaetigen">Bestätigen</button>');
   }
   if (r.buero && status !== "aktiv" && k.meldung_id) {
-    knoepfe.push('<button type="button" class="knopf knopf-leise" id="austritt-korrigieren">Korrigieren</button>');
+    const unbestaetigt = status.endsWith("_gemeldet");
+    knoepfe.push(`<button type="button" class="knopf knopf-leise" id="austritt-korrigieren">${unbestaetigt ? "Zurücknehmen" : "Korrigieren"}</button>`);
   }
   const buero = stand?.organisation?.buero_email;
   if (!r.buero && buero && r.austritt_melden) {
@@ -109,8 +110,14 @@ const TITEL = {
 
 async function formular(dialog, modus, k, aktuell, neuLaden) {
   const r = k.rechte;
-  const nichtAngetreten = modus === "nicht_angetreten" || (modus !== "austritt" && aktuell.art === "nicht_angetreten");
+  const status = k.status || "aktiv";
+  const nichtAngetreten = modus === "nicht_angetreten"
+    || (modus !== "austritt" && ["nicht_angetreten_gemeldet", "storno_ausstaendig", "nicht_angetreten"].includes(status));
+  // noch nicht bestätigt: Korrigieren heißt nur zurücknehmen (ändern geht beim Bestätigen)
+  const nurZurueck = nichtAngetreten || (modus === "korrigieren" && status.endsWith("_gemeldet"));
   const mitDatum = !nichtAngetreten;
+  // ohne Stufe Personendaten ist die Art verborgen: dann bleibt sie, wie gemeldet
+  const mitArt = r.personendaten || modus === "austritt";
   let liste = [];
   if (mitDatum) {
     try { liste = await austrittsarten(); } catch { liste = []; }
@@ -124,11 +131,11 @@ async function formular(dialog, modus, k, aktuell, neuLaden) {
     <form class="dialog" id="austritt-form" novalidate>
       <h3>${TITEL[modus]}</h3>
       ${modus === "korrigieren" ? '<p class="einleitung klein">Die bisherige Fassung bleibt im Verlauf erhalten.</p>' : ""}
-      ${modus === "korrigieren" ? `<label class="ankreuzen"><input type="checkbox" name="zuruecknehmen"${nichtAngetreten ? " checked disabled" : ""}>
+      ${modus === "korrigieren" ? `<label class="ankreuzen"><input type="checkbox" name="zuruecknehmen"${nurZurueck ? " checked disabled" : ""}>
         ${nichtAngetreten ? "„Nicht angetreten“ zurücknehmen" : "Austritt zurücknehmen (Person bleibt)"}</label>` : ""}
-      <div class="reihe" data-teil="datum"${mitDatum ? "" : " hidden"}>
+      <div class="reihe" data-teil="datum"${mitDatum && !(modus === "korrigieren" && nurZurueck) ? "" : " hidden"}>
         <label class="feld"><span>Letzter Arbeitstag</span><input type="date" name="tag" value="${text(tag)}"></label>
-        <label class="feld"><span>Art des Austritts</span><select name="austrittsart"><option value="">Bitte wählen</option>${
+        <label class="feld"${mitArt ? "" : " hidden"}><span>Art des Austritts</span><select name="austrittsart"><option value="">Bitte wählen</option>${
           auswahl.map((a) => `<option value="${text(a.schluessel)}"${a.schluessel === art ? " selected" : ""}>${text(a.bezeichnung)}</option>`).join("")}</select></label>
       </div>
       ${modus === "austritt" || modus === "nicht_angetreten"
@@ -155,7 +162,8 @@ async function formular(dialog, modus, k, aktuell, neuLaden) {
     const werte = { tag: e.tag.value || null, art: e.austrittsart.value || null };
     const pruefen = mitDatum && !zurueck();
     if (pruefen && !werte.tag) { fehler.textContent = "Bitte den letzten Arbeitstag angeben."; return; }
-    if (pruefen && !werte.art) { fehler.textContent = "Bitte die Art des Austritts wählen."; return; }
+    if (!mitArt) werte.art = null;
+    if (pruefen && mitArt && !werte.art) { fehler.textContent = "Bitte die Art des Austritts wählen."; return; }
     if (modus === "nicht_angetreten" && !e.notiz.value.trim()) { fehler.textContent = "Bitte einen Grund angeben."; return; }
     if (modus === "korrigieren" && !e.grund.value.trim()) { fehler.textContent = "Bitte einen Grund angeben."; return; }
     knopf.disabled = true;

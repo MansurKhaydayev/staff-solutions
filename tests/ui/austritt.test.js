@@ -460,7 +460,80 @@ async function teilDokumente(browser) {
   await p.close();
 }
 
-const TEILE = [teilMelden, teilBestaetigen, teilUebermittlung, teilListe, teilEinstellungen, teilDokumente];
+// ---------------------------------------------------------------- Funde aus der Prüfung
+async function teilPruefung(browser) {
+  console.log("\n# Unbestätigt: nur zurücknehmen; Art der Meldung aus dem Status");
+  const d = austrittDaten();
+  d.status = { status: "austritt_gemeldet", meldung_id: "am1", abmeldung_bis: null };
+  const k = [];
+  const p = await neueSeite(browser, d, { rpc: rpcAustritt(d, { austritt_korrigieren: (b) => { k.push(b); return "am2"; } }),
+    funktionen: { mappe: () => ({ status: 500, body: { meldung: "Für diese Meldung ist nichts an den Lohnverrechner zu schicken." } }) } });
+  await anmelden(p, "hr@demo.invalid");
+  await p.goto(`${ADRESSE}#akte/d1/uebersicht`);
+  await p.waitForSelector("#austritt-korrigieren");
+  pruefe((await p.textContent("#austritt-korrigieren")).trim() === "Zurücknehmen", "unbestätigt: Knopf heißt „Zurücknehmen“");
+  await p.click("#austritt-korrigieren");
+  pruefe(await p.isChecked("#austritt-form [name=zuruecknehmen]") && await p.isDisabled("#austritt-form [name=zuruecknehmen]"),
+    "unbestätigt: nur zurücknehmen");
+  pruefe(!(await p.isVisible("#austritt-form [name=tag]")), "unbestätigt: kein Datum zum Ändern");
+  await p.fill("#austritt-form [name=grund]", "falsch gemeldet");
+  await p.click("#austritt-form button[type=submit]");
+  await p.waitForSelector("#austritt-form", { state: "detached" });
+  pruefe(k[0]?.p_zuruecknehmen === true, "Zurücknehmen gesendet");
+  pruefe(!(await p.textContent("#akte-austritt")).includes("Das PDF konnte nicht erstellt werden"), "nichts zu schicken ist kein Fehler");
+  await p.close();
+
+  const d2 = austrittDaten();
+  d2.status = { status: "nicht_angetreten_gemeldet", meldung_id: "na1", abmeldung_bis: null };
+  const b = [];
+  const q = await neueSeite(browser, d2, { rpc: rpcAustritt(d2, {
+    austritt_verlauf: () => ({ status: 500, body: { message: "kaputt" } }),
+    austritt_bestaetigen: (x) => { b.push(x); return "na1"; } }), funktionen: { mappe: () => ({ body: "x" }) } });
+  await anmelden(q, "hr@demo.invalid");
+  await q.goto(`${ADRESSE}#akte/d1/uebersicht`);
+  await q.click("#austritt-bestaetigen");
+  pruefe(!(await q.isVisible("#austritt-form [name=tag]")), "nicht angetreten: kein Datum, auch ohne Verlauf");
+  await q.click("#austritt-form button[type=submit]");
+  await q.waitForSelector("#austritt-form", { state: "detached" });
+  pruefe(b[0]?.p_meldung_id === "na1" && b[0]?.p_letzter_arbeitstag === null, "nicht angetreten bestätigt");
+  await q.close();
+
+  console.log("\n# Büro ohne Personendaten: Art bleibt, wie gemeldet");
+  const d3 = austrittDaten();
+  d3.rollen_recht.find((r) => r.rolle === "hr").sieht_personendaten = false;
+  d3.status = { status: "austritt_gemeldet", meldung_id: "am1", abmeldung_bis: null };
+  d3.verlauf = [{ id: "am1", art: "austritt", letzter_arbeitstag: plus(10), austrittsart: null, austrittsart_text: null, notiz: null,
+    gemeldet_von_email: "sl@demo.invalid", gemeldet_am: `${plus(-1)}T08:00:00Z`, bestaetigt_von_email: null, bestaetigt_am: null,
+    abweichung: null, zurueckgenommen: false, korrektur_grund: null, ersetzt: false }];
+  const c = [];
+  const r = await neueSeite(browser, d3, { rpc: rpcAustritt(d3, { austritt_bestaetigen: (x) => { c.push(x); return "am1"; } }),
+    funktionen: { mappe: () => ({ body: "x" }) } });
+  await anmelden(r, "hr@demo.invalid");
+  await r.goto(`${ADRESSE}#akte/d1/uebersicht`);
+  await r.click("#austritt-bestaetigen");
+  pruefe(!(await r.isVisible("#austritt-form [name=austrittsart]")), "Art-Auswahl verborgen");
+  await r.click("#austritt-form button[type=submit]");
+  await r.waitForSelector("#austritt-form", { state: "detached" });
+  pruefe(c[0]?.p_austrittsart === null && c[0]?.p_letzter_arbeitstag === plus(10), `Art nicht überschrieben (${JSON.stringify(c[0])})`);
+  pruefe(r.jsFehler.length === 0, `keine JS-Fehler (${r.jsFehler.join("; ")})`);
+  await r.close();
+
+  console.log("\n# Gleiche Namen in einer Sammelmail");
+  const d4 = uebermittlungDaten();
+  d4.offen = [d4.offen[0], { ...d4.offen[0], dienstverhaeltnis_id: "d9", dokument_id: "x9" }];
+  d4.dokument.push({ id: "x9", dienstverhaeltnis_id: "d9", kategorie: "anmeldung", datei_pfad: "o/d9/anmeldung/x9.pdf" });
+  const s = await neueSeite(browser, d4, { rpc: rpcAustritt(d4, { offene_punkte: () => [], uebermittlung_offen: () => d4.offen }) });
+  await s.addInitScript(() => { window.__mailOeffnen = () => {}; });
+  await anmelden(s, "hr@demo.invalid");
+  await s.goto(`${ADRESSE}#offen`);
+  await s.click('[data-lv="c1"] [data-aktion=senden]');
+  await s.waitForSelector("#uebermittlung-dialog .gespeichert-liste li");
+  const namen = await s.$$eval("#uebermittlung-dialog .gespeichert-liste li", (l) => l.map((x) => x.textContent.trim()));
+  pruefe(namen.length === 2 && namen[0] !== namen[1] && namen[1].endsWith("_Berger-Anna-2.pdf"), `Dateinamen eindeutig (${namen})`);
+  await s.close();
+}
+
+const TEILE = [teilMelden, teilBestaetigen, teilUebermittlung, teilListe, teilEinstellungen, teilDokumente, teilPruefung];
 
 (async () => {
   const server = await starteServer(APP);

@@ -113,7 +113,9 @@ async function senden(abschnitt, bereich, knopf) {
   try {
     const pfade = new Map((await api.lesen("dokument", `select=id,datei_pfad&id=in.(${ids.join(",")})`)).map((d) => [d.id, d.datei_pfad]));
     for (const f of auswahl) {
-      const name = dateiname({ datum: heute, lohnverrechner: f.lohnverrechner_name, art: f.art, nachname: f.nachname, vorname: f.vorname });
+      let name = dateiname({ datum: heute, lohnverrechner: f.lohnverrechner_name, art: f.art, nachname: f.nachname, vorname: f.vorname });
+      // gleicher Name, gleiche Art, gleicher Tag: sonst hängt der Browser „(1)“ an und die Liste stimmt nicht
+      for (let i = 2; namen.includes(name); i++) name = name.replace(/(-\d+)?\.pdf$/, `-${i}.pdf`);
       if (!pfade.get(f.dokument_id)) throw new Error(`Für ${f.nachname} ${f.vorname} fehlt das PDF.`);
       await speichern(pfade.get(f.dokument_id), name);
       namen.push(name);
