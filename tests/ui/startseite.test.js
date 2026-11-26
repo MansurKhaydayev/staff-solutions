@@ -94,6 +94,21 @@ const kachel = (p, titel) => p.$$eval(".kachel", (ks, t) => {
     pruefe(await p.$eval("#start-pdf", (e) => e.hidden), "Personalbüro ohne Recht: kein Download-Knopf");
     pruefe(!(await p.$("[data-analyse-recht]")), "Personalbüro: keine Verwaltung des Download-Rechts");
 
+    // Ruhiger Einstieg: vier Zahlen oben, der Rest zugeklappt; offen bleibt offen beim Monatswechsel
+    pruefe(await p.$$eval("section[aria-labelledby='t-monat'] .kachel", (x) => x.length) === 4, "oben genau vier Zahlen");
+    pruefe(await p.$$eval("section[aria-labelledby='t-monat'] svg", (x) => x.length) === 1, "oben genau ein Diagramm");
+    pruefe(!(await p.$eval("#start-details", (e) => e.open)), "Details sind anfangs zugeklappt");
+    pruefe(!(await p.isVisible(".start-tabelle")), "Monatstabelle erst nach dem Aufklappen sichtbar");
+    const vorAchtung = await p.$eval("#t-achtung", (h) => h.compareDocumentPosition(document.querySelector("#t-monat")) & 4);
+    pruefe(Boolean(vorAchtung), "„Was ansteht“ steht vor den Zahlen");
+    await p.click("#start-details > summary");
+    pruefe(await p.isVisible(".start-tabelle"), "nach dem Aufklappen: Monatstabelle sichtbar");
+    const monate = await p.$$eval('#start-steuerung select[name="monat"] option', (o) => o.map((x) => x.value));
+    await p.selectOption('#start-steuerung select[name="monat"]', monate[0]);
+    pruefe(await p.$eval("#start-details", (e) => e.open), "Details bleiben beim Monatswechsel offen");
+    pruefe(await p.$$eval(".kachel-titel", (t) => t.filter((x) => x.textContent.trim() === "Fluktuation 12 Monate").length) === 1,
+      "keine Zahl doppelt (Fluktuation 12 Monate nur einmal)");
+
     // Dienstzettel-Erfassung bleibt erreichbar
     await p.goto(`${ADRESSE}#erfassen`);
     await p.waitForSelector("#seite-erfassen:not([hidden])");
@@ -121,27 +136,41 @@ const kachel = (p, titel) => p.$$eval(".kachel", (ks, t) => {
     await adm.click("#start-pdf");
     await adm.waitForSelector("#start-pdf-meldung:not([hidden])");
     pruefe((await adm.textContent("#start-pdf-meldung")).includes("nicht herunterladen"), "Ablehnung vom Server wird angezeigt");
-    pruefe(await adm.$$eval("[data-analyse-recht]", (x) => x.length) === 7, "Admin sieht alle Rollen (ohne Mitarbeiter) zum Vergeben");
+    pruefe(!(await adm.$("[data-analyse-recht]")), "Startseite zeigt die Vergabe des Rechts nicht mehr");
+    await adm.screenshot({ path: `${OUT}/startseite-admin.png`, fullPage: true });
+
+    // Vergabe in den Einstellungen
+    await adm.goto(`${ADRESSE}#einstellungen`);
+    await adm.waitForSelector("#einstellung-analyse:not([hidden]) [data-analyse-recht]");
+    pruefe(await adm.$$eval("[data-analyse-recht]", (x) => x.length) === 7, "Einstellungen: alle Rollen außer „nur eigene Daten“");
     pruefe(await adm.$eval('[data-analyse-recht="geschaeftsfuehrung"]', (x) => x.checked), "GF ist angehakt");
+    pruefe(!(await adm.$eval("#t-rechte", (e) => e.closest("section").hidden)), "Admin sieht auch die übrigen Einstellungen");
     await adm.check('[data-analyse-recht="hr"]');
     await adm.waitForFunction(() => !document.querySelector('[data-analyse-recht="hr"]').disabled);
     pruefe(adm.gesetzt?.[0]?.p_rolle === "hr" && adm.gesetzt[0].p_darf === true, "Admin gibt dem Personalbüro das Recht");
+    pruefe((await adm.textContent("#einstellungen-status")).includes("Gespeichert"), "Bestätigung nach dem Speichern");
     await adm.uncheck('[data-analyse-recht="admin"]');
-    await adm.waitForFunction(() => document.querySelector("#start-pdf").hidden);
-    pruefe(true, "eigenes Recht entzogen: Download-Knopf verschwindet sofort");
+    await adm.waitForFunction(() => !document.querySelector('[data-analyse-recht="admin"]').disabled);
+    await adm.goto(`${ADRESSE}#start`);
+    await adm.waitForSelector("#t-monat");
+    pruefe(await adm.$eval("#start-pdf", (e) => e.hidden), "eigenes Recht entzogen: kein Download-Knopf mehr");
     pruefe(adm.jsFehler.length === 0, `keine JS-Fehler (${adm.jsFehler.join("; ")})`);
-    await adm.screenshot({ path: `${OUT}/startseite-admin.png`, fullPage: true });
     await adm.close();
     d.rollen_recht.find((r) => r.rolle === "admin").darf_analyse_export = true;
 
-    // Abgelehntes Setzen: Haken springt zurück, Meldung
+    // Geschäftsführung ohne „verwalten“: Einstellungen zeigen nur die Analyse-Vergabe; Ablehnung setzt den Haken zurück
     const gf = await neueSeite(browser, d, { rpc: rpcFuer(d, {
       analyse_recht_setzen: () => ({ status: 400, body: { message: "Das Recht „Analyse herunterladen“ können nur Rollen ändern, die es vergeben dürfen." } }) }) });
-    await anmelden(gf, "admin@demo.invalid");
-    await gf.waitForSelector("[data-analyse-recht]");
+    await anmelden(gf, "gf@demo.invalid");
+    await gf.waitForSelector("#t-monat");
+    pruefe(!(await gf.$eval('.navigation a[data-ziel="einstellungen"]', (a) => a.hidden)), "GF sieht „Einstellungen“");
+    await gf.goto(`${ADRESSE}#einstellungen`);
+    await gf.waitForSelector("#einstellung-analyse:not([hidden]) [data-analyse-recht]");
+    pruefe(await gf.$eval("#t-rechte", (e) => e.closest("section").hidden), "GF ohne „verwalten“ sieht nur die Analyse-Vergabe");
     await gf.click('[data-analyse-recht="buchhaltung"]');
-    await gf.waitForSelector("#rechte-analyse-meldung:not([hidden])");
+    await gf.waitForSelector("#einstellungen-status.fehler");
     pruefe(!(await gf.$eval('[data-analyse-recht="buchhaltung"]', (x) => x.checked)), "abgelehnt: Haken springt zurück");
+    pruefe(gf.jsFehler.length === 0, `keine JS-Fehler (${gf.jsFehler.join("; ")})`);
     await gf.close();
 
     // ------------------------------------------------ Studioleitung: eigene Studios, kein Geld, keine Personendaten

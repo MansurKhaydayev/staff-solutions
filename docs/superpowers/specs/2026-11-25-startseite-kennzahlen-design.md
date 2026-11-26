@@ -26,9 +26,15 @@ Mansur hat „einfach drauf los bauen“ gewählt (keine eigene Freigabe von Bes
     Vorher vermerkt `public.analyse_export_vermerken` den Download im Protokoll; ohne Recht kommt eine Meldung und kein PDF.
   - Verworfen: nur Knopf ausblenden (kein echter Schutz) und „nur GF vergibt“ (Mansur möchte, dass auch der Admin vergeben darf).
   - Der frühere Druckdialog ist entfernt.
+  - Vergabe des Rechts steht in den Einstellungen, nicht auf der Startseite (Mansur 26.11.2026).
 - **Aussehen:** an die freigegebene Design-Vorschau angelehnt (Glas-Karten, Blau-Verlauf). Alle Farben stehen als
   Variablen `--sz-*` in `app/startseite.css`, damit der Design-Umbau sie übernehmen kann.
 - Die Dienstzettel-Erfassung bleibt eigene Seite („Neuer Mitarbeiter“).
+
+- **Ruhiger Einstieg** (Vorschlag 26.11.2026, Mansur: Sorge, es sei auf den ersten Blick zu viel): oben „Was ansteht“
+  (nur Kästen mit Einträgen), dann vier Zahlen (im Dienst, Eintritte, Austritte, Fluktuation 12 Monate) und ein Diagramm.
+  Alles andere unter „Alle Details anzeigen“ (zugeklappt, bleibt beim Monatswechsel offen). Keine Zahl doppelt.
+  Das PDF bleibt vollständig.
 
 ## Abhängigkeiten
 - **Austritt-Modul:** Heute kann die App kein Austrittsdatum setzen. Bis dahin zeigt die Startseite einen Hinweis.

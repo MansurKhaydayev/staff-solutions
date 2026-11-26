@@ -142,18 +142,34 @@ svg .punkt-stand { fill: var(--sz-linie); stroke: var(--sz-feld); stroke-width: 
 .personen li span { white-space: nowrap; color: var(--sz-leise); }
 .achtung p { margin: 4px 0 0; font-size: 14px; }
 
+/* Ruhiger Einstieg: vier große Zahlen, ein Diagramm, der Rest unter „Alle Details anzeigen“ */
+.kacheln-vier { grid-template-columns: repeat(4, 1fr); }
+.diagramm-breit { margin-top: 14px; }
+.diagramm-breit svg { max-height: 240px; }
+.start-ruhig { padding: 16px 20px; margin: 0; color: var(--sz-leise); }
+.start-details { margin-top: 28px; }
+.start-details > summary {
+  cursor: pointer; list-style: none; display: inline-flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  min-height: 44px; padding: 10px 20px; border-radius: 999px; background: var(--sz-karte); border: 1px solid var(--sz-rand);
+  box-shadow: var(--sz-schatten); color: var(--sz-akzent); font-weight: 700;
+}
+.start-details > summary::-webkit-details-marker { display: none; }
+.start-details > summary::before { content: "▸"; transition: transform .15s; }
+.start-details[open] > summary::before { transform: rotate(90deg); }
+.start-details > summary small { font-weight: 500; color: var(--sz-leise); }
+.start-details > summary:focus-visible { outline: 3px solid var(--sz-akzent); outline-offset: 3px; }
+
+@media (max-width: 900px) and (min-width: 601px) {
+  .kacheln-vier { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 600px) {
   .seite.startseite { padding: 16px; border-radius: 0; }
-  .kacheln { grid-template-columns: repeat(2, 1fr); }
+  .kacheln, .kacheln-vier { grid-template-columns: repeat(2, 1fr); }
   .kachel-wert { font-size: 28px; }
   .start-steuerung { width: 100%; }
   .start-steuerung label { flex: 1 1 120px; }
 }
 
-.rechte-analyse { padding: 16px 20px; }
-.rechte-analyse p { margin: 0 0 8px; }
-.rechte-analyse ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 24px; }
-.rechte-analyse label { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 600; cursor: pointer; }
-.rechte-analyse input { width: 20px; height: 20px; accent-color: var(--sz-akzent); }
 .start-steuerung .knopf-pdf:disabled { opacity: .7; cursor: wait; }
 #start-pdf-meldung { margin: 8px 0 0; }

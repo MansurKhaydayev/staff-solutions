@@ -169,7 +169,7 @@ async function stammdatenLaden() {
   $("#wer").textContent = `${user.email}, ${stand.rollenText}`;
   const darfErfassen = stand.erfassbareFunktionen.length > 0;
   document.querySelector('[data-ziel="erfassen"]').hidden = !darfErfassen;
-  document.querySelector('[data-ziel="einstellungen"]').hidden = !stand.recht.darf_verwalten;
+  document.querySelector('[data-ziel="einstellungen"]').hidden = !einstellungenErlaubt();
   document.querySelector('[data-ziel="offen"]').hidden = !darfOffenePunkte();
   document.querySelector('[data-ziel="unterschreiben"]').hidden = !stand.recht.darf_arbeitgeber_unterschreiben;
   $('#filter option[value="befristung"]').hidden = !stand.recht.sieht_personendaten;
@@ -207,12 +207,15 @@ function standorteFuellen() {
 const SEITEN = ["start", "erfassen", "mitarbeiter", "offen", "unterschreiben", "akte", "mappe", "einstellungen"];
 const darfOffenePunkte = () => istBuero() || LEITUNG.includes(stand.profil?.rolle);
 
+// Einstellungen: wer verwaltet, oder wer das Recht „Analyse herunterladen“ vergeben darf (sieht dann nur diesen Teil)
+const einstellungenErlaubt = () => Boolean(stand.recht.darf_verwalten || stand.recht.vergibt_analyse_export);
+
 function seiteZeigen() {
   const [teil, ...rest] = (location.hash.replace("#", "") || "start").split("/");
   let ziel = teil;
   if (!SEITEN.includes(ziel)) ziel = "start";
   if (ziel === "erfassen" && !stand.erfassbareFunktionen.length) ziel = "mitarbeiter";
-  if (ziel === "einstellungen" && !stand.recht.darf_verwalten) ziel = "mitarbeiter";
+  if (ziel === "einstellungen" && !einstellungenErlaubt()) ziel = "mitarbeiter";
   if ((ziel === "akte" || ziel === "mappe") && !rest[0]) ziel = "mitarbeiter";
   if (ziel === "offen" && !darfOffenePunkte()) ziel = "mitarbeiter";
   if (ziel === "unterschreiben" && !stand.recht.darf_arbeitgeber_unterschreiben) ziel = "mitarbeiter";
@@ -517,7 +520,7 @@ function listeZeigen() {
   zeilen = zeilen.sort(sortierer);
 
   const gesamt = stand.liste.length;
-  $("#anzahl").textContent = !gesamt ? "" : zeilen.length === gesamt ? `${gesamt} ${gesamt === 1 ? "Mitarbeiter" : "Mitarbeiter"}` : `${zeilen.length} von ${gesamt} Mitarbeitern`;
+  $("#anzahl").textContent = !gesamt ? "" : zeilen.length === gesamt ? `${gesamt} Mitarbeiter` : `${zeilen.length} von ${gesamt} Mitarbeitern`;
   $("#liste-leer").hidden = zeilen.length > 0;
   $("#liste-leer").innerHTML = gesamt
     ? "Keine Treffer. Ändere die Suche oder die Filter."
@@ -556,7 +559,7 @@ function listeZeigen() {
     const imTeam = d.eintritt > heute ? `ab ${datumAT(d.eintritt)}` : `seit ${datumAT(d.eintritt)}`;
     const name = p ? `${p.nachname} ${p.vorname}` : "–";
     return `<tr>
-      <td class="name-zelle" data-label="Name"><span class="avatar ${avatarFarbe(name)}" data-i="${text(p ? `${p.nachname[0] || ""}${p.vorname[0] || ""}`.toUpperCase() : "–")}" aria-hidden="true"></span><span class="name-block"><a class="name" href="#akte/${text(d.id)}/uebersicht">${text(name)}</a><span class="zeile-unter">${text(wo || "–")}</span>${merkmale.length ? `<span class="chip-reihe">${merkmale.join("")}</span>` : ""}</span></td>
+      <td class="name-zelle" data-label="Name"><span class="avatar ${avatarFarbe(name)}" data-i="${text(p ? `${(p.nachname || "")[0] || ""}${(p.vorname || "")[0] || ""}`.toUpperCase() : "–")}" aria-hidden="true"></span><span class="name-block"><a class="name" href="#akte/${text(d.id)}/uebersicht">${text(name)}</a><span class="zeile-unter">${text(wo || "–")}</span>${merkmale.length ? `<span class="chip-reihe">${merkmale.join("")}</span>` : ""}</span></td>
       ${r.sieht_kontakt ? `<td class="kontakt" data-label="Kontakt">${kontakt(d)}</td>` : ""}
       ${r.sieht_personendaten ? `<td data-label="Arbeitszeit">${text(`${Number(d.wochenstunden).toLocaleString("de-DE")} Std. pro Woche`)}<span class="zeile-unter">${text(art[d.beschaeftigungsart] || "")}</span></td>` : ""}
       <td data-label="Im Team">${imTeam}</td>
