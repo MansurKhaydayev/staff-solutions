@@ -940,3 +940,13 @@ textarea, .baustein textarea, .text-zeile textarea, .mappe-dringend textarea {
   #seite-mitarbeiter .tabelle td .zeile-unter { display: inline; margin-left: .35rem; }
   #seite-mitarbeiter .tabelle td:first-child .zeile-unter { display: block; margin: 0; }
 }
+
+/* ---------- Logo: Schild mit S (Dunkelblau mit Silber) ---------- */
+.marke-zeichen {
+  width: 2.5rem; height: auto; aspect-ratio: 48 / 58; border-radius: 0; background: none;
+  filter: drop-shadow(0 4px 10px rgba(0, 29, 57, .35));
+}
+.marke-text { display: inline-flex; flex-direction: column; line-height: 1; }
+.marke-staff { font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.marke-solutions { font-weight: 500; font-size: .5em; text-transform: uppercase; letter-spacing: .32em; margin-top: .35em; opacity: .85; }
+.anmelde-marke .marke-zeichen { width: 3rem; }

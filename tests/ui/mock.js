@@ -62,7 +62,7 @@ function starteServer(app) {
   const server = http.createServer((req, res) => {
     const datei = path.join(wurzel, req.url === "/" ? "index.html" : decodeURIComponent(req.url.split("?")[0]));
     if (!datei.startsWith(wurzel) || !fs.existsSync(datei) || fs.statSync(datei).isDirectory()) { res.writeHead(404); return res.end(); }
-    const typ = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json" }[path.extname(datei)];
+    const typ = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml" }[path.extname(datei)];
     res.writeHead(200, { "Content-Type": `${typ}; charset=utf-8` });
     fs.createReadStream(datei).pipe(res);
   });
