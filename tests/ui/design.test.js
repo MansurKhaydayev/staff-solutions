@@ -14,6 +14,37 @@ const GRUND = { light: ["#bdd8e9", "#8cc6ea", "#6ea2b3"], dark: ["#001d39", "#0a
 const SEITEN = [["liste", "#mitarbeiter", "hr"], ["akte", "#akte/d1/uebersicht", "hr"], ["dokumente", "#akte/d1/dokumente", "hr"],
   ["formular", "#erfassen", "hr"], ["einstellungen", "#einstellungen", "admin"], ["offen", "#offen", "hr"]];
 
+
+// läuft im Browser: Felder liegen innerhalb ihrer Karte, einzeilige Felder sind gleich hoch, Reihen sind bündig
+function ordnung() {
+  const v = [];
+  const sicht = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && !e.closest("[hidden]"); };
+  const felder = [...document.querySelectorAll("main input, main select, main textarea")]
+    .filter((e) => sicht(e) && !["checkbox", "radio", "hidden", "file"].includes(e.type) && !e.closest(".tabelle, #seite-liste"));
+  for (const e of felder) {
+    const karte = e.closest("fieldset, .einstellung, section, form") || document.body;
+    const kr = karte.getBoundingClientRect(), er = e.getBoundingClientRect();
+    if (er.right > kr.right + 1 || er.left < kr.left - 1) v.push(`Feld ${e.name || e.id || e.type} ragt aus der Karte (${Math.round(er.right - kr.right)} px)`);
+    if (e.tagName !== "TEXTAREA" && Math.abs(er.height - 48) > 1) v.push(`Feld ${e.name || e.id} ist ${Math.round(er.height)} px hoch statt 48`);
+  }
+  for (const reihe of document.querySelectorAll("main .reihe, main .regeln")) {
+    const fs = [...reihe.querySelectorAll("input, select")].filter((e) => sicht(e) && e.type !== "checkbox");
+    const unten = {};
+    for (const e of fs) { const r = e.getBoundingClientRect(); const k = Math.round(r.top / 4); (unten[k] ||= []).push(r.bottom); }
+    for (const l of Object.values(unten)) if (Math.max(...l) - Math.min(...l) > 1) v.push("Felder einer Reihe sitzen nicht bündig");
+    const fl = [...reihe.querySelectorAll(".feld")].filter(sicht);
+    for (let i = 0; i < fl.length; i++) for (let j = i + 1; j < fl.length; j++) {
+      const a = fl[i].getBoundingClientRect(), b = fl[j].getBoundingClientRect();
+      if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1) v.push("Felder überlappen sich");
+    }
+  }
+  const dd = [...document.querySelectorAll(".rechte-legende dd")].filter(sicht).map((e) => Math.round(e.getBoundingClientRect().left));
+  if (dd.length && Math.max(...dd) - Math.min(...dd) > 1) v.push("Erklärungen in der Rechte-Liste stehen nicht bündig");
+  const haken = [...document.querySelectorAll(".analyse-rechte input")].filter(sicht).map((e) => Math.round(e.getBoundingClientRect().left));
+  if (haken.length) { const spalten = new Set(haken.map((x) => Math.round(x / 8))); const zeilen = haken.length; if (spalten.size > 3 || (zeilen > 1 && spalten.size === zeilen)) v.push("Haken stehen nicht im gleichmäßigen Raster"); }
+  return v;
+}
+
 // läuft im Browser: liefert Verstöße gegen Kontrast und Größe
 function messen({ grund }) {
   const hexZuRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
@@ -106,6 +137,8 @@ function messen({ grund }) {
             const v = await p.evaluate(messen, { grund: GRUND[farbe] });
             const breit = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
             pruefe(breit <= 1, `${name} ${g} ${farbe}: Seite läuft nicht seitlich über (${breit} px)`);
+            const o = await p.evaluate(ordnung);
+            pruefe(o.length === 0, `${name} ${g} ${farbe}: Felder ordentlich ausgerichtet${o.length ? ` (${[...new Set(o)].slice(0, 4).join(" | ")})` : ""}`);
             pruefe(v.length === 0, `${name} ${g} ${farbe}${v.length ? `: ${v.length} Verstöße, z. B. ${[...new Set(v)].slice(0, 5).join(" | ")}` : ""}`);
           }
         }

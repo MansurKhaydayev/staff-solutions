@@ -44,6 +44,8 @@ export async function akteZeigen(stand, dvId, reiter = "uebersicht") {
   hinweiseZeichnen(kopf);
   $("#akte-reiter").innerHTML = erlaubt.map((r) =>
     `<a href="#akte/${text(dvId)}/${r.name}"${r === aktiv ? ' aria-current="page"' : ""}>${text(r.titel)}</a>`).join("");
+  const aktivLink = $("#akte-reiter [aria-current]");
+  if (aktivLink) { const leiste = $("#akte-reiter"); leiste.scrollLeft = aktivLink.offsetLeft - (leiste.clientWidth - aktivLink.offsetWidth) / 2; }
 
   const neuLaden = async () => {
     geladen = { dv: null, kopf: null };
