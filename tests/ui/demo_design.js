@@ -8,7 +8,7 @@ const fs = require("fs");
 
 const [APP = "app", OUT = "/tmp/ui-bilder", NUR = ""] = process.argv.slice(2);
 const GROESSEN = { buero: [1280, 860], "ipad-quer": [1180, 820], "ipad-hoch": [820, 1100], handy: [390, 844] };
-const SEITEN = [["liste", "#mitarbeiter"], ["akte", "#akte/d1/uebersicht"], ["formular", "#erfassen"], ["einstellungen", "#einstellungen"], ["offen", "#offen"], ["dokumente", "#akte/d1/dokumente"], ["verlauf", "#akte/d1/verlauf"]];
+const SEITEN = [["liste", "#mitarbeiter"], ["akte", "#akte/d1/uebersicht"], ["formular", "#erfassen"], ["einstellungen", "#einstellungen"], ["offen", "#offen"], ["dokumente", "#akte/d1/dokumente"], ["verlauf", "#akte/d1/verlauf"], ["stunden", "#akte/d1/stunden"], ["lohn", "#akte/d1/lohn"], ["protokoll", "#akte/d1/protokoll"]];
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
