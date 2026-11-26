@@ -912,3 +912,31 @@ textarea, .baustein textarea, .text-zeile textarea, .mappe-dringend textarea {
   .anmelde-punkte, .anmelde-satz { display: none; }
   .anmelde-karte { margin: -2rem auto 2rem; }
 }
+
+/* Chips unter dem Namen, nie über die nächste Spalte hinaus */
+.chip-reihe { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .35rem; }
+#seite-mitarbeiter .tabelle td .chip-reihe .merkmal { margin: 0; }
+#seite-mitarbeiter .tabelle td:first-child { min-width: 13rem; }
+#seite-mitarbeiter .tabelle td.kontakt { white-space: normal; overflow-wrap: anywhere; }
+
+/* Handy: jede Zeile wird eine eigene Karte statt einer breiten Tabelle */
+@media (max-width: 720px) {
+  #seite-mitarbeiter .tabelle-rahmen { overflow: visible; margin: 0; padding: 0; }
+  #seite-mitarbeiter .tabelle, #seite-mitarbeiter .tabelle tbody, #seite-mitarbeiter .tabelle tr, #seite-mitarbeiter .tabelle td { display: block; width: 100%; }
+  #seite-mitarbeiter .tabelle thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  #seite-mitarbeiter .tabelle tbody tr {
+    background: var(--papier); border: 1px solid var(--kante); border-radius: 24px; padding: .9rem 1rem; margin-bottom: .75rem;
+    box-shadow: 0 10px 24px var(--schatten);
+  }
+  #seite-mitarbeiter .tabelle td, #seite-mitarbeiter .tabelle td:first-child {
+    background: none; border: 0; border-radius: 0; box-shadow: none; padding: .2rem 0; min-width: 0; white-space: normal;
+  }
+  #seite-mitarbeiter .tabelle tbody tr:hover td { background: none; }
+  #seite-mitarbeiter .tabelle td:not(:first-child) { white-space: normal; display: flex; justify-content: space-between; gap: 1rem; text-align: right; }
+  #seite-mitarbeiter .tabelle td:not(:first-child)::before { content: attr(data-label); color: var(--tinte-leise); font-weight: 600; text-align: left; flex: none; }
+  #seite-mitarbeiter .tabelle td.kontakt { display: block; text-align: left; }
+  #seite-mitarbeiter .tabelle td.kontakt::before { display: block; }
+  #seite-mitarbeiter .tabelle td:first-child { padding-bottom: .5rem; border-bottom: 1px solid var(--linie); margin-bottom: .35rem; }
+  #seite-mitarbeiter .tabelle td .zeile-unter { display: inline; margin-left: .35rem; }
+  #seite-mitarbeiter .tabelle td:first-child .zeile-unter { display: block; margin: 0; }
+}

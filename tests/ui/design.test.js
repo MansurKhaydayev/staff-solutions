@@ -104,6 +104,8 @@ function messen({ grund }) {
             await p.setViewportSize({ width: w, height: h });
             await p.waitForTimeout(100);
             const v = await p.evaluate(messen, { grund: GRUND[farbe] });
+            const breit = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+            pruefe(breit <= 1, `${name} ${g} ${farbe}: Seite läuft nicht seitlich über (${breit} px)`);
             pruefe(v.length === 0, `${name} ${g} ${farbe}${v.length ? `: ${v.length} Verstöße, z. B. ${[...new Set(v)].slice(0, 5).join(" | ")}` : ""}`);
           }
         }
