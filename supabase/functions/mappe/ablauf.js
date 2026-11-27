@@ -1,5 +1,6 @@
 // Ablauf der Edge Function „mappe“ – ohne Deno-Abhängigkeiten, damit er in Node getestet werden kann.
 // abh = { nutzer, rpcAlsNutzer, rpcAlsDienst, hochladen, laden, sha256, pdfLib, schrift, uuid }
+// Aktionen: mitarbeiter (Mappe), arbeitgeber (Zu unterschreiben), meldung (Abmeldung/Storno/Korrektur an den Lohnverrechner)
 import { pdfErstellen } from "./pdf.js";
 
 const PNG_MIN = 1000;          // kleiner ist kein erkennbarer Namenszug
@@ -101,6 +102,20 @@ async function arbeitgeber(token, nutzer, d, abh) {
   });
 }
 
+// PDF „Austrittsmeldung“, „Storno der Anmeldung“ oder „Korrektur“ für den Lohnverrechner (nur Büro, prüft die Datenbank)
+async function meldung(token, nutzer, d, abh) {
+  const m = await abh.rpcAlsNutzer(token, "meldung_inhalt", { p_meldung_id: d.meldung_id });
+  if (m.dokument_id) return m.dokument_id;  // schon erzeugt (z. B. erneuter Versuch)
+  if (!["abmeldung", "storno"].includes(m.kategorie)) fehler("Unbekannte Meldung.");
+  const id = abh.uuid();
+  const pdf = await pdfErstellen(abh.pdfLib, { ...m.inhalt, dokument_nr: id, inhalt_hash: m.fassung }, {}, abh.schrift);
+  const pfad = `${m.organisation_id}/${m.dienstverhaeltnis_id}/${m.kategorie}/${id}.pdf`;
+  await abh.hochladen(pfad, pdf, "application/pdf");
+  return abh.rpcAlsDienst("meldung_ablegen", {
+    p_user: nutzer.id, p_meldung_id: m.meldung_id, p_fassung: m.fassung, p_pfad: pfad, p_hash: await abh.sha256(pdf),
+  });
+}
+
 // anfrage = { token, daten } → { status, body }
 export async function bearbeiten(anfrage, abh) {
   const nutzer = anfrage.token ? await abh.nutzer(anfrage.token) : null;
@@ -110,6 +125,7 @@ export async function bearbeiten(anfrage, abh) {
     let id;
     if (d.aktion === "mitarbeiter") id = await mitarbeiter(anfrage.token, nutzer, d, abh);
     else if (d.aktion === "arbeitgeber") id = await arbeitgeber(anfrage.token, nutzer, d, abh);
+    else if (d.aktion === "meldung") id = await meldung(anfrage.token, nutzer, d, abh);
     else fehler("Unbekannte Aktion.");
     return { status: 200, body: { dokument_id: id } };
   } catch (e) {

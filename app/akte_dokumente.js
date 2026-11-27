@@ -10,6 +10,7 @@ export const KATEGORIEN = [
   { wert: "onboarding", titel: "Onboarding" },
   { wert: "vereinbarung", titel: "Vereinbarungen" },
   { wert: "abmeldung", titel: "Abmeldung" },
+  { wert: "storno", titel: "Storno" },
   { wert: "nachweis_personendaten", titel: "Nachweise", gruppe: "nachweise" },
   { wert: "nachweis_lohnverrechnung", titel: "Nachweise", gruppe: "nachweise" },
   { wert: "sonstiges", titel: "Sonstiges" },
@@ -22,7 +23,7 @@ function erlaubteKategorien(r) {
   if (!r.buero) return r.hochladen_onboarding ? ["onboarding"] : [];
   const liste = KATEGORIEN.map((k) => k.wert).filter((k) => {
     if (k === "vereinbarung") return r.entgelt;
-    if (["anmeldung", "abmeldung", "nachweis_lohnverrechnung"].includes(k)) return r.lohnverrechnung;
+    if (["anmeldung", "abmeldung", "storno", "nachweis_lohnverrechnung"].includes(k)) return r.lohnverrechnung;
     if (k === "nachweis_personendaten") return r.personendaten;
     return true;
   });
@@ -57,6 +58,7 @@ export async function zeigen(ziel, kopf, stand, neuLaden) {
     const k = e.target.closest("button");
     if (!k) return;
     if (k.dataset.klaerung) return klaerungZeigen($("#klaerung-bereich"), dv, k.dataset.klaerung, neuLaden);
+    if (k.dataset.abschrift) return dienstzettelAktion($("#dz-bereich"), "abschrift", doks.find((x) => x.id === k.dataset.abschrift), neuLaden);
     const dz = doks.find((x) => x.id === (k.dataset.uebermittelt || k.dataset.ausgehaendigt || k.dataset.neu));
     if (dz && k.dataset.uebermittelt) {
       k.disabled = true;
@@ -75,6 +77,7 @@ export async function zeigen(ziel, kopf, stand, neuLaden) {
   };
 }
 
+const GEMELDET = ["austrittsmeldung", "stornomeldung", "korrekturmeldung"];
 const ART_AUSGEHAENDIGT = { ausdruck: "Ausdruck", email: "E-Mail" };
 
 function dienstzettelVermerke(d) {
@@ -102,10 +105,11 @@ function dienstzettelKnoepfe(d) {
 
 // Kleines Formular unter den Dokumenten: ausgehändigt (Art) oder neu unterschreiben lassen (Grund)
 function dienstzettelAktion(bereich, art, dok, neuLaden) {
-  const ausgeh = art === "ausgehaendigt";
+  const abschrift = art === "abschrift";
+  const ausgeh = art === "ausgehaendigt" || abschrift;
   bereich.innerHTML = `
     <form class="dialog" id="dz-aktion" novalidate>
-      <h3>${ausgeh ? "Dienstzettel ausgehändigt" : "Dienstzettel neu unterschreiben lassen"}</h3>
+      <h3>${abschrift ? "Abschrift der Abmeldung ausgehändigt" : ausgeh ? "Dienstzettel ausgehändigt" : "Dienstzettel neu unterschreiben lassen"}</h3>
       ${ausgeh
         ? '<label class="feld"><span>Wie?</span><select name="art"><option value="ausdruck">Ausdruck</option><option value="email">E-Mail</option></select></label>'
         : `<p class="einleitung klein">Der bisherige Dienstzettel bleibt erhalten. Die Unterschriftsmappe bietet ihn danach neu an.</p>
@@ -123,7 +127,10 @@ function dienstzettelAktion(bereich, art, dok, neuLaden) {
     const fehler = form.querySelector(".fehler");
     const knopf = form.querySelector("button[type=submit]");
     try {
-      if (ausgeh) {
+      if (abschrift) {
+        knopf.disabled = true;
+        await api.funktion("abmeldung_aushaendigen", { p_dokument_id: dok.id, p_art: form.elements.art.value });
+      } else if (ausgeh) {
         knopf.disabled = true;
         await api.funktion("dienstzettel_vermerken", { p_dokument_id: dok.id, p_was: "ausgehaendigt", p_art: form.elements.art.value });
       } else {
@@ -161,13 +168,20 @@ function gruppenHtml(doks, r) {
         knoepfe.push(`<button type="button" class="knopf knopf-leise" data-ersetzen="${text(d.id)}">Ersetzen</button>`);
       }
       if (r.buero && d.typ === "dienstzettel") knoepfe.push(...dienstzettelKnoepfe(d));
+      // Abschrift der Abmeldebestätigung an den Mitarbeiter (nicht bei den selbst erzeugten Meldungs-PDFs)
+      if (r.buero && d.kategorie === "abmeldung" && !d.ersetzt_durch && !d.ausgehaendigt_am && !GEMELDET.includes(d.typ)) {
+        knoepfe.push(`<button type="button" class="knopf knopf-leise" data-abschrift="${text(d.id)}">Abschrift ausgehändigt …</button>`);
+      }
     } else if (darfHochladen(d) && !d.ersetzt_durch && !(d.kategorie === "onboarding" && d.onboarding_ergebnis === "abgelehnt")) {
       knoepfe.push(`<button type="button" class="knopf knopf-haupt" data-nachweis="${text(d.id)}">Datei hochladen</button>`);
     }
     const art = NAMEN[d.kategorie] ? `<small>${text(NAMEN[d.kategorie])}</small><br>` : "";
     const zustand = d.datei_pfad ? `${datum(d.hochgeladen_am || d.created_at)}` : '<span class="merkmal merkmal-fehlt">Datei fehlt</span>';
     const ergebnis = (d.onboarding_ergebnis === "abgelehnt" ? ' <span class="merkmal">abgelehnt</span>' : "")
-      + (d.typ === "dienstzettel" ? dienstzettelVermerke(d) : "");
+      + (d.typ === "dienstzettel" ? dienstzettelVermerke(d) : "")
+      + (d.typ !== "dienstzettel" && d.uebermittelt_am ? ` <small class="vermerk">übermittelt am ${text(datum(d.uebermittelt_am))}</small>` : "")
+      + (d.typ !== "dienstzettel" && d.ausgehaendigt_am
+        ? ` <small class="vermerk">Abschrift ausgehändigt am ${text(datum(d.ausgehaendigt_am))} (${text(ART_AUSGEHAENDIGT[d.ausgehaendigt_art] || "")})</small>` : "");
     return `<tr><td>${art}${text(d.bezeichnung || "Unterlage")}${ergebnis}</td><td>${zustand}</td>
       <td class="knopf-zelle">${knoepfe.join(" ")}</td></tr>`;
   };

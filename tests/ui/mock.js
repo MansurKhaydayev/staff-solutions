@@ -133,7 +133,7 @@ async function neueSeite(browser, daten, optionen = {}) {
       const h = optionen.rpc && optionen.rpc[name];
       if (!h) return json({ message: `RPC ${name} nicht simuliert` }, 404);
       const a = await h(body || {}, page);
-      if (a && a.status) return json(a.body, a.status);
+      if (a && typeof a.status === "number") return json(a.body, a.status);
       return json(a === undefined ? null : a);
     }
     const tabelle = url.pathname.replace("/rest/v1/", "");

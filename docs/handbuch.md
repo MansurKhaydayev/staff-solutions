@@ -1,7 +1,7 @@
 # Staff-Solutions: Handbuch für den Betreiber
 
 Dieses Handbuch erklärt, wie Staff-Solutions aufgebaut ist und wie du es betreibst.
-Es wächst mit jeder neuen Funktion. Stand: 20.11.2026.
+Es wächst mit jeder neuen Funktion. Stand: 26.11.2026.
 
 ---
 
@@ -56,6 +56,8 @@ umgeht, bekommt er keine Daten, die er nicht sehen darf.
 | `supabase/functions/analyse/` | Edge Function: Personalanalyse als PDF (Recht prüfen, Download vermerken) |
 | `app/kennzahlen.js` | Rechnungen der Startseite (Fluktuation, Stände, Verteilungen), ohne Seitenzugriff testbar |
 | `app/offene_punkte.js` | Seite „Offene Punkte“ (wem fehlt was) |
+| `app/akte_austritt.js` | Austritt und „nicht angetreten“ in der Akte: melden, bestätigen, korrigieren, Verlauf |
+| `app/uebermittlung.js`, `app/sammelmail.js` | „An Lohnverrechner übermitteln“: PDFs speichern, Mail-Link, „Gesendet?“ |
 | `app/datei.js` | Dateien prüfen (Typ, Größe), Fingerabdruck, Ablageort |
 | `app/hilfen.js` | Kleine Hilfen für alle Seiten (Datum, Euro, Text) |
 | `app/mappe.js`, `app/unterschrift.js` | Unterschriftsmappe am iPad, Unterschriftsfeld |
@@ -395,7 +397,133 @@ Bis dahin nur mit erfundenen Daten testen.
 
 ---
 
-## 9. Die Startseite (Kennzahlen)
+## 9. Austritt und Storno
+
+Hier geht es um das Ende eines Dienstverhältnisses: Austritt, „nicht angetreten“, Abmeldung und Storno
+beim Lohnverrechner. Nichts wird gelöscht. Jede Meldung und jede Korrektur bleibt im Verlauf sichtbar.
+
+### Wer macht was
+
+| Schritt | Wer | Wo |
+|---|---|---|
+| Austritt oder „nicht angetreten“ melden | wer Mitarbeiter **anlegen** darf, nur für die eigenen Studios | Akte, Knöpfe unter dem Kopf |
+| Bestätigen, korrigieren | Personalbüro | Akte |
+| An den Lohnverrechner übermitteln | Personalbüro | Offene Punkte, „An Lohnverrechner übermitteln“ |
+| Abmelde- bzw. Storno-Bestätigung hochladen | Personalbüro | Akte, Reiter Dokumente |
+| Abschrift der Abmeldung aushändigen | Personalbüro | Akte, Reiter Dokumente |
+
+Status und Austrittsdatum sieht jeder mit Zugang. Art, Notiz und Grund sieht nur, wer die Stufe
+**Personendaten** hat.
+
+### Austritt
+
+1. Die **Leitung** klickt in der Akte auf **Austritt melden**: letzter Arbeitstag, Art des Austritts,
+   Notiz (freiwillig). Die Akte zeigt gelb „Austritt gemeldet“. Das Büro bekommt den offenen Punkt
+   „Austritt bestätigen“. Am Rand „Rückfrage ans Büro“ öffnet eine Mail an das Personalbüro.
+2. Das **Büro** klickt auf **Bestätigen**. Datum und Art sind vorbelegt und lassen sich ändern. Eine
+   Abweichung wird im Verlauf vermerkt („Letzter Arbeitstag … statt …“). Erst jetzt gilt der Austritt.
+   Die App erzeugt gleich das PDF „Austrittsmeldung“ für den Lohnverrechner.
+   Kommt eine Kündigung direkt im Büro an, meldet das Büro selbst und lässt „gleich bestätigen“ angehakt.
+3. Offener Punkt: „Abmeldung übermitteln bis TT.MM.JJJJ“ (letzter Arbeitstag plus Abmeldefrist,
+   Voreinstellung 7 Tage). Ab Fristablauf steht er rot da, auch das Etikett in der Akte wird rot.
+4. Nach der Sammelmail (siehe unten) steht „Abmeldebestätigung hochladen“. Die Bestätigung des
+   Lohnverrechners unter Dokumente → Unterlage hochladen → Kategorie **Abmeldung** ablegen. Der Status
+   wird grau „abgemeldet“.
+5. Offener Punkt „Abschrift der Abmeldung aushändigen“: in Dokumente bei der Bestätigung
+   **Abschrift ausgehändigt …** klicken und Ausdruck oder E-Mail wählen.
+
+Bis einschließlich zum letzten Arbeitstag bleibt die Person in den aktiven Listen, in der Mappe und in
+den offenen Punkten. Ab dem nächsten Tag (Wiener Datum) nicht mehr.
+
+### Nicht angetreten
+
+1. Die **Leitung** klickt ab dem geplanten Dienstantritt auf **Nicht angetreten** und gibt einen Grund an.
+   Vorher gibt es den Knopf nicht. Dann reicht eine Rückfrage ans Büro, der Dienstzettel kann wie
+   bisher neu angefordert werden.
+2. Das **Büro** bestätigt.
+3. War die Person schon angemeldet, steht rot **Storno ausständig**. Die App erzeugt das PDF
+   „Storno der Anmeldung“. Nach der Sammelmail die Storno-Bestätigung unter Dokumente → Kategorie
+   **Storno** hochladen. Danach grau „nicht angetreten“.
+   War sie nie angemeldet, ist sie gleich „nicht angetreten“.
+4. In den Kennzahlen zählt sie weder als Eintritt noch als Austritt.
+
+### Korrigieren und zurücknehmen
+
+Nur das Büro, immer mit Grund. In der Akte **Korrigieren**: neues Datum oder neue Art, oder das Häkchen
+„Austritt zurücknehmen“ (die Person bleibt). Die alte Fassung bleibt im Verlauf durchgestrichen stehen.
+War die Meldung schon beim Lohnverrechner, kommt automatisch eine **Korrektur** auf die Übermittlungsliste.
+Bei „nicht angetreten“ gibt es nur „zurücknehmen“.
+
+### Status in Akte und Liste
+
+| Etikett | Bedeutung |
+|---|---|
+| gelb „Austritt gemeldet“ / „Nicht angetreten gemeldet“ | Leitung hat gemeldet, Büro hat noch nicht bestätigt |
+| gelb „Austritt am TT.MM.JJJJ“ | bestätigt, Abmeldebestätigung fehlt noch |
+| rot „… Abmeldefrist abgelaufen“ | wie oben, aber die Frist ist vorbei |
+| rot „Storno ausständig“ | nicht angetreten, war angemeldet, Storno-Bestätigung fehlt |
+| grau „abgemeldet“ | Abmeldebestätigung liegt vor |
+| grau „nicht angetreten“ | erledigt |
+
+In der **Mitarbeiterliste** wählt man unter „Zeigen“: Aktive Mitarbeiter (Voreinstellung),
+**Ein- und Austritte** mit Zeitraum von–bis (Voreinstellung die letzten 7 Tage, ohne „nicht angetreten“),
+Ehemalige oder Alle inkl. ehemalige. Das ist auch die Wochenübersicht für die Verwaltung: Sie hat
+ihren eigenen Zugang und sieht dort die Ein- und Austritte, aber keine Gehälter.
+
+### Sammelmail an den Lohnverrechner, Schritt für Schritt
+
+Jede GmbH hat ihren Lohnverrechner (Einstellungen → „Austritt und Lohnverrechner“, dort auch die
+E-Mail-Adresse). Unter **Offene Punkte** steht oben „An Lohnverrechner übermitteln“, getrennt nach
+Lohnverrechner: Anmeldungen (fertig unterschriebene Dienstzettel), Abmeldungen, Stornos, Korrekturen.
+
+1. Fälle anhaken (Voreinstellung: alle mit PDF). Fehlt bei einer Zeile das PDF, zuerst **PDF erzeugen**.
+2. **PDFs speichern und Mail öffnen** klicken. Der Browser speichert die PDFs nacheinander. Beim ersten
+   Mal fragt er eventuell, ob die Seite mehrere Dateien speichern darf: erlauben.
+3. Die App zeigt die **genauen Dateinamen** und wo sie liegen: im Ordner **Downloads**
+   (am iPad: Dateien-App → Downloads). Die Namen beginnen mit Datum und Lohnverrechner, z. B.
+   `2026-11-26_Demo-Lohnbuero_Abmeldung_Muster-Max.pdf`.
+4. Das Mailprogramm öffnet sich mit Empfänger, Betreff (z. B. „Staff-Solutions: 3 Anmeldungen,
+   1 Abmeldung, 26.11.2026“) und Text. Im Text stehen nur Art, Name, GmbH und Datum, nie
+   Versicherungsnummer, Bank oder Gehalt. Bei mehr als 30 Fällen wird die Liste gekürzt
+   („… und 12 weitere, siehe Anhänge“).
+5. Die PDFs anhängen und **selbst senden**. Die App sendet nie selbst.
+6. Zurück in der App: **Gesendet?** „Ja, gesendet“ vermerkt alle angehakten Fälle als übermittelt.
+   „Nein, noch nicht“ ändert nichts, die Fälle bleiben auf der Liste. Wurde ein Fall in der Zwischenzeit
+   korrigiert, wird nur vermerkt, was noch offen war. Die Korrektur kommt neu auf die Liste.
+
+Fehlt beim Lohnverrechner die E-Mail-Adresse, ist der Knopf gesperrt und die App sagt, wo man sie einträgt.
+Der bisherige Knopf „An Lohnverrechner übermittelt“ beim Dienstzettel bleibt für Fälle, die auf anderem
+Weg geschickt wurden.
+
+### Hinweis zur Urlaubsersatzleistung
+
+Die Austrittsmeldung enthält den Hinweis, dass der Lohnverrechner offenen Urlaub als
+Urlaubsersatzleistung abrechnet. Den Resturlaub selbst rechnet die App noch nicht (kommt mit der
+Stundenauswertung).
+
+### Einstellungen
+
+Unter Einstellungen → **Austritt und Lohnverrechner** (nur Admin): Abmeldefrist (1 bis 30 Tage),
+Mail-Adresse des Personalbüros (für „Rückfrage ans Büro“), E-Mail je Lohnverrechner und die
+Austrittsarten (umbenennen, Reihenfolge, deaktivieren, neue hinzufügen). Austrittsarten werden nie
+gelöscht, damit alte Meldungen ihre Art behalten.
+
+### Wo das technisch steht
+
+| Was | Wo |
+|---|---|
+| Meldungen (jede Fassung) | Tabelle `austritt_meldung`, nur über Funktionen beschreibbar |
+| Status | `app.dv_status(dv)` (berechnet, nie gespeichert), für Listen `mitarbeiter_status()` |
+| Melden, bestätigen, korrigieren | `austritt_melden`, `austritt_bestaetigen`, `austritt_korrigieren`, Verlauf `austritt_verlauf` |
+| Übermittlungsliste und Vermerk | `uebermittlung_offen`, `uebermittlung_vermerken`, Tabelle `sammelversand` |
+| PDFs Austrittsmeldung, Storno, Korrektur | Edge Function `mappe`, Aktion `meldung` (`meldung_inhalt`, `meldung_ablegen`) |
+| Dateinamen, Betreff, Mail-Text | `app/sammelmail.js` |
+| Oberfläche | `app/akte_austritt.js`, `app/uebermittlung.js` |
+| Tests | `supabase/tests/16_austritt.sql` bis `19_storno_hochladen.sql`, `tests/ui/austritt.test.js`, `tests/unit/sammelmail.test.mjs`, `tests/unit/meldung_ablauf.test.mjs` |
+
+---
+
+## 10. Die Startseite (Kennzahlen)
 
 Nach der Anmeldung kommt jetzt die **Startseite**. Das Formular für neue Mitarbeiter liegt unter „Neuer Mitarbeiter“.
 
@@ -437,7 +565,7 @@ und Austritte und Fluktuation bleiben bei 0.
 
 ---
 
-## 10. Das Aussehen (Glas-Design)
+## 11. Das Aussehen (Glas-Design)
 
 - **Farben ändern:** Ganz oben in `app/style.css` stehen die Farb-Variablen für hell und dunkel (zum Beispiel `--tanne` für Links, `--knopf` für Knöpfe, `--himmel` für den Hintergrund). Dort ändern, nicht an einzelnen Stellen.
 - **Seitenleiste:** Auf breiten Bildschirmen (ab 1000 Pixel) immer sichtbar, auf dem iPad hochkant und am Handy hinter dem Knopf „Menü“.
@@ -446,7 +574,7 @@ und Austritte und Fluktuation bleiben bei 0.
 
 ---
 
-## 11. Tests ausführen
+## 12. Tests ausführen
 
 | Art | Wie | Bestanden, wenn |
 |---|---|---|
@@ -477,7 +605,7 @@ Genau dafür ist die Prüfziffer da: Sie fängt Tippfehler ab.
 
 ---
 
-## 12. Begriffe
+## 13. Begriffe
 
 | Begriff | Bedeutung |
 |---|---|

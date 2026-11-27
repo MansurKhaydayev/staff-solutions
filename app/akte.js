@@ -4,6 +4,7 @@
 import * as api from "./api.js";
 import { heuteIso } from "./pruefungen.js";
 import { $, text, ART, stunden, geld, datum, tageZwischen, liste, avatarFarbe } from "./hilfen.js";
+import { austrittZeigen, statusEtikett, etikettHtml, imDienst } from "./akte_austritt.js";
 
 // Reiter: Schlüssel, Name, wer ihn sieht, Modul (wird erst beim Öffnen geladen)
 const REITER = [
@@ -22,6 +23,7 @@ export async function akteZeigen(stand, dvId, reiter = "uebersicht") {
   if (geladen.dv !== dvId) {
     $("#akte-kopf").innerHTML = '<p class="leer-zustand">Akte wird geladen …</p>';
     $("#akte-hinweise").innerHTML = "";
+    $("#akte-austritt").innerHTML = "";
     $("#akte-reiter").innerHTML = "";
     ziel.innerHTML = "";
     try {
@@ -40,15 +42,15 @@ export async function akteZeigen(stand, dvId, reiter = "uebersicht") {
     return akteZeigen(stand, dvId, "uebersicht");
   }
 
-  kopfZeichnen(kopf, stand);
-  hinweiseZeichnen(kopf);
-  $("#akte-reiter").innerHTML = erlaubt.map((r) =>
-    `<a href="#akte/${text(dvId)}/${r.name}"${r === aktiv ? ' aria-current="page"' : ""}>${text(r.titel)}</a>`).join("");
-
   const neuLaden = async () => {
     geladen = { dv: null, kopf: null };
     await akteZeigen(stand, dvId, aktiv.name);
   };
+  kopfZeichnen(kopf, stand);
+  hinweiseZeichnen(kopf);
+  $("#akte-reiter").innerHTML = erlaubt.map((r) =>
+    `<a href="#akte/${text(dvId)}/${r.name}"${r === aktiv ? ' aria-current="page"' : ""}>${text(r.titel)}</a>`).join("");
+  await austrittZeigen($("#akte-austritt"), kopf, stand, neuLaden);
   if (aktiv.name === "uebersicht") return uebersichtZeichnen(ziel, kopf, stand, neuLaden);
   if (aktiv.name === "stunden") {
     ziel.innerHTML = `<p class="leer-zustand">Stunden, Urlaub und Krankenstand kommen mit der Stundenauswertung.
@@ -69,7 +71,9 @@ export function akteVergessen() {
 }
 
 function status(k, heute) {
+  if (["nicht_angetreten", "storno_ausstaendig", "nicht_angetreten_gemeldet"].includes(k.status)) return "";
   if (k.austritt && k.austritt < heute) return `ausgetreten am ${datum(k.austritt)}`;
+  if (k.austritt && k.status === "austritt_bestaetigt") return "";
   if (k.eintritt > heute) return `beginnt am ${datum(k.eintritt)}`;
   if (k.befristet_bis && k.befristet_bis >= heute) return `befristet bis ${datum(k.befristet_bis)}`;
   return "aktiv";
@@ -79,12 +83,13 @@ function status(k, heute) {
 const darfMappe = (k, stand) => k.rechte.buero || (k.rechte.dokumente && ["studioleitung", "regionalleitung"].includes(stand?.profil?.rolle));
 
 function kopfZeichnen(k, stand) {
-  const aktiv = !k.austritt || k.austritt >= heuteIso();
+  const aktiv = imDienst(k.status, k.austritt, heuteIso());
   $("#akte-kopf").innerHTML = `
     <span class="avatar avatar-gross ${avatarFarbe(`${k.nachname} ${k.vorname}`)}" data-i="${text(`${(k.nachname || "")[0] || ""}${(k.vorname || "")[0] || ""}`.toUpperCase())}" aria-hidden="true"></span>
     <h1 class="seitentitel">${text(`${k.nachname} ${k.vorname}`)}</h1>
     <p class="akte-unterzeile">${text([k.funktion, k.arbeitsort, k.gesellschaft].filter(Boolean).join(", "))}</p>
     <p class="akte-status">${text(status(k, heuteIso()))}
+      ${etikettHtml(statusEtikett(k.status, k))}
       ${aktiv && k.angemeldet === false ? '<span class="merkmal merkmal-fehlt">noch nicht angemeldet</span>' : ""}</p>
     ${aktiv && darfMappe(k, stand) ? `<p class="akte-aktionen"><a class="knopf knopf-leise" href="#mappe/${text(k.dienstverhaeltnis_id)}">Unterschriftsmappe</a></p>` : ""}`;
 }

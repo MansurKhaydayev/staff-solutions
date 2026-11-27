@@ -1,6 +1,6 @@
 import * as api from "./api.js";
 import { fristende, datumAT, euro } from "./fristen.js";
-import { dienstzettelPruefen, heuteIso } from "./pruefungen.js";
+import { dienstzettelPruefen, heuteIso, tageVersetzt } from "./pruefungen.js";
 import { einstellungenZeigen } from "./einstellungen.js";
 import { akteZeigen, akteVergessen } from "./akte.js";
 import { offenePunkteZeigen } from "./offene_punkte.js";
@@ -9,6 +9,7 @@ import { arbeitgeberZeigen } from "./arbeitgeber.js";
 import { startseiteZeigen } from "./startseite.js";
 import { menueEinrichten } from "./menue.js";
 import { avatarFarbe, tagesgruss } from "./hilfen.js";
+import { statusEtikett, imDienst } from "./akte_austritt.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -133,7 +134,7 @@ async function stammdatenLaden() {
 
   const [orgs, standorte, gesellschaften, zonen, funktionen, brutto, zust] = await Promise.all([
     api.lesen("organisation", "select=id,name,probezeit_monate,befristung_monate,vollzeit_stunden,geringfuegig_grenze,max_stunden_tag," +
-      "anmeldung_stichzeit,tage_dazwischen_vor,tage_dazwischen_nach"),
+      "anmeldung_stichzeit,tage_dazwischen_vor,tage_dazwischen_nach,abmeldefrist_tage,buero_email"),
     api.lesen("standort", "select=id,name,art,vertragsbezeichnung,gesellschaft_id,tarifzone_id&order=name"),
     api.lesen("gesellschaft", "select=id,name,strasse,plz,ort"),
     api.lesen("tarifzone", "select=id,name"),
@@ -165,6 +166,7 @@ async function stammdatenLaden() {
     stand.erfassbareFunktionen = [];
   }
 
+  stand.buero = istBuero();
   stand.rollenText = rolleText(stand.profil.rolle);
   $("#wer").textContent = `${user.email}, ${stand.rollenText}`;
   const darfErfassen = stand.erfassbareFunktionen.length > 0;
@@ -461,9 +463,16 @@ async function listeLaden() {
   akteVergessen();
   try {
     // Das Verzeichnis liefert nur die Spalten, die diese Rolle sehen darf
-    const zeilen = await api.funktion("mitarbeiter_verzeichnis");
+    // Status (Austritt gemeldet, abgemeldet, nicht angetreten …) kommt getrennt; fehlt er, gilt das Austrittsdatum
+    const [zeilen, status] = await Promise.all([
+      api.funktion("mitarbeiter_verzeichnis"),
+      api.funktion("mitarbeiter_status").catch(() => []),
+    ]);
+    const st = new Map((status || []).map((x) => [x.dienstverhaeltnis_id, x]));
     stand.liste = zeilen.map((z) => ({
       ...z,
+      status: st.get(z.dienstverhaeltnis_id)?.status || null,
+      austritt: z.austritt || st.get(z.dienstverhaeltnis_id)?.austritt || null,
       id: z.dienstverhaeltnis_id,
       heimstandort_id: z.standort_id,
       created_at: z.erfasst_am,
@@ -489,11 +498,20 @@ function listeZeigen() {
   const funktion = new Map(stand.funktionen.map((x) => [x.id, x]));
   const art = { vollzeit: "Vollzeit", teilzeit: "Teilzeit", geringfuegig: "Geringfügig" };
 
-  const aktiv = (d) => !d.austritt || d.austritt >= heute;
+  const aktiv = (d) => imDienst(d.status, d.austritt, heute);
+  const einaus = f.status.value === "einaus";
+  document.querySelectorAll("#filter [data-zeitraum]").forEach((el) => { el.hidden = !einaus; });
+  if (einaus && !f.von.value) { f.von.value = tageVersetzt(heute, -7); f.bis.value = heute; }
+  const von = f.von.value || "0000-01-01";
+  const bis = f.bis.value || "9999-12-31";
+  const imZeitraum = (tag) => Boolean(tag) && tag >= von && tag <= bis;
   const passt = {
     aktiv,
     neu: (d) => aktiv(d) && tageBis(heute, d.created_at.slice(0, 10)) <= 14,
     befristung: (d) => aktiv(d) && d.befristet_bis && tageBis(d.befristet_bis, heute) >= 0 && tageBis(d.befristet_bis, heute) <= 30,
+    // Eintritte ohne „nicht angetreten“ (zählt weder als Ein- noch als Austritt), Austritte nach Austrittsdatum
+    einaus: (d) => (imZeitraum(d.eintritt) && !["nicht_angetreten", "storno_ausstaendig", "nicht_angetreten_gemeldet"].includes(d.status))
+      || imZeitraum(d.austritt),
     ausgetreten: (d) => !aktiv(d),
     alle: () => true,
   }[f.status.value];
@@ -553,8 +571,10 @@ function listeZeigen() {
         befristung = `<span class="merkmal merkmal-frist">${noch}</span><span class="zeile-unter">befristet bis ${datumAT(d.befristet_bis)}</span>`;
       }
     }
-    if (d.austritt && d.austritt < heute) merkmale.push('<span class="merkmal merkmal-aus">ausgetreten</span>');
-    else if (d.angemeldet === false) merkmale.push('<span class="merkmal merkmal-fehlt">noch nicht angemeldet</span>');
+    const etikett = statusEtikett(d.status, d, heute);
+    if (d.austritt && d.austritt < heute) merkmale.push(`<span class="merkmal merkmal-aus">Austritt ${datumAT(d.austritt)}</span>`);
+    if (etikett) merkmale.push(`<span class="merkmal ${etikett.klasse}">${text(etikett.text)}</span>`);
+    else if (aktiv(d) && d.angemeldet === false) merkmale.push('<span class="merkmal merkmal-fehlt">noch nicht angemeldet</span>');
     const wo = [funktion.get(d.funktion_id)?.name, s ? s.name || s.vertragsbezeichnung : null].filter(Boolean).join(" · ");
     const imTeam = d.eintritt > heute ? `ab ${datumAT(d.eintritt)}` : `seit ${datumAT(d.eintritt)}`;
     const name = p ? `${p.nachname} ${p.vorname}` : "–";

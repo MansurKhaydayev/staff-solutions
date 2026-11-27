@@ -1,6 +1,8 @@
 // Seite „Offene Punkte“: Wem fehlt was? Die Datenbank liefert nur Punkte, die die Rolle sehen darf.
 import * as api from "./api.js";
 import { $, text, datum } from "./hilfen.js";
+import { heuteIso } from "./pruefungen.js";
+import { uebermittlungZeigen } from "./uebermittlung.js";
 
 const ARTEN = {
   onboarding: "Onboarding fehlt",
@@ -12,7 +14,14 @@ const ARTEN = {
   arbeitgeber: "Arbeitgeber-Unterschrift fehlt",
   uebermittlung: "An Lohnverrechner übermitteln",
   dringend: "Dringende Anmeldung",
+  austritt_bestaetigen: "Austritt bestätigen",
+  abmeldung: "Abmeldung",
+  storno: "Storno ausständig",
+  abschrift: "Abschrift der Abmeldung aushändigen",
 };
+
+// rot: Abmeldefrist abgelaufen oder Storno ausständig
+const ueberfaellig = (p, heute) => p.art === "storno" || (p.art === "abmeldung" && p.datum && p.datum < heute);
 
 export function punktText(p) {
   switch (p.art) {
@@ -40,6 +49,9 @@ export async function offenePunkteZeigen(stand) {
     f.art.innerHTML = '<option value="">Alle</option>' + Object.entries(ARTEN).map(([w, t]) =>
       `<option value="${w}">${text(t)}</option>`).join("");
   }
+  // Sammelmail an die Lohnverrechner: nur Personalbüro (die Datenbank prüft es noch einmal)
+  if (stand.buero) uebermittlungZeigen($("#uebermittlung"));
+  else $("#uebermittlung").hidden = true;
   $("#offen-liste").innerHTML = '<p class="leer-zustand">Wird geladen …</p>';
   try {
     punkte = await api.funktion("offene_punkte");
@@ -59,6 +71,7 @@ function zeichnen(stand) {
     if (!personen.has(p.dienstverhaeltnis_id)) personen.set(p.dienstverhaeltnis_id, { ...p, punkte: [] });
     personen.get(p.dienstverhaeltnis_id).punkte.push(p);
   }
+  const heute = heuteIso();
   const ort = new Map(stand.standorte.map((s) => [s.id, s.vertragsbezeichnung || s.name]));
   const sortiert = [...personen.values()].sort((a, b) => `${a.nachname} ${a.vorname}`.localeCompare(`${b.nachname} ${b.vorname}`, "de"));
   $("#offen-anzahl").textContent = punkte.length ? `${gefiltert.length} ${gefiltert.length === 1 ? "offener Punkt" : "offene Punkte"} bei ` +
@@ -69,6 +82,6 @@ function zeichnen(stand) {
     <section class="offen-person akte-block">
       <h2><a class="name" href="#akte/${text(m.dienstverhaeltnis_id)}/uebersicht">${text(`${m.nachname} ${m.vorname}`)}</a>
         <small>${text(ort.get(m.standort_id) || "")}</small></h2>
-      <ul>${m.punkte.map((p) => `<li class="punkt-${text(p.art)}">${text(punktText(p))}</li>`).join("")}</ul>
+      <ul>${m.punkte.map((p) => `<li class="punkt-${text(p.art)}${ueberfaellig(p, heute) ? " punkt-ueberfaellig" : ""}">${text(punktText(p))}</li>`).join("")}</ul>
     </section>`).join("");
 }

@@ -291,10 +291,13 @@
             <option value="aktiv">Aktive Mitarbeiter</option>
             <option value="neu">Neu in den letzten 14 Tagen</option>
             <option value="befristung">Befristung endet in 30 Tagen</option>
-            <option value="ausgetreten">Ausgetretene</option>
-            <option value="alle">Alle</option>
+            <option value="einaus">Ein- und Austritte</option>
+            <option value="ausgetreten">Ehemalige</option>
+            <option value="alle">Alle inkl. ehemalige</option>
           </select>
         </label>
+        <label class="feld" data-zeitraum hidden><span>Von</span><input type="date" name="von"></label>
+        <label class="feld" data-zeitraum hidden><span>Bis</span><input type="date" name="bis"></label>
         <label class="feld">
           <span>Sortieren</span>
           <select name="sortierung">
@@ -322,6 +325,14 @@
     <main id="seite-offen" class="seite" hidden>
       <h1 class="seitentitel">Offene Punkte</h1>
       <p class="einleitung">Fehlende Unterlagen und Nachweise aller aktiven Mitarbeiter, für die du zuständig bist.</p>
+      <section id="uebermittlung" class="uebermittlung" aria-labelledby="t-uebermittlung" hidden>
+        <h2 id="t-uebermittlung">An Lohnverrechner übermitteln</h2>
+        <p class="einleitung klein">Anmeldungen, Abmeldungen, Stornos und Korrekturen gesammelt je Lohnverrechner.
+          Die App speichert die PDFs und öffnet das Mailprogramm. Senden musst du selbst.</p>
+        <p class="status" id="uebermittlung-status" role="status" aria-live="polite"></p>
+        <div id="uebermittlung-dialog"></div>
+        <div id="uebermittlung-liste"></div>
+      </section>
       <form class="filter" id="offen-filter">
         <label class="feld"><span>Arbeitsort</span><select name="standort"><option value="">Alle</option></select></label>
         <label class="feld"><span>Art</span><select name="art"><option value="">Alle</option></select></label>
@@ -336,6 +347,7 @@
       <p class="zurueck"><a href="#mitarbeiter">Zur Mitarbeiterliste</a></p>
       <header id="akte-kopf" class="akte-kopf"></header>
       <div id="akte-hinweise" aria-live="polite"></div>
+      <div id="akte-austritt" class="akte-austritt"></div>
       <nav id="akte-reiter" class="reiter" aria-label="Bereiche der Akte"></nav>
       <section id="akte-inhalt" class="akte-inhalt"></section>
     </main>
@@ -478,6 +490,38 @@
           <label class="feld schmal"><span>Tage dazwischen (nach Stichzeit)</span>
             <input type="number" name="tage_dazwischen_nach" min="0" max="7" step="1" required></label>
           <button type="submit" class="knopf knopf-haupt">Regeln speichern</button>
+        </form>
+      </section>
+
+      <section class="einstellung" aria-labelledby="t-austritt">
+        <h2 id="t-austritt">Austritt und Lohnverrechner</h2>
+        <form id="austritt-regeln" class="regeln" novalidate>
+          <label class="feld schmal"><span>Abmeldefrist (Tage nach dem letzten Arbeitstag)</span>
+            <input type="number" name="abmeldefrist_tage" min="1" max="30" step="1"></label>
+          <label class="feld breit"><span>Mail-Adresse Personalbüro (für „Rückfrage ans Büro“)</span>
+            <input type="email" name="buero_email" maxlength="200" autocomplete="off"></label>
+          <button type="submit" class="knopf knopf-haupt">Speichern</button>
+        </form>
+        <h3>E-Mail je Lohnverrechner</h3>
+        <p class="einleitung klein">An diese Adresse geht die Sammelmail (Offene Punkte → „An Lohnverrechner übermitteln“).</p>
+        <div class="tabelle-rahmen">
+          <table class="tabelle">
+            <thead><tr><th scope="col">Lohnverrechner</th><th scope="col">E-Mail</th></tr></thead>
+            <tbody id="lohnverrechner-einstellungen"></tbody>
+          </table>
+        </div>
+        <h3>Austrittsarten</h3>
+        <p class="einleitung klein">Zur Auswahl beim Melden eines Austritts. Nicht mehr benötigte Arten deaktivieren
+          (bisherige Meldungen behalten ihre Art).</p>
+        <div class="tabelle-rahmen">
+          <table class="tabelle">
+            <thead><tr><th scope="col">Bezeichnung</th><th scope="col">Reihenfolge</th><th scope="col">Aktiv</th></tr></thead>
+            <tbody id="austrittsarten-einstellungen"></tbody>
+          </table>
+        </div>
+        <form id="austrittsart-neu" class="regeln">
+          <label class="feld breit"><span>Neue Austrittsart</span><input type="text" name="bezeichnung" maxlength="120" required></label>
+          <button type="submit" class="knopf knopf-leise">Hinzufügen</button>
         </form>
       </section>
     </main>
